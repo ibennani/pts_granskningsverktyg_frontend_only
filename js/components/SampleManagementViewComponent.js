@@ -85,15 +85,17 @@ export const SampleManagementViewComponent = (function () {
     function on_sample_saved() {
         // console.log("[SampleManagementView] on_sample_saved CALLED");
         if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
-            // console.log("[SampleManagementView/on_sample_saved] Calling SampleListComponent.render()");
             sample_list_component_instance.render(); 
         }
-        // console.log("[SampleManagementView/on_sample_saved] Calling toggle_add_sample_form_visibility(false)");
-        toggle_add_sample_form_visibility(false);
-        
-        // console.log("[SampleManagementView/on_sample_saved] Calling update_button_states()");
-        update_button_states(); 
-        // console.log("[SampleManagementView/on_sample_saved] FINISHED");
+        toggle_add_sample_form_visibility(false); 
+        update_button_states(); // Uppdatera knapparnas enabled/disabled status.
+                               // Synligheten av "Starta granskning" hanteras av render().
+                               // Om vi vill tvinga den att synas/döljas direkt, måste render() anropas.
+        if (typeof render === 'function') {
+            render(); // Anropa yttre render för att uppdatera "Starta granskning"-knappens synlighet
+        } else {
+            console.error("[SampleManagementView/on_sample_saved] Outer render function is not available.");
+        }
     }
     
     function handle_edit_sample_request(sample_id) {
@@ -122,11 +124,10 @@ export const SampleManagementViewComponent = (function () {
             }
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(Translation_t('sample_deleted_successfully', {sampleName: sample_to_delete && Helpers_escape_html ? Helpers_escape_html(sample_to_delete.description) : ''}), "success");
             
-            // Behöver rendera om hela vyn för att "Starta granskning"-knappen ska uppdateras (döljas om det var sista stickprovet)
             if (typeof render === 'function') {
-                 render(); // Anropa den yttre render-funktionen
+                render();
             } else {
-                console.error("[SampleManagementView] handle_delete_sample_request: Outer render function not defined in this scope for re-render!");
+                console.error("[SampleManagementView] handle_delete_sample_request: render function is not defined for re-render!");
             }
         }
     }
@@ -144,21 +145,17 @@ export const SampleManagementViewComponent = (function () {
 
         if (add_sample_form_container_element && sample_list_container_element && toggle_form_button_element && Helpers_get_icon_svg && Translation_t) {
             if (is_form_visible) { 
-                // console.log("[SampleManagementView/toggle] SHOWING FORM");
                 add_sample_form_container_element.removeAttribute('hidden');
                 sample_list_container_element.setAttribute('hidden', 'true');
                 toggle_form_button_element.innerHTML = Helpers_get_icon_svg('list', ['currentColor'], 18) + `<span>${Translation_t('show_existing_samples')}</span>`;
                 if (add_sample_form_component_instance && typeof add_sample_form_component_instance.render === 'function') {
-                    //  console.log("[SampleManagementView/toggle] Calling AddSampleFormComponent.render()");
                      add_sample_form_component_instance.render(sample_id_to_edit); 
                 } else { console.error("[SampleManagementView/toggle] AddSampleFormComponent.render is not a function or instance is null"); }
             } else { 
-                // console.log("[SampleManagementView/toggle] SHOWING LIST");
                 add_sample_form_container_element.setAttribute('hidden', 'true');
                 sample_list_container_element.removeAttribute('hidden');
                 toggle_form_button_element.innerHTML = Helpers_get_icon_svg('add', ['currentColor'], 18) + `<span>${Translation_t('add_new_sample')}</span>`;
                 if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
-                    //  console.log("[SampleManagementView/toggle] Calling SampleListComponent.render()");
                      sample_list_component_instance.render(); 
                 } else { console.error("[SampleManagementView/toggle] SampleListComponent.render is not a function or instance is null"); }
             }
@@ -177,8 +174,6 @@ export const SampleManagementViewComponent = (function () {
             toggle_form_button_element.classList.toggle('button-disabled', is_readonly);
         }
 
-        // Hantera synlighet och disabled-status för start_audit_button_element
-        // Denna knapp skapas/tas bort i render(), så update_button_states hanterar bara 'disabled' om den finns.
         if (start_audit_button_element) { 
             const can_start = current_audit && current_audit.samples && current_audit.samples.length > 0 && current_audit.auditStatus === 'not_started';
             start_audit_button_element.disabled = !can_start;
@@ -186,22 +181,56 @@ export const SampleManagementViewComponent = (function () {
         }
     }
 
+    // --- ÅTERSTÄLLD handle_start_audit ---
     function handle_start_audit() {
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        console.error("[SampleManagementView] DRING DRING! handle_start_audit ANROPADES.");
-        const ca = State_getCurrentAudit ? State_getCurrentAudit() : null;
-        console.error("Nuvarande auditStatus:", ca ? ca.auditStatus : "State_getCurrentAudit är null eller current_audit är null");
-        console.error("Antal samples:", ca && ca.samples ? ca.samples.length : "N/A");
-        console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        console.log("[SampleManagementView] handle_start_audit CALLED");
+        const current_audit = State_getCurrentAudit ? State_getCurrentAudit() : null;
         
-        if (window.NotificationComponent && typeof NotificationComponent_show_global_message === 'function') {
-            NotificationComponent_show_global_message("handle_start_audit anropades - detta ska bara hända vid klick på 'Starta Granskning'-knappen.", "warning");
+        if (!current_audit || !Translation_t || !Helpers_get_current_iso_datetime_utc || !State_setCurrentAudit || !NotificationComponent_show_global_message || !router_ref) {
+            console.error("[SampleManagementView/handle_start_audit] Kritiska beroenden saknas!");
+            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internt fel: Kan inte starta granskning p.g.a. saknade beroenden.", "error");
+            return;
         }
-        // Faktisk logik är utkommenterad för test
+
+        // console.log("[SampleManagementView] In handle_start_audit - Current Audit Object:", current_audit);
+        // if (current_audit) {
+        //     console.log("[SampleManagementView] current_audit.auditStatus:", current_audit.auditStatus);
+        //     console.log("[SampleManagementView] current_audit.samples.length:", current_audit.samples ? current_audit.samples.length : 'N/A');
+        // }
+
+        if (current_audit.samples && current_audit.samples.length > 0 && current_audit.auditStatus === 'not_started') {
+            console.log("[SampleManagementView] CONDITIONS MET - Starting audit...");
+            current_audit.auditStatus = 'in_progress';
+            current_audit.startTime = Helpers_get_current_iso_datetime_utc(); 
+            State_setCurrentAudit(current_audit);
+            
+            // console.log("[SampleManagementView] Audit status set to 'in_progress', startTime set.");
+            
+            NotificationComponent_show_global_message(Translation_t('audit_started_successfully'), "success"); 
+            
+            update_button_states(); 
+            if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
+                sample_list_component_instance.render(); 
+            }
+
+            // console.log("[SampleManagementView] Setting timeout for navigation to audit_overview...");
+            setTimeout(() => {
+                // console.log("[SampleManagementView] Timeout fired! Navigating to audit_overview.");
+                if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message(); 
+                router_ref('audit_overview'); 
+            }, 500); 
+        } else if (current_audit.auditStatus !== 'not_started') {
+            // console.log("[SampleManagementView] Audit already started or locked. Status:", current_audit.auditStatus);
+            NotificationComponent_show_global_message(Translation_t('audit_already_started_or_locked'), "info"); 
+        } else {
+            // console.log("[SampleManagementView] Conditions NOT met to start audit (e.g., no samples).");
+            NotificationComponent_show_global_message(Translation_t('error_no_samples_to_start_audit'), "warning");
+        }
     }
+    // --- SLUT ÅTERSTÄLLD handle_start_audit ---
 
     async function init(_app_container, _router_cb) {
-        console.log("[SampleManagementView] INIT CALLED - TOP");
+        // console.log("[SampleManagementView] INIT CALLED - TOP");
         if (!assign_globals()) {
             console.error("SampleManagementView: Failed to assign global dependencies in init. Component will likely fail.");
             return; 
@@ -215,9 +244,9 @@ export const SampleManagementViewComponent = (function () {
             console.error("SampleManagementView: NotificationComponent_get_global_message_element_reference is not available post assign_globals!");
         }
         
-        console.log("[SampleManagementView] About to init_sub_components...");
+        // console.log("[SampleManagementView] About to init_sub_components...");
         await init_sub_components(); 
-        console.log("[SampleManagementView] FINISHED init_sub_components.");
+        // console.log("[SampleManagementView] FINISHED init_sub_components.");
         
         if (Helpers_load_css) {
             try { 
@@ -228,11 +257,11 @@ export const SampleManagementViewComponent = (function () {
             } 
             catch (error) { console.warn("Failed to load CSS for SampleManagementViewComponent:", error); }
         }
-        console.log("[SampleManagementView] INIT COMPLETED");
+        // console.log("[SampleManagementView] INIT COMPLETED");
     }
 
     function render() {
-        console.log("[SampleManagementView] RENDER CALLED");
+        // console.log("[SampleManagementView] RENDER CALLED");
         if (!app_container_ref || !Helpers_create_element || !Translation_t || !State_getCurrentAudit) {
              console.error("SampleManagementView: Core dependencies missing for render. Has init completed successfully?");
             if(app_container_ref) app_container_ref.innerHTML = "<p>Kunde inte rendera stickprovshantering på grund av saknade beroenden.</p>";
