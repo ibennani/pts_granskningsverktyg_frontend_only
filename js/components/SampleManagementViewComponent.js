@@ -82,22 +82,19 @@ export const SampleManagementViewComponent = (function () {
         // console.log("[SampleManagementView/init_sub_components] COMPLETED");
     }
 
-    // --- JUSTERAD on_sample_saved ---
     function on_sample_saved() {
-        console.log("[SampleManagementView] on_sample_saved CALLED");
+        // console.log("[SampleManagementView] on_sample_saved CALLED");
         if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
-            console.log("[SampleManagementView/on_sample_saved] Calling SampleListComponent.render()");
+            // console.log("[SampleManagementView/on_sample_saved] Calling SampleListComponent.render()");
             sample_list_component_instance.render(); 
         }
-        console.log("[SampleManagementView/on_sample_saved] Calling toggle_add_sample_form_visibility(false)");
-        toggle_add_sample_form_visibility(false); // Dölj formulär, visa lista
+        // console.log("[SampleManagementView/on_sample_saved] Calling toggle_add_sample_form_visibility(false)");
+        toggle_add_sample_form_visibility(false);
         
-        console.log("[SampleManagementView/on_sample_saved] Calling update_button_states()");
-        update_button_states(); // Uppdatera knapparnas enabled/disabled status
-        // Vi anropar INTE den yttre render() härifrån direkt längre.
-        console.log("[SampleManagementView/on_sample_saved] FINISHED");
+        // console.log("[SampleManagementView/on_sample_saved] Calling update_button_states()");
+        update_button_states(); 
+        // console.log("[SampleManagementView/on_sample_saved] FINISHED");
     }
-    // --- SLUT JUSTERAD on_sample_saved ---
     
     function handle_edit_sample_request(sample_id) {
         const current_audit = State_getCurrentAudit ? State_getCurrentAudit() : null;
@@ -125,11 +122,11 @@ export const SampleManagementViewComponent = (function () {
             }
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(Translation_t('sample_deleted_successfully', {sampleName: sample_to_delete && Helpers_escape_html ? Helpers_escape_html(sample_to_delete.description) : ''}), "success");
             
-            // Anropa den yttre render() för att "Starta granskning"-knappen ska försvinna om det var sista
+            // Behöver rendera om hela vyn för att "Starta granskning"-knappen ska uppdateras (döljas om det var sista stickprovet)
             if (typeof render === 'function') {
-                 render();
+                 render(); // Anropa den yttre render-funktionen
             } else {
-                console.error("[SampleManagementView] handle_delete_sample_request: render function is not defined in this scope for re-render!");
+                console.error("[SampleManagementView] handle_delete_sample_request: Outer render function not defined in this scope for re-render!");
             }
         }
     }
@@ -180,6 +177,8 @@ export const SampleManagementViewComponent = (function () {
             toggle_form_button_element.classList.toggle('button-disabled', is_readonly);
         }
 
+        // Hantera synlighet och disabled-status för start_audit_button_element
+        // Denna knapp skapas/tas bort i render(), så update_button_states hanterar bara 'disabled' om den finns.
         if (start_audit_button_element) { 
             const can_start = current_audit && current_audit.samples && current_audit.samples.length > 0 && current_audit.auditStatus === 'not_started';
             start_audit_button_element.disabled = !can_start;
@@ -198,7 +197,7 @@ export const SampleManagementViewComponent = (function () {
         if (window.NotificationComponent && typeof NotificationComponent_show_global_message === 'function') {
             NotificationComponent_show_global_message("handle_start_audit anropades - detta ska bara hända vid klick på 'Starta Granskning'-knappen.", "warning");
         }
-        // Den faktiska logiken är utkommenterad för test
+        // Faktisk logik är utkommenterad för test
     }
 
     async function init(_app_container, _router_cb) {

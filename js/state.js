@@ -7,6 +7,7 @@
     let current_audit_object = null;
 
     function get_current_audit_from_session() {
+        // Undvik att logga härifrån, kan bli för mycket
         if (current_audit_object) {
             return current_audit_object;
         }
@@ -16,11 +17,11 @@
                 current_audit_object = JSON.parse(stored_audit);
                 return current_audit_object;
             } catch (e) {
-                console.error("Error parsing current_audit from sessionStorage:", e);
+                console.error("State.js: Error parsing current_audit from sessionStorage:", e);
                 sessionStorage.removeItem(CURRENT_AUDIT_KEY);
-                current_audit_object = null; // Viktigt att nollställa här
-                if (window.NotificationComponent) { // Kolla om NotificationComponent är laddad
-                    NotificationComponent.show_notification('Fel vid läsning av sparad session. Tidigare data kan vara förlorad.', 'error', 7000);
+                current_audit_object = null;
+                if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
+                    NotificationComponent.show_global_message('Fel vid läsning av sparad session. Tidigare data kan vara förlorad.', 'error', 7000);
                 }
                 return null;
             }
@@ -33,12 +34,11 @@
             try {
                 sessionStorage.setItem(CURRENT_AUDIT_KEY, JSON.stringify(current_audit_object));
             } catch (e) {
-                console.error("Error stringifying or saving current_audit to sessionStorage:", e);
-                if (window.NotificationComponent) {
-                    NotificationComponent.show_notification(
+                console.error("State.js: Error stringifying or saving current_audit to sessionStorage:", e);
+                if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
+                    NotificationComponent.show_global_message(
                         'Kritiskt fel: Kunde inte spara granskningsdata till sessionen. Data kan gå förlorad vid omladdning.',
-                        'error',
-                        10000
+                        'error', 10000
                     );
                 }
             }
@@ -57,7 +57,7 @@
         save_current_audit_to_session();
     }
 
-    function get_current_audit_object_internal() { // Byt namn för att undvika konflikt med exporten
+    function get_current_audit_object_internal() { 
         return get_current_audit_from_session();
     }
 
@@ -66,15 +66,11 @@
             saveFileVersion: APP_SAVE_FILE_VERSION,
             ruleFileContent: null,
             auditMetadata: {
-                caseNumber: '',
-                actorName: '',
-                actorLink: '',
-                auditorName: '',
-                internalComment: ''
+                caseNumber: '', actorName: '', actorLink: '',
+                auditorName: '', internalComment: ''
             },
             auditStatus: 'not_started',
-            startTime: null,
-            endTime: null,
+            startTime: null, endTime: null,
             samples: [],
         };
         set_current_audit_object(new_audit);
@@ -83,31 +79,27 @@
 
     function load_audit_from_file_data(file_content_object) {
         if (typeof file_content_object !== 'object' || file_content_object === null) {
-            console.error("Invalid data type for loading audit from file.");
+            console.error("State.js: Invalid data type for loading audit from file.");
             return false;
         }
         if (!file_content_object.saveFileVersion || !file_content_object.hasOwnProperty('ruleFileContent') || !file_content_object.hasOwnProperty('auditMetadata')) {
-            console.error("Loaded audit data is missing essential properties.");
+            console.error("State.js: Loaded audit data is missing essential properties.");
             return false;
         }
-        // Ytterligare validering av `saveFileVersion` kan ske här om det skiljer sig mycket mellan versioner
         if (file_content_object.saveFileVersion > APP_SAVE_FILE_VERSION) {
-            console.warn(`Sparfilens version (${file_content_object.saveFileVersion}) är nyare än applikationens version (${APP_SAVE_FILE_VERSION}). Full kompatibilitet kan inte garanteras.`);
-            if (window.NotificationComponent) {
-                 NotificationComponent.show_notification(`Varning: Sparfilen är från en nyare version av verktyget. (${file_content_object.saveFileVersion} vs ${APP_SAVE_FILE_VERSION}).`, 'warning', 8000);
+            console.warn(`State.js: Sparfilens version (${file_content_object.saveFileVersion}) är nyare än applikationens version (${APP_SAVE_FILE_VERSION}).`);
+            if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
+                 NotificationComponent.show_global_message(`Varning: Sparfilen är från en nyare version av verktyget. (${file_content_object.saveFileVersion} vs ${APP_SAVE_FILE_VERSION}).`, 'warning', 8000);
             }
         }
-
-
         set_current_audit_object(file_content_object);
         return true;
     }
 
-    // Initialize on load to populate current_audit_object from sessionStorage if it exists
-    get_current_audit_from_session();
+    get_current_audit_from_session(); // Initialize on load
 
     const public_api = {
-        getCurrentAudit: get_current_audit_object_internal, // Använd det interna namnet
+        getCurrentAudit: get_current_audit_object_internal,
         setCurrentAudit: set_current_audit_object,
         saveCurrentAudit: save_current_audit_to_session,
         clearCurrentAudit: clear_current_audit_from_session,
@@ -116,7 +108,10 @@
         getAppSaveFileVersion: () => APP_SAVE_FILE_VERSION
     };
 
-    // Expose to global scope
-    window.State = public_api;
+    window.State = public_api; // Exponera till global scope
 
-})(); // Slut på IIFE
+    console.log("[state.js] IIFE executed. typeof window.State:", typeof window.State);
+    if (typeof window.State === 'object' && window.State !== null) {
+        console.log("[state.js] window.State keys:", Object.keys(window.State));
+    }
+})();

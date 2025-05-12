@@ -1,116 +1,131 @@
 (function () { // IIFE start
     'use-strict';
 
-    // CSS-filen behövs fortfarande för styling av själva meddelandet (färger, border etc.)
     const CSS_PATH = 'css/components/notification_component.css';
-    const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area'; // Nytt ID
+    const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area'; 
 
     let global_message_element = null;
-    const { t } = Translation; // Förutsätter att Translation är tillgängligt
+    // Translation och Helpers kommer att hämtas från window när de behövs inuti funktioner
+    // Detta gör komponenten mindre beroende av att de finns exakt när assign_globals körs,
+    // men assign_globals i andra komponenter kommer fortfarande att fejla om de inte finns.
 
     async function init() {
-        try {
-            await Helpers.load_css(CSS_PATH);
-        } catch (error) {
-            console.error("Failed to load CSS for NotificationComponent:", error);
+        if (window.Helpers && typeof window.Helpers.load_css === 'function') {
+            try {
+                const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
+                if(!link_tag) await window.Helpers.load_css(CSS_PATH);
+            } catch (error) {
+                console.error("NotificationComponent: Failed to load CSS:", error);
+            }
+        } else {
+            console.warn("NotificationComponent: Helpers.load_css not available for CSS loading.");
         }
+        
+        return Promise.resolve().then(() => { // Defer DOM access
+            global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
+            if (!global_message_element && window.Helpers && typeof window.Helpers.create_element === 'function') {
+                // console.warn("NotificationComponent: Global message container not found, creating it.");
+                global_message_element = window.Helpers.create_element('div', {
+                    id: GLOBAL_MESSAGE_CONTAINER_ID,
+                    attributes: { 'aria-live': 'polite', hidden: 'true' }
+                });
+                // Denna kommer att läggas till av vyn som använder den.
+            } else if (!window.Helpers) {
+                console.error("NotificationComponent: Helpers module not available to create message container.");
+            }
+        });
+    }
+    
+    function _update_global_message_content(message, type){
+        if (!global_message_element || !window.Translation || !window.Helpers) {
+            console.error("NotificationComponent: Cannot update message, core dependencies missing or element not ready.");
+            return;
+        }
+        const { t } = window.Translation;
+        const { create_element } = window.Helpers;
 
-        // Skapa containern om den inte finns. Den kommer att läggas till dynamiskt av komponenter.
-        // Eller så kan main.js skapa en placeholder i #app-container
-        global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
-        if (!global_message_element) {
-            global_message_element = Helpers.create_element('div', {
-                id: GLOBAL_MESSAGE_CONTAINER_ID,
-                attributes: {
-                    'aria-live': 'polite', // För skärmläsare
-                    hidden: 'true' // Dold från början
-                }
-            });
-            // Elementet kommer att infogas av vyn som vill använda det, eller av main.js.
-            // Vi skapar det bara här så det är redo.
+        global_message_element.innerHTML = ''; 
+        
+        if (message && message.trim() !== '') {
+            global_message_element.textContent = message;
+            global_message_element.className = ''; 
+            global_message_element.classList.add('global-message-content'); 
+            global_message_element.classList.add(`message-${type}`); 
+
+            if (type === 'error' || type === 'warning') {
+                const close_button = create_element('button', {
+                    class_name: 'global-message-close-btn', html_content: '×',
+                    attributes: { 'aria-label': t('close'), title: t('close') }
+                });
+                close_button.addEventListener('click', clear_global_message, { once: true });
+                global_message_element.appendChild(close_button);
+                global_message_element.setAttribute('role', 'alert'); 
+            } else {
+                global_message_element.removeAttribute('role'); 
+            }
+            global_message_element.removeAttribute('hidden');
+        } else {
+            clear_global_message(); 
         }
-        return Promise.resolve(); // Behåll async-kompatibilitet
     }
 
-    // Funktion för att visa/uppdatera det globala meddelandet
-    // Duration tas bort - meddelandet är persistent tills det rensas eller byts.
     function show_global_message(message, type = 'info') {
         if (!global_message_element) {
-            console.error("Global message element not initialized. Call init() first.");
-            // Försök initiera igen om det missats, men detta bör inte hända om init_app hanterar det.
-            init().then(() => {
+            // console.warn("NotificationComponent: Global message element not initialized in show_global_message. Attempting init.");
+            init().then(() => { // Försök initiera om den inte redan är det
                 if(global_message_element) _update_global_message_content(message, type);
+                else console.error("NotificationComponent: Still cannot show message, container not established after re-init.");
             });
             return;
         }
         _update_global_message_content(message, type);
     }
     
-    function _update_global_message_content(message, type){
-        if (!global_message_element) return;
-
-        global_message_element.innerHTML = ''; // Rensa tidigare innehåll (t.ex. gammal stängningsknapp)
-        
-        if (message && message.trim() !== '') {
-            global_message_element.textContent = message;
-            // Ta bort gamla typklasser och sätt ny
-            global_message_element.className = ''; // Rensa alla klasser först
-            global_message_element.classList.add('global-message-content'); // Basklass
-            global_message_element.classList.add(`message-${type}`); // Typspecifik klass
-
-            // Lägg till en stängningsknapp om det är ett fel eller varning (eller alltid om så önskas)
-            if (type === 'error' || type === 'warning') {
-                const close_button = Helpers.create_element('button', {
-                    class_name: 'global-message-close-btn',
-                    html_content: '&times;',
-                    attributes: {
-                        'aria-label': t('close'),
-                        title: t('close')
-                    }
-                });
-                close_button.addEventListener('click', clear_global_message, { once: true });
-                global_message_element.appendChild(close_button);
-                global_message_element.setAttribute('role', 'alert'); // För error/warning
-            } else {
-                global_message_element.removeAttribute('role'); // Ta bort alert-rollen för info/success
-            }
-            global_message_element.removeAttribute('hidden');
-        } else {
-            clear_global_message(); // Dölj om meddelandet är tomt
-        }
-    }
-
-    // Funktion för att rensa/dölja det globala meddelandet
     function clear_global_message() {
         if (global_message_element) {
-            global_message_element.textContent = ''; // Rensa text
+            global_message_element.textContent = ''; 
             global_message_element.setAttribute('hidden', 'true');
-            global_message_element.className = 'global-message-content'; // Återställ klasser
+            global_message_element.className = 'global-message-content'; 
             global_message_element.removeAttribute('role');
-            // Ta bort eventuell stängningsknapp om den finns dynamiskt tillagd
             const btn = global_message_element.querySelector('.global-message-close-btn');
             if(btn) btn.remove();
         }
     }
 
-    // Ge vyn en referens till det globala meddelandeelementet
     function get_global_message_element_reference() {
         if (!global_message_element) {
-            // Detta kan hända om get_global_message_element_reference anropas före init.
-            // Vi tvingar en init här för att säkerställa att elementet skapas.
-            // console.warn("Global message element was not ready, initializing now for reference.");
-            init(); // init är async, men vi returnerar elementet synkront. Det skapas i init.
+            // console.warn("NotificationComponent: get_global_message_element_reference called before init fully established the element. Forcing creation if possible.");
+            // Detta init-anrop är mest för att säkerställa att elementet skapas om det inte finns,
+            // även om init i main.js bör ha kört.
+            if (window.Helpers && typeof window.Helpers.create_element === 'function' && !document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID)) {
+                 global_message_element = window.Helpers.create_element('div', {
+                    id: GLOBAL_MESSAGE_CONTAINER_ID,
+                    attributes: { 'aria-live': 'polite', hidden: 'true' }
+                });
+            } else if (!document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID)) {
+                // Fallback om Helpers inte är redo, men detta bör inte hända.
+                global_message_element = document.createElement('div');
+                global_message_element.id = GLOBAL_MESSAGE_CONTAINER_ID;
+                global_message_element.setAttribute('aria-live', 'polite');
+                global_message_element.hidden = true;
+            } else {
+                 global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
+            }
         }
         return global_message_element;
     }
-
 
     const public_api = {
         init,
         show_global_message,
         clear_global_message,
-        get_global_message_element_reference // Ny funktion
+        get_global_message_element_reference
     };
 
-    window.NotificationComponent = public_api; // Behåll samma globala namn
-})(); // IIFE end
+    window.NotificationComponent = public_api;
+
+    console.log("[NotificationComponent.js] IIFE executed. typeof window.NotificationComponent:", typeof window.NotificationComponent);
+    if (typeof window.NotificationComponent === 'object' && window.NotificationComponent !== null) {
+        console.log("[NotificationComponent.js] window.NotificationComponent keys:", Object.keys(window.NotificationComponent));
+    }
+})();

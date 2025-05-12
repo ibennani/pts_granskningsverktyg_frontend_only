@@ -23,6 +23,7 @@ export const UploadViewComponent = (function () {
             const reader = new FileReader();
             reader.onload = function (e) {
                 try {
+                    console.log("[UploadViewComponent] Raw file content from FileReader:", e.target.result); 
                     const json_content = JSON.parse(e.target.result);
                     const validation_result = ValidationLogic.validate_rule_file_json(json_content);
 
