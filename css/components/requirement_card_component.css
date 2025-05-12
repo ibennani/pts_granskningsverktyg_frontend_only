@@ -1,0 +1,73 @@
+/* Styles for RequirementCardComponent */
+.requirement-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    background-color: var(--background-color);
+    transition: box-shadow 0.2s ease-in-out;
+}
+
+.requirement-card-button { /* Gör hela kortet till en knapp-liknande länk */
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 1rem;
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+.requirement-card-button:hover,
+.requirement-card-button:focus {
+    background-color: rgba(0,0,0,0.03); /* Subtil hover/fokus */
+    outline: none; /* Fokus hanteras av :focus-visible på .requirement-card */
+}
+[data-theme="dark"] .requirement-card-button:hover,
+[data-theme="dark"] .requirement-card-button:focus {
+    background-color: rgba(255,255,255,0.05);
+}
+
+.requirement-card:focus-within { /* Tydligare fokus när knappen inuti får fokus */
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 0.2rem var(--focus-ring-color);
+}
+
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    flex-shrink: 0; /* Förhindra att den krymper */
+}
+
+.status-indicator.status-passed { background-color: var(--success-color); }
+.status-indicator.status-failed { background-color: var(--danger-color); }
+.status-indicator.status-not-audited { background-color: var(--secondary-color); }
+/* För mörkt tema kan vi behöva ljusare varianter av dessa om de är för mörka */
+[data-theme="dark"] .status-indicator.status-passed { background-color: var(--success-color); } /* Kan behöva ljusare grön */
+[data-theme="dark"] .status-indicator.status-failed { background-color: var(--danger-color); } /* Kan behöva ljusare röd */
+[data-theme="dark"] .status-indicator.status-not-audited { background-color: var(--text-color-muted); }
+
+
+.requirement-card-content {
+    flex-grow: 1;
+}
+
+.requirement-card-title {
+    font-weight: 500;
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.requirement-card-reference {
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+    display: block; /* För att den ska hamna på ny rad */
+    margin-top: 0.25rem;
+}

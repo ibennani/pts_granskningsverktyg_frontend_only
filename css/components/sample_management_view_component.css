@@ -1,0 +1,22 @@
+/* Styles for SampleManagementViewComponent */
+.sample-management-view-plate { /* "Plattan" för denna vy */
+    background-color: var(--background-color);
+    padding: 1.5rem;
+    border: 2px solid var(--primary-color);
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    margin-top: 1rem;
+}
+
+.sample-management-view-plate h1 {
+    margin-bottom: 0.5rem;
+}
+.sample-management-view-plate .view-intro-text {
+     margin-bottom: 1.5rem;
+    font-size: 1rem;
+    color: var(--text-color-muted);
+}
+
+.sample-management-actions { /* För knappar som "Lägg till nytt stickprov" */
+    margin-bottom: 1.5rem;
+}

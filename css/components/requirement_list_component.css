@@ -1,0 +1,101 @@
+/* Styles for RequirementListComponent */
+.requirement-list-plate { 
+    /* Använder .content-plate globalt */
+}
+
+/* Header för vyn - Stickprovsinfo */
+.requirement-list-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color); /* Tydligare avdelare */
+}
+.requirement-list-header h1 { /* Stickprovets namn */
+    font-size: 1.8rem; 
+    margin-bottom: 0.25rem;
+    color: var(--primary-color-dark); /* Mörkare primärfärg för H1 här */
+}
+.requirement-list-header .sample-info-display { /* Typ av sida */
+    font-size: 1rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0; /* Ingen extra marginal om det är sista elementet i headern */
+}
+.requirement-list-header .sample-info-display strong {
+    color: var(--text-color);
+}
+
+/* Navigationsfältet (Tillbaka-knapp) */
+.requirements-navigation-bar {
+    margin-bottom: 1.5rem;
+    /* border-bottom: 1px solid var(--border-color); Borttagen, header har nu tydligare avdelare */
+    /* padding-bottom: 1rem; */
+    display: flex;
+    justify-content: flex-start; 
+}
+.requirements-navigation-bar.bottom { 
+    margin-top: 2.5rem; /* Mer utrymme uppåt */
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem; /* Mer utrymme nedåt */
+}
+
+/* Innehållet i kravlistan */
+.requirements-list-content .category-group {
+    margin-bottom: 2.5rem; /* Mer luft mellan huvudkategorier */
+}
+.requirements-list-content .main-category-title { /* H2 */
+    font-size: 1.5rem; /* Större */
+    color: var(--primary-color); /* Standard primärfärg */
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--secondary-color);
+}
+.requirements-list-content .sub-category-title { /* H3 */
+    font-size: 1.25rem; /* Större */
+    color: var(--text-color); /* Standard textfärg, men fetare */
+    margin-top: 1.5rem; /* Mer luft ovanför subkategori */
+    margin-bottom: 0.6rem;
+    font-weight: 500;
+}
+
+.requirements-list-content .requirement-items-ul { /* ul för kraven under en subkategori */
+    list-style: none;
+    padding-left: 0; /* Ingen default padding för ul */
+}
+
+.requirements-list-content .requirement-item { /* li för varje krav */
+    padding: 0.8rem 1rem; /* Lite mer padding */
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border-color);
+    /* border-left: 4px solid var(--accent-color); Använd accentfärg för kanten */
+    border-left: 4px solid color-mix(in srgb, var(--primary-color) 60%, transparent); /* Subtilare kant */
+
+    background-color: var(--plate-background-color); 
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    box-shadow: 1px 1px 3px rgba(0,0,0,0.04);
+}
+[data-theme="dark"] .requirements-list-content .requirement-item {
+    border-left-color: color-mix(in srgb, var(--primary-color) 70%, transparent);
+    background-color: color-mix(in srgb, var(--plate-background-color) 95%, black); /* Lite mörkare än plattan */
+}
+
+.requirements-list-content .requirement-title { /* H4 för kravets titel */
+    font-weight: 500; /* Fetare än vanlig text, men inte lika fet som H3 */
+    color: var(--text-color);
+    font-size: 1.1rem;
+    margin:0 0 0.3rem 0;
+}
+.requirements-list-content .requirement-reference {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+.requirements-list-content .requirement-reference a {
+    color: var(--primary-color);
+    text-decoration: none; /* Ta bort understrykning, hover-effekt räcker */
+}
+.requirements-list-content .requirement-reference a:hover {
+    text-decoration: underline;
+    color: var(--primary-color-dark);
+}
+/* Ta bort om du inte använder statusindikatorn här än */
+/* .requirements-list-content .requirement-status-indicator { 
+    font-size: 0.8rem; font-style: italic; color: var(--text-color-muted); margin-top: 0.25rem; 
+}*/

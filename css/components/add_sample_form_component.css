@@ -1,0 +1,50 @@
+/* Styles for AddSampleFormComponent */
+.add-sample-form {
+    border: 1px dashed var(--secondary-color);
+    padding: 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: var(--border-radius);
+    background-color: var(--background-color); 
+}
+
+[data-theme="dark"] .add-sample-form {
+    /* Ingen specifik ändring just nu, ärver från globala variabler */
+}
+
+.add-sample-form h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.5rem; 
+    color: var(--primary-color);
+}
+
+.add-sample-form .form-group {
+    margin-bottom: 1.25rem;
+}
+
+/* Styling för fieldset och legend (Innehållstyper) */
+.add-sample-form .content-types-group {
+    border: none; /* Ta bort standard fieldset border om du inte vill ha den */
+    padding: 0;   /* Ta bort standard fieldset padding */
+    margin: 0;    /* Ta bort standard fieldset margin */
+}
+
+.add-sample-form .content-types-group legend {
+    font-weight: 500; /* Samma som .form-label */
+    padding: 0; /* Ta bort default padding */
+    margin-bottom: 0.5rem; /* Lite utrymme till första checkboxen */
+    font-size: var(--font-size-base); 
+    color: var(--text-color);
+    width: auto; /* För att legend inte ska ta full bredd om fieldset har border */
+}
+.add-sample-form .content-types-group .form-check {
+    margin-bottom: 0.5rem; 
+}
+
+.add-sample-form .form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}

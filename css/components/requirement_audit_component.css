@@ -1,0 +1,107 @@
+/* Styles for RequirementAuditComponent */
+.requirement-audit-plate {
+    /* Använder .content-plate globalt */
+}
+
+.requirement-audit-header h1 { /* requirement.title */
+    font-size: 1.6rem;
+    color: var(--primary-color-dark);
+    margin-bottom: 0.3rem;
+}
+.requirement-audit-header .standard-reference {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+.requirement-audit-header .standard-reference a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.requirement-audit-header .standard-reference a:hover {
+    text-decoration: underline;
+}
+
+.audit-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+.audit-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.audit-section h2 { /* För sektionsrubriker som "Förväntad observation", "Instruktioner" */
+    font-size: 1.1rem;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase; /* Stora bokstäver för sektionsrubriker */
+    letter-spacing: 0.05em;
+}
+.audit-section p,
+.audit-section ul,
+.audit-section ol {
+    font-size: 0.95rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.75rem;
+    line-height: 1.7;
+}
+.audit-section ul, .audit-section ol {
+    padding-left: 1.5rem; /* Indrag för listor */
+}
+.audit-section code { /* För eventuell kod i instruktioner etc. */
+    background-color: var(--button-default-bg);
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+[data-theme="dark"] .audit-section code {
+    background-color: var(--button-default-hover-bg); /* Lite mörkare för kodblock i dark mode */
+}
+
+
+.requirement-metadata-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+.requirement-metadata-grid p {
+    margin-bottom: 0.25rem;
+    color: var(--text-color-muted);
+}
+.requirement-metadata-grid strong {
+    color: var(--text-color);
+}
+
+
+.checks-container {
+    margin-top: 1.5rem;
+}
+
+.input-fields-container {
+    margin-top: 1.5rem;
+}
+.input-fields-container .form-group {
+    margin-bottom: 1rem;
+}
+.input-fields-container textarea.form-control {
+    min-height: 80px; /* Lite högre textareas */
+}
+
+
+.audit-navigation-buttons {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between; /* Sprid ut knapparna */
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.audit-navigation-buttons .nav-group-left,
+.audit-navigation-buttons .nav-group-right {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}

@@ -1,0 +1,67 @@
+/* Styles for SampleListComponent */
+/* ... (befintlig H2 och .sample-list styling) ... */
+
+.sample-list-item {
+    display: flex; /* Behåll flex för övergripande layout */
+    flex-direction: column; /* ÄNDRING: Stapla info och actions vertikalt */
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 1rem;
+    background-color: var(--background-color); 
+}
+
+.sample-list-item .sample-info {
+    /* Tar nu full bredd automatiskt eftersom flex-direction är column */
+    margin-right: 0; /* Ingen marginal behövs till höger längre */
+    margin-bottom: 0.75rem; /* Lite utrymme till knappraden */
+    width: 100%;
+}
+
+/* ... (befintlig styling för .sample-info h3, p, .content-types-display) ... */
+
+.sample-list-item .sample-actions-wrapper { /* NY WRAPPER för knapparna */
+    display: flex;
+    justify-content: space-between; /* Huvudknappar till vänster, Radera till höger */
+    align-items: center; /* Linjera knapparna vertikalt om de har olika höjd */
+    width: 100%;
+    margin-top: 0.5rem; /* Lite extra utrymme ovanför knapparna */
+}
+
+.sample-list-item .sample-actions-main { /* För knappar som Redigera, Granska etc. */
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap; /* Om det blir många knappar här */
+}
+
+.sample-list-item .sample-actions-delete { /* Specifikt för delete-knappen */
+    /* Ingen specifik styling behövs här om vi bara har en knapp, 
+       justify-content: space-between på wrappern sköter det. */
+}
+
+
+/* ... (befintlig .button.button-small och @media-query för 600px) ... */
+/* Media queryn kan behöva justeras eller tas bort om den nya layouten fungerar bra på alla storlekar */
+@media (max-width: 600px) {
+    /* .sample-list-item .sample-actions-wrapper kan behöva flex-direction: column; 
+       om skärmen är mycket smal och man vill ha delete-knappen under de andra. */
+    .sample-list-item .sample-actions-wrapper {
+        flex-direction: column;
+        align-items: stretch; /* Få knapparna att ta full bredd */
+    }
+    .sample-list-item .sample-actions-main {
+        margin-bottom: 0.5rem; /* Utrymme till delete-knappen */
+        justify-content: flex-start;
+    }
+     .sample-list-item .sample-actions-main .button,
+     .sample-list-item .sample-actions-delete .button {
+        width: 100%; /* Gör knapparna fullbredd på liten skärm */
+        margin-bottom: 0.5rem;
+    }
+    .sample-list-item .sample-actions-main .button:last-child,
+    .sample-list-item .sample-actions-delete .button:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* ... (befintlig .no-samples-message) ... */

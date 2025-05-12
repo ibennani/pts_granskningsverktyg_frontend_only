@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verktyg för Digital Tillsyn</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- IIFE-MODULER FÖRST (vanliga script-taggar, körs i ordning) -->
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/translation_logic.js"></script> <!-- Denna skapar window.Translation -->
+    <script src="js/state.js"></script>
+    <script src="js/components/NotificationComponent.js"></script> 
+    <script src="js/audit_logic.js"></script>
+    <script src="js/export_logic.js"></script>
+    <script src="js/validation_logic.js"></script>
+    
+    <!-- ES6 MODUL SOM ANVÄNDER DE GLOBALA OBJEKTEN (körs efter ovanstående) -->
+    <script type="module" src="js/main.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Vyer kommer att renderas här -->
+    </div>
+</body>
+</html>
