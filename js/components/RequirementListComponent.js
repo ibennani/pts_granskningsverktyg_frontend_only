@@ -76,10 +76,10 @@ export const RequirementListComponent = (function () {
             }
         } else { console.error("ReqList: AuditLogic module is missing!"); all_assigned = false; }
 
+        // RequirementCardComponent är inte aktivt använd i denna komponent just nu för att rendera listan,
+        // men vi låter den vara kvar om den används någon annanstans eller för framtida bruk.
         if (window.RequirementCardComponent && typeof window.RequirementCardComponent.create === 'function') {
             RequirementCardComponent_create = window.RequirementCardComponent.create;
-        } else {
-            // console.warn("ReqList: RequirementCardComponent.create is not available.");
         }
         return all_assigned;
     }
@@ -238,23 +238,46 @@ export const RequirementListComponent = (function () {
                         const req_result_object = current_sample_object.requirementResults ? current_sample_object.requirementResults[req.id] : null;
                         const status = AuditLogic_calculate_requirement_status(req, req_result_object);
 
-                        // Använd alltid direkt <li> rendering som är din önskade funktion
-                        const li = Helpers_create_element('li', {class_name: 'requirement-item'});
+                        const li = Helpers_create_element('li', {class_name: 'requirement-item compact-twoline'});
 
+                        const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-row' });
                         const title_h_container = Helpers_create_element('h4', {class_name: 'requirement-title-container'});
                         const title_button = Helpers_create_element('button', {
-                            class_name: 'fallback-title-button', // Byt namn på klassen om "fallback" är förvirrande
+                            class_name: 'list-title-button',
                             text_content: req.title
                         });
                         title_button.addEventListener('click', () => {
-                            // ANVÄND req.key (UUID) istället för req.id HÄR
                             router_ref('requirement_audit', { sampleId: current_sample_object.id, requirementId: req.key });
                         });
                         title_h_container.appendChild(title_button);
-                        li.appendChild(title_h_container);
+                        title_row_div.appendChild(title_h_container);
+                        li.appendChild(title_row_div);
+
+                        const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
+
+                        const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
+                        const status_indicator_span = Helpers_create_element('span', {
+                           class_name: ['status-indicator', `status-${status}`],
+                           attributes: { 'aria-hidden': 'true' }
+                        });
+                        status_indicator_wrapper.appendChild(status_indicator_span);
+                        status_indicator_wrapper.appendChild(document.createTextNode(` ${t('audit_status_' + status, {defaultValue: status})}`));
+                        details_row_div.appendChild(status_indicator_wrapper);
+
+                        const total_checks_count = req.checks ? req.checks.length : 0;
+                        let audited_checks_count = 0;
+                        if (req_result_object && req_result_object.checkResults) {
+                            audited_checks_count = Object.values(req_result_object.checkResults).filter(
+                                check_res => check_res.status === 'passed' || check_res.status === 'failed'
+                            ).length;
+                        }
+                        const checks_info_span = Helpers_create_element('span', {
+                            class_name: 'requirement-checks-info',
+                            text_content: `(${audited_checks_count}/${total_checks_count} ${t('checks_short', {defaultValue: 'checks'})})`
+                        });
+                        details_row_div.appendChild(checks_info_span);
 
                         if (req.standardReference && req.standardReference.text) {
-                            const ref_wrapper = Helpers_create_element('div', {class_name: 'requirement-reference-wrapper'});
                             let reference_element;
                             if (req.standardReference.url) {
                                 let url_to_use = req.standardReference.url;
@@ -262,33 +285,23 @@ export const RequirementListComponent = (function () {
                                     url_to_use = Helpers_add_protocol_if_missing(url_to_use);
                                 }
                                 reference_element = Helpers_create_element('a', {
-                                    class_name: 'fallback-reference-link',
+                                    class_name: 'list-reference-link',
                                     text_content: req.standardReference.text,
                                     attributes: {
-                                        href: url_to_use, // Korrekt placerad här
+                                        href: url_to_use,
                                         target: '_blank',
                                         rel: 'noopener noreferrer'
                                     }
                                 });
                             } else {
                                 reference_element = Helpers_create_element('span', {
-                                    class_name: 'fallback-reference-text',
+                                    class_name: 'list-reference-text',
                                     text_content: req.standardReference.text
                                 });
                             }
-                            ref_wrapper.appendChild(reference_element);
-                            li.appendChild(ref_wrapper);
+                            details_row_div.appendChild(reference_element);
                         }
-
-                         const status_indicator_wrapper = Helpers_create_element('div', { class_name: 'requirement-status-indicator-wrapper' });
-                         const status_indicator_span = Helpers_create_element('span', {
-                            class_name: ['status-indicator', `status-${status}`],
-                            attributes: { 'aria-hidden': 'true' }
-                         });
-                         status_indicator_wrapper.appendChild(status_indicator_span);
-                         status_indicator_wrapper.appendChild(document.createTextNode(` ${t('status')}: ${t('audit_status_' + status, {defaultValue: status})}`));
-                         li.appendChild(status_indicator_wrapper);
-
+                        li.appendChild(details_row_div);
                         req_ul.appendChild(li);
                     });
                     main_cat_group.appendChild(req_ul);

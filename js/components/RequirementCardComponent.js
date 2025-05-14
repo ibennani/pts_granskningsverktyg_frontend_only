@@ -45,15 +45,12 @@ export const RequirementCardComponent = (function () {
                 if(opts && opts.class_name) el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
                 return el;
             };
-        const escape_html_func = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
-            ? window.Helpers.escape_html
-            : (str) => str;
+        const add_protocol_if_missing_func = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.add_protocol_if_missing === 'function')
+            ? window.Helpers.add_protocol_if_missing
+            : (url) => url;
 
         const card_li = create_element_func('li', { class_name: 'requirement-card' });
-
-        // Wrapper för innehållet, ersätter den tidigare .requirement-card-button som täckte allt
         const card_content_wrapper = create_element_func('div', { class_name: 'requirement-card-inner-content' });
-
 
         const indicator = create_element_func('span', {
             class_name: ['status-indicator', `status-${requirement_status}`],
@@ -63,39 +60,41 @@ export const RequirementCardComponent = (function () {
 
         const text_content_div = create_element_func('div', { class_name: 'requirement-card-text-content' });
 
-        // Titel blir en knapp som navigerar till granskningsvyn
+        const title_h_container = create_element_func('h3', { class_name: 'requirement-card-title-container'});
         const title_button = create_element_func('button', {
-            class_name: 'requirement-card-title-button', // Ny klass för styling
+            class_name: 'requirement-card-title-button',
             text_content: requirement.title
         });
         title_button.addEventListener('click', () => {
             if (router_cb && typeof router_cb === 'function') {
-                router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.id });
+                router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.key }); // Använder req.key
             } else {
                 console.warn("RequirementCard: router_cb not provided or not a function for title navigation.");
             }
         });
-        const title_h_container = create_element_func('h3', { class_name: 'requirement-card-title-container'}); // Behåll H3 för semantik
         title_h_container.appendChild(title_button);
         text_content_div.appendChild(title_h_container);
-
 
         if (requirement.standardReference && requirement.standardReference.text) {
             let reference_element;
             if (requirement.standardReference.url) {
+                const url_to_use = add_protocol_if_missing_func(requirement.standardReference.url);
                 reference_element = create_element_func('a', {
-                    class_name: 'requirement-card-reference-link', // Ny klass för styling
+                    class_name: 'requirement-card-reference-link',
                     text_content: requirement.standardReference.text,
-                    href: requirement.standardReference.url,
-                    attributes: { target: '_blank', rel: 'noopener noreferrer' }
+                    attributes: {
+                        href: url_to_use,
+                        target: '_blank',
+                        rel: 'noopener noreferrer'
+                    }
                 });
             } else {
                 reference_element = create_element_func('span', {
-                    class_name: 'requirement-card-reference-text', // Ny klass för styling
+                    class_name: 'requirement-card-reference-text',
                     text_content: requirement.standardReference.text
                 });
             }
-            const ref_wrapper = create_element_func('div', {class_name: 'requirement-card-reference-wrapper'}); // Wrapper för styling
+            const ref_wrapper = create_element_func('div', {class_name: 'requirement-card-reference-wrapper'});
             ref_wrapper.appendChild(reference_element);
             text_content_div.appendChild(ref_wrapper);
         }
@@ -112,9 +111,8 @@ export const RequirementCardComponent = (function () {
     if (typeof window.RequirementCardComponent === 'undefined') {
         window.RequirementCardComponent = public_api;
     } else {
-        console.warn("RequirementCardComponent already defined on window. Overwriting.");
         window.RequirementCardComponent = public_api;
     }
-    
+
     return public_api;
 })();
