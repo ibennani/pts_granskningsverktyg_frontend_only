@@ -1,13 +1,26 @@
 (function () { // Start på IIFE
-    'use-strict';
+    'use strict';
 
     const CURRENT_AUDIT_KEY = 'current_audit';
     const APP_SAVE_FILE_VERSION = "1.1";
 
     let current_audit_object = null;
 
+    function get_t_func() {
+        return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
+            ? window.Translation.t
+            : (key, replacements) => {
+                let str = `**${key}**`;
+                if (replacements) {
+                    for (const rKey in replacements) {
+                        str += ` (${rKey}: ${replacements[rKey]})`;
+                    }
+                }
+                return str + " (t not found)";
+            };
+    }
+
     function get_current_audit_from_session() {
-        // Undvik att logga härifrån, kan bli för mycket
         if (current_audit_object) {
             return current_audit_object;
         }
@@ -21,7 +34,8 @@
                 sessionStorage.removeItem(CURRENT_AUDIT_KEY);
                 current_audit_object = null;
                 if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
-                    NotificationComponent.show_global_message('Fel vid läsning av sparad session. Tidigare data kan vara förlorad.', 'error', 7000);
+                    const t = get_t_func();
+                    NotificationComponent.show_global_message(t('error_reading_session_data_lost'), 'error', 7000);
                 }
                 return null;
             }
@@ -36,8 +50,9 @@
             } catch (e) {
                 console.error("State.js: Error stringifying or saving current_audit to sessionStorage:", e);
                 if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
+                    const t = get_t_func();
                     NotificationComponent.show_global_message(
-                        'Kritiskt fel: Kunde inte spara granskningsdata till sessionen. Data kan gå förlorad vid omladdning.',
+                        t('critical_error_saving_session_data_lost'),
                         'error', 10000
                     );
                 }
@@ -46,7 +61,7 @@
             sessionStorage.removeItem(CURRENT_AUDIT_KEY);
         }
     }
-    
+
     function clear_current_audit_from_session() {
         current_audit_object = null;
         sessionStorage.removeItem(CURRENT_AUDIT_KEY);
@@ -57,7 +72,7 @@
         save_current_audit_to_session();
     }
 
-    function get_current_audit_object_internal() { 
+    function get_current_audit_object_internal() {
         return get_current_audit_from_session();
     }
 
@@ -82,21 +97,28 @@
             console.error("State.js: Invalid data type for loading audit from file.");
             return false;
         }
-        if (!file_content_object.saveFileVersion || !file_content_object.hasOwnProperty('ruleFileContent') || !file_content_object.hasOwnProperty('auditMetadata')) {
-            console.error("State.js: Loaded audit data is missing essential properties.");
+        if (!file_content_object.saveFileVersion) {
+            console.error("State.js: Loaded audit data is missing saveFileVersion.");
             return false;
         }
+
         if (file_content_object.saveFileVersion > APP_SAVE_FILE_VERSION) {
             console.warn(`State.js: Sparfilens version (${file_content_object.saveFileVersion}) är nyare än applikationens version (${APP_SAVE_FILE_VERSION}).`);
             if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
-                 NotificationComponent.show_global_message(`Varning: Sparfilen är från en nyare version av verktyget. (${file_content_object.saveFileVersion} vs ${APP_SAVE_FILE_VERSION}).`, 'warning', 8000);
+                const t = get_t_func();
+                NotificationComponent.show_global_message(
+                    t('warning_save_file_newer_version', {
+                        fileVersionInFile: file_content_object.saveFileVersion,
+                        appVersion: APP_SAVE_FILE_VERSION
+                    }),
+                    'warning', 8000);
             }
         }
         set_current_audit_object(file_content_object);
         return true;
     }
 
-    get_current_audit_from_session(); // Initialize on load
+    get_current_audit_from_session();
 
     const public_api = {
         getCurrentAudit: get_current_audit_object_internal,
@@ -108,7 +130,7 @@
         getAppSaveFileVersion: () => APP_SAVE_FILE_VERSION
     };
 
-    window.State = public_api; // Exponera till global scope
+    window.State = public_api;
 
     console.log("[state.js] IIFE executed. typeof window.State:", typeof window.State);
     if (typeof window.State === 'object' && window.State !== null) {

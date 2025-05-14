@@ -2,7 +2,7 @@
     'use-strict';
 
     const CSS_PATH = 'css/components/notification_component.css';
-    const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area'; 
+    const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
 
     let global_message_element = null;
     // Translation och Helpers kommer att hämtas från window när de behövs inuti funktioner
@@ -20,7 +20,7 @@
         } else {
             console.warn("NotificationComponent: Helpers.load_css not available for CSS loading.");
         }
-        
+
         return Promise.resolve().then(() => { // Defer DOM access
             global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
             if (!global_message_element && window.Helpers && typeof window.Helpers.create_element === 'function') {
@@ -35,7 +35,7 @@
             }
         });
     }
-    
+
     function _update_global_message_content(message, type){
         if (!global_message_element || !window.Translation || !window.Helpers) {
             console.error("NotificationComponent: Cannot update message, core dependencies missing or element not ready.");
@@ -44,13 +44,13 @@
         const { t } = window.Translation;
         const { create_element } = window.Helpers;
 
-        global_message_element.innerHTML = ''; 
-        
+        global_message_element.innerHTML = '';
+
         if (message && message.trim() !== '') {
             global_message_element.textContent = message;
-            global_message_element.className = ''; 
-            global_message_element.classList.add('global-message-content'); 
-            global_message_element.classList.add(`message-${type}`); 
+            global_message_element.className = '';
+            global_message_element.classList.add('global-message-content');
+            global_message_element.classList.add(`message-${type}`);
 
             if (type === 'error' || type === 'warning') {
                 const close_button = create_element('button', {
@@ -59,13 +59,13 @@
                 });
                 close_button.addEventListener('click', clear_global_message, { once: true });
                 global_message_element.appendChild(close_button);
-                global_message_element.setAttribute('role', 'alert'); 
+                global_message_element.setAttribute('role', 'alert');
             } else {
-                global_message_element.removeAttribute('role'); 
+                global_message_element.removeAttribute('role');
             }
             global_message_element.removeAttribute('hidden');
         } else {
-            clear_global_message(); 
+            clear_global_message();
         }
     }
 
@@ -80,12 +80,12 @@
         }
         _update_global_message_content(message, type);
     }
-    
+
     function clear_global_message() {
         if (global_message_element) {
-            global_message_element.textContent = ''; 
+            global_message_element.textContent = '';
             global_message_element.setAttribute('hidden', 'true');
-            global_message_element.className = 'global-message-content'; 
+            global_message_element.className = 'global-message-content';
             global_message_element.removeAttribute('role');
             const btn = global_message_element.querySelector('.global-message-close-btn');
             if(btn) btn.remove();

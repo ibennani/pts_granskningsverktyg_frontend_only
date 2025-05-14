@@ -3,17 +3,32 @@ export const MetadataViewComponent = (function () {
 
     const CSS_PATH = 'css/components/metadata_view_component.css';
     let app_container_ref;
-    let navigate_and_set_hash_ref; // Omdöpt från router_ref för tydlighet
-    
-    // Globala referenser tilldelas i init
+    let navigate_and_set_hash_ref;
+
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_add_protocol_if_missing, Helpers_load_css;
     let State_getCurrentAudit, State_setCurrentAudit;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
 
-
     let case_number_input, actor_name_input, actor_link_input, auditor_name_input, internal_comment_input;
     let global_message_element_ref;
+
+    // Helper function to safely get the translation function
+    function get_t_internally() {
+        if (Translation_t) return Translation_t; // Om redan tilldelad via assign_globals
+        return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
+            ? window.Translation.t
+            : (key, replacements) => {
+                let str = `**${key}**`;
+                if (replacements) {
+                    for (const rKey in replacements) {
+                        str += ` (${rKey}: ${replacements[rKey]})`;
+                    }
+                }
+                return str + " (MetadataView t not found)";
+            };
+    }
+
 
     function assign_globals() {
         let all_assigned = true;
@@ -29,7 +44,7 @@ export const MetadataViewComponent = (function () {
                 console.error("MetadataView: One or more Helper functions are missing!"); all_assigned = false;
             }
         } else { console.error("MetadataView: Helpers module is missing!"); all_assigned = false; }
-        
+
         if (window.State) {
             State_getCurrentAudit = window.State.getCurrentAudit;
             State_setCurrentAudit = window.State.setCurrentAudit;
@@ -49,17 +64,17 @@ export const MetadataViewComponent = (function () {
         return all_assigned;
     }
 
-    async function init(_app_container, _navigate_cb, _params) { // _navigate_cb är nu navigate_and_set_hash
+    async function init(_app_container, _navigate_cb, _params) {
         if (!assign_globals()) {
              console.error("MetadataViewComponent: Failed to assign global dependencies in init.");
         }
         app_container_ref = _app_container;
-        navigate_and_set_hash_ref = _navigate_cb; 
-        
+        navigate_and_set_hash_ref = _navigate_cb;
+
         if(NotificationComponent_get_global_message_element_reference) {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
-        
+
         if (Helpers_load_css) {
             try {
                 const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
@@ -71,16 +86,21 @@ export const MetadataViewComponent = (function () {
     }
 
     function save_metadata() {
+        const t = get_t_internally();
         const current_audit = State_getCurrentAudit ? State_getCurrentAudit() : null;
         if (!current_audit) {
-            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(Translation_t('error_no_active_audit_to_save_metadata'), "error");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_no_active_audit_to_save_metadata'), "error");
             return false;
         }
 
+        // Om granskningen inte är 'not_started', ska fälten vara readonly och spara-knappen inte finnas.
+        // Men om man på något sätt lyckas anropa save_metadata, returnera true för att inte blockera flödet,
+        // men inga ändringar bör ha gjorts i UI.
         if (current_audit.auditStatus !== 'not_started') {
-            return true; 
+            console.warn("MetadataView: save_metadata called when audit status is not 'not_started'. No changes will be saved.");
+            return true;
         }
-        
+
         let actor_link_value = actor_link_input.value.trim();
         if (actor_link_value && Helpers_add_protocol_if_missing) {
             actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
@@ -100,126 +120,187 @@ export const MetadataViewComponent = (function () {
     function handle_submit(event) {
         event.preventDefault();
         if (save_metadata()) {
-            if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message(); 
-            if (navigate_and_set_hash_ref) { 
+            if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
+            if (navigate_and_set_hash_ref) {
                 navigate_and_set_hash_ref('sample_management');
             }
         }
     }
 
     function create_form_field(id, label_key, type = 'text', current_value = '', remove_placeholder = false) {
+        const t = get_t_internally();
         const form_group = Helpers_create_element('div', { class_name: 'form-group' });
-        const label = Helpers_create_element('label', { 
+        const label = Helpers_create_element('label', {
             attributes: { for: id },
-            text_content: Translation_t(label_key)
+            text_content: t(label_key)
         });
-        
+
         let input_element;
         const attributes = { type: type };
-        if (remove_placeholder) { /* Ingen placeholder */ }
+        // Placeholder logik kan vara kvar om den är generell, annars tas den bort eller görs specifik.
+        // if (remove_placeholder) { /* Ingen placeholder */ }
 
         if (type === 'textarea') {
-            input_element = Helpers_create_element('textarea', { 
+            input_element = Helpers_create_element('textarea', {
                 id: id, class_name: 'form-control', attributes: { rows: '3' }
             });
             input_element.value = current_value;
         } else {
-            input_element = Helpers_create_element('input', { 
+            input_element = Helpers_create_element('input', {
                 id: id, class_name: 'form-control', attributes: attributes
             });
             input_element.value = current_value;
         }
-        
+
         form_group.appendChild(label);
         form_group.appendChild(input_element);
         return { form_group, input_element };
     }
 
-    function create_static_field(label_key, value) { /* ... (som tidigare) ... */ }
+    function create_static_field(label_key, value, is_link = false) {
+        const t = get_t_internally();
+        const field_div = Helpers_create_element('div', { class_name: 'static-field' });
+        field_div.appendChild(Helpers_create_element('strong', { text_content: t(label_key) + ":" }));
+
+        if (value && typeof value === 'string' && value.trim() !== '') {
+            if (is_link) {
+                const safe_url = Helpers_add_protocol_if_missing ? Helpers_add_protocol_if_missing(value) : value;
+                field_div.appendChild(document.createTextNode(' '));
+                field_div.appendChild(Helpers_create_element('a', {
+                    href: safe_url,
+                    text_content: value,
+                    attributes: { target: '_blank', rel: 'noopener noreferrer' }
+                }));
+            } else {
+                 // Hantera nyradstecken för internalComment
+                if (label_key === 'internal_comment' && value.includes('\n')) {
+                    value.split('\n').forEach((line, index) => {
+                        if (index > 0) field_div.appendChild(Helpers_create_element('br'));
+                        field_div.appendChild(document.createTextNode(' ' + line));
+                    });
+                } else {
+                    field_div.appendChild(document.createTextNode(' ' + value));
+                }
+            }
+        } else {
+            field_div.appendChild(document.createTextNode(' ' + t('value_not_set', {defaultValue: '(Not set)'}))); // Nyckel för "Ej angivet"
+        }
+        return field_div;
+    }
+
 
     function render() {
-        if (!app_container_ref || !Helpers_create_element || !Translation_t || !State_getCurrentAudit) {
+        const t = get_t_internally();
+        if (!app_container_ref || !Helpers_create_element || !t || !State_getCurrentAudit) {
             console.error("MetadataView: Core dependencies missing for render.");
-            if(app_container_ref) app_container_ref.innerHTML = "<p>Kunde inte rendera metadatavyn.</p>";
+            if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_metadata_view')}</p>`; // ANVÄNDER i18n
             return;
         }
         app_container_ref.innerHTML = '';
 
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent) {
-            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(Translation_t("error_no_rulefile_loaded_for_metadata"), "error"); // Nyckel
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t("error_no_rulefile_loaded_for_metadata"), "error");
             const back_button = Helpers_create_element('button', {
-                text_content: Translation_t('upload_rule_file_title'), 
+                text_content: t('upload_rule_file_title'),
                 class_name: ['button', 'button-default'],
                 event_listeners: { click: () => { if(navigate_and_set_hash_ref) navigate_and_set_hash_ref('upload');} }
             });
             app_container_ref.appendChild(back_button);
             return;
         }
-        
+
         const plate_element = Helpers_create_element('div', { class_name: 'content-plate metadata-view-plate' });
         app_container_ref.appendChild(plate_element);
 
         if (global_message_element_ref) {
             plate_element.appendChild(global_message_element_ref);
-            if (NotificationComponent_show_global_message && Translation_t && 
+            if (NotificationComponent_show_global_message &&
                 (global_message_element_ref.hasAttribute('hidden') || !global_message_element_ref.textContent.trim())) {
-                NotificationComponent_show_global_message(Translation_t('metadata_form_intro'), "info"); // Ny nyckel
+                NotificationComponent_show_global_message(t('metadata_form_intro'), "info");
             }
         }
 
-        plate_element.appendChild(Helpers_create_element('h1', { text_content: Translation_t('audit_metadata_title') }));
-        plate_element.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: Translation_t('metadata_form_instruction') })); // Ny nyckel
+        plate_element.appendChild(Helpers_create_element('h1', { text_content: t('audit_metadata_title') }));
+        plate_element.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('metadata_form_instruction') }));
 
         const form_container = Helpers_create_element('div', { class_name: 'metadata-form-container' });
-        const form = Helpers_create_element('form');
-        form.addEventListener('submit', handle_submit);
-
         const metadata = current_audit.auditMetadata || {};
         const is_editable = current_audit.auditStatus === 'not_started';
 
         if (is_editable) {
-            // ... (skapande av form fields som tidigare, men använd Helpers_create_element och Translation_t)
-            // Exempel för ett fält:
+            const form = Helpers_create_element('form');
+            form.addEventListener('submit', handle_submit);
+
             const case_field = create_form_field('caseNumber', 'case_number', 'text', metadata.caseNumber);
             case_number_input = case_field.input_element;
             form.appendChild(case_field.form_group);
-            // ... upprepa för actor_name, actor_link (med remove_placeholder=true), auditor_name, internal_comment ...
-             const actor_field = create_form_field('actorName', 'actor_name', 'text', metadata.actorName); actor_name_input = actor_field.input_element; form.appendChild(actor_field.form_group);
-            const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', metadata.actorLink, true); actor_link_input = actor_link_field.input_element; form.appendChild(actor_link_field.form_group);
-            const auditor_field = create_form_field('auditorName', 'auditor_name', 'text', metadata.auditorName); auditor_name_input = auditor_field.input_element; form.appendChild(auditor_field.form_group);
-            const comment_field = create_form_field('internalComment', 'internal_comment', 'textarea', metadata.internalComment); internal_comment_input = comment_field.input_element; form.appendChild(comment_field.form_group);
-            
+
+            const actor_field = create_form_field('actorName', 'actor_name', 'text', metadata.actorName);
+            actor_name_input = actor_field.input_element;
+            form.appendChild(actor_field.form_group);
+
+            const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', metadata.actorLink, true); // remove_placeholder=true
+            actor_link_input = actor_link_field.input_element;
+            form.appendChild(actor_link_field.form_group);
+
+            const auditor_field = create_form_field('auditorName', 'auditor_name', 'text', metadata.auditorName);
+            auditor_name_input = auditor_field.input_element;
+            form.appendChild(auditor_field.form_group);
+
+            const comment_field = create_form_field('internalComment', 'internal_comment', 'textarea', metadata.internalComment);
+            internal_comment_input = comment_field.input_element;
+            form.appendChild(comment_field.form_group);
+
             form_container.appendChild(form);
-        } else { 
-            // ... (visning av statisk data som tidigare, men använd Helpers_create_element och Translation_t) ...
+        } else {
+            const static_display_div = Helpers_create_element('div', { class_name: 'static-metadata-display' });
+            static_display_div.appendChild(create_static_field('case_number', metadata.caseNumber));
+            static_display_div.appendChild(create_static_field('actor_name', metadata.actorName));
+            static_display_div.appendChild(create_static_field('actor_link', metadata.actorLink, true));
+            static_display_div.appendChild(create_static_field('auditor_name', metadata.auditorName));
+            static_display_div.appendChild(create_static_field('internal_comment', metadata.internalComment));
+            form_container.appendChild(static_display_div);
         }
-        
-        plate_element.appendChild(form_container); 
-        
+
+        plate_element.appendChild(form_container);
+
         const actions_div = Helpers_create_element('div', { class_name: 'metadata-actions' });
-        const submit_button_text = is_editable ? Translation_t('continue_to_samples') : Translation_t('view_samples_button'); // Nyckel
-        const submit_button_icon = is_editable ? 'arrow_forward' : 'list';
+        const submit_button_text_key = is_editable ? 'continue_to_samples' : 'view_samples_button';
+        const submit_button_icon = is_editable ? 'arrow_forward' : 'list'; // eller 'visibility'
 
         const submit_button = Helpers_create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: Helpers_get_icon_svg(submit_button_icon, ['currentColor'], 18) + `<span>${submit_button_text}</span>`
+            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg(submit_button_icon, ['currentColor'], 18) : '') + `<span>${t(submit_button_text_key)}</span>`
         });
-        
+
         if (is_editable) {
             submit_button.setAttribute('type', 'submit');
-            form.appendChild(actions_div); 
+             // Lägg till knappen inuti formuläret om det är redigerbart
+            const form_element = form_container.querySelector('form');
+            if (form_element) {
+                form_element.appendChild(actions_div);
+            } else { // Fallback om formuläret av någon anledning inte finns
+                plate_element.appendChild(actions_div);
+            }
         } else {
             submit_button.addEventListener('click', (e) => {
-                e.preventDefault(); 
+                e.preventDefault();
                 if (navigate_and_set_hash_ref) navigate_and_set_hash_ref('sample_management');
             });
-            plate_element.appendChild(actions_div);
+            plate_element.appendChild(actions_div); // Lägg till efter form_container om statisk
         }
         actions_div.appendChild(submit_button);
     }
 
-    function destroy() { /* ... (som tidigare) ... */ }
+    function destroy() {
+        case_number_input = null;
+        actor_name_input = null;
+        actor_link_input = null;
+        auditor_name_input = null;
+        internal_comment_input = null;
+        // Eventuella andra DOM-referenser eller lyssnare som behöver rensas manuellt
+    }
 
     return { init, render, destroy };
 })();
