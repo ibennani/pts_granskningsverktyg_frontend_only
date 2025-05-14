@@ -109,7 +109,7 @@
   "invalid_date_format": "Ogiltigt datum",
   "language_switcher_label": "Språk:",
   "light_mode": "Ljust läge",
-  "lock_audit": "Lås granskning",
+  "lock_audit": "Lås och avsluta granskningen",
   "locked": "Låst",
   "main_category": "Huvudkategori",
   "metadata_form_instruction": "Alla fält är frivilliga. Informationen kommer att inkluderas i exporterade rapporter.",
