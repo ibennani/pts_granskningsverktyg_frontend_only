@@ -1,44 +1,44 @@
 /* Global styles and CSS variables - Teal/Coral Tema */
 :root {
     /* Nytt Teal/Coral Ljust Tema */
-    --primary-color: #2a9d8f; 
-    --primary-color-dark: #21867c; 
-    --button-primary-bg: #2a9d8f; 
-    --button-primary-text: #ffffff; 
-    
-    --secondary-color: #b5e3d8; 
-    --accent-color: #e76f51; 
-    --accent-color-light: #ffebe4; 
+    --primary-color: #2a9d8f;
+    --primary-color-dark: #21867c;
+    --button-primary-bg: #2a9d8f;
+    --button-primary-text: #ffffff;
 
-    --danger-color: #e63946; 
+    --secondary-color: #b5e3d8;
+    --accent-color: #e76f51;
+    --accent-color-light: #ffebe4;
+
+    --danger-color: #e63946;
     --danger-color-light: #fce8e9;
-    --warning-color: #f4a261; 
+    --warning-color: #f4a261;
     --warning-color-light: #fef4eb;
-    --info-color: #457b9d; 
+    --info-color: #457b9d;
     --info-color-light: #e7f0f5;
-    --success-color: #4caf50; 
+    --success-color: #4caf50;
     --success-color-light: #e9f7ea;
 
-    --text-color: #1e2a2b; 
-    --text-color-muted: #4a5a5c; 
-    
-    --background-color: #f1fdfc; 
-    --plate-background-color: #ffffff; 
-    --input-background-color: #ffffff; 
-    
-    --border-color: #88c5be; 
-    --border-radius: 6px; 
+    --text-color: #1e2a2b;
+    --text-color-muted: #4a5a5c;
 
-    --font-family-sans-serif: sans-serif; 
-    --font-family-base: var(--font-family-sans-serif); 
-    --font-size-base: 1rem; 
-    --line-height-base: 1.6; 
-    --focus-ring-color: rgba(42, 157, 143, 0.4); 
-    
-    --container-max-width: 1080px; 
+    --background-color: #f1fdfc;
+    --plate-background-color: #ffffff;
+    --input-background-color: #ffffff;
+
+    --border-color: #88c5be;
+    --border-radius: 6px;
+
+    --font-family-sans-serif: sans-serif;
+    --font-family-base: var(--font-family-sans-serif);
+    --font-size-base: 1rem;
+    --line-height-base: 1.6;
+    --focus-ring-color: rgba(42, 157, 143, 0.4);
+
+    --container-max-width: 1080px;
     --spacing-unit: 1rem;
 
-    --button-default-bg: #e0f2f1; 
+    --button-default-bg: #e0f2f1;
     --button-default-text: var(--primary-color-dark);
     --button-default-hover-bg: #cce8e4;
     --button-default-border: var(--secondary-color);
@@ -58,7 +58,7 @@
     --button-danger-hover-bg: #c22a36;
 
     --button-warning-bg: var(--warning-color);
-    --button-warning-text: #2a1e14; 
+    --button-warning-text: #2a1e14;
     --button-warning-hover-bg: #e08b4a;
 
     --button-info-bg: var(--info-color);
@@ -68,35 +68,35 @@
 
 [data-theme="dark"] {
     /* Nytt Teal/Coral Mörkt Tema */
-    --primary-color: #36e2d5; 
-    --primary-color-dark: #21bdb0; 
-    --button-primary-bg: #178176; 
-    --button-primary-text: #eafaf9; 
-    
-    --secondary-color: #35617a; 
-    --accent-color: #cc6e52; 
+    --primary-color: #36e2d5;
+    --primary-color-dark: #21bdb0;
+    --button-primary-bg: #178176;
+    --button-primary-text: #eafaf9;
+
+    --secondary-color: #35617a;
+    --accent-color: #cc6e52;
     --accent-color-light: rgba(204, 110, 82, 0.1);
 
-    --danger-color: #c94a4a; 
+    --danger-color: #c94a4a;
     --danger-color-light: rgba(201, 74, 74, 0.1);
-    --warning-color: #c9953d; 
+    --warning-color: #c9953d;
     --warning-color-light: rgba(201, 149, 61, 0.1);
-    --info-color: #4b94b8; 
+    --info-color: #4b94b8;
     --info-color-light: rgba(75, 148, 184, 0.1);
-    --success-color: #58a47a; 
+    --success-color: #58a47a;
     --success-color-light: rgba(88, 164, 122, 0.1);
 
-    --text-color: #eafaf9; 
-    --text-color-muted: #a6c1bd; 
-    
-    --background-color: #1b2326; 
-    --plate-background-color: #263238; 
-    --input-background-color: #324247; 
+    --text-color: #eafaf9;
+    --text-color-muted: #a6c1bd;
 
-    --border-color: #6fa6a1; 
-    --focus-ring-color: rgba(54, 226, 213, 0.4); 
+    --background-color: #1b2326;
+    --plate-background-color: #263238;
+    --input-background-color: #324247;
 
-    --button-default-bg: #37474f; 
+    --border-color: #6fa6a1;
+    --focus-ring-color: rgba(54, 226, 213, 0.4);
+
+    --button-default-bg: #37474f;
     --button-default-text: var(--text-color);
     --button-default-hover-bg: #455a64;
     --button-default-border: var(--secondary-color);
@@ -104,10 +104,10 @@
     --button-primary-hover-bg: #126a5f;
 
     --button-accent-bg: var(--accent-color);
-    --button-accent-text: #1b2326; 
+    --button-accent-text: #1b2326;
     --button-accent-hover-bg: #b85e42;
-    
-    --button-success-text: #1b2326;
+
+    --button-success-text: #1b2326; /* Mörk text på ljusgrön knapp i mörkt tema */
     --button-danger-text: #ffffff;
     --button-warning-text: #1b2326;
     --button-info-text: #1b2326;
@@ -131,66 +131,67 @@ body {
     background-color: var(--background-color);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    display: flex; 
+    display: flex;
     flex-direction: column;
-    align-items: center; 
+    align-items: center;
     min-height: 100vh;
-    padding: 2rem 0; 
+    padding: 2rem 0;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #app-container {
-    max-width: var(--container-max-width); 
-    width: 100%; 
-    padding: 0 var(--spacing-unit); 
+    max-width: var(--container-max-width);
+    width: 100%;
+    padding: 0 var(--spacing-unit);
 }
 
-.view-container, 
-.content-plate { 
+.view-container,
+.content-plate {
     background-color: var(--plate-background-color);
     padding: 1.5rem;
-    border: 1px solid var(--border-color); 
-    border-radius: var(--border-radius); 
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    margin-bottom: 2rem; 
+    margin-bottom: 2rem;
 }
 .content-plate h1 { margin-bottom: 0.5rem; }
 .content-plate .view-intro-text { margin-bottom: 1.5rem; font-size: 1rem; color: var(--text-color-muted); }
 
-h1, h2, h3, h4, h5, h6 { 
-    margin-bottom: 0.75em; 
-    font-weight: 500; 
-    line-height: 1.2; 
-    color: var(--primary-color); 
-    transition: color 0.3s ease; 
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 0.75em;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--primary-color);
+    transition: color 0.3s ease;
 }
 
 p { margin-bottom: var(--spacing-unit); }
 a { color: var(--primary-color); text-decoration: underline; }
 a:hover, a:focus { color: var(--primary-color-dark); text-decoration: none; }
 
-.button { 
-    display: inline-flex; align-items: center; justify-content: center; 
-    padding: 0.6rem 1rem; 
-    margin-right: 0.5rem; 
-    font-size: var(--font-size-base); 
-    font-weight: bold; 
-    line-height: var(--line-height-base); 
-    text-align: center; text-decoration: none; vertical-align: middle; 
-    cursor: pointer; user-select: none; 
-    border: none; 
-    border-radius: var(--border-radius); 
-    gap: 0.5rem; 
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; 
+.button {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.6rem 1rem;
+    margin-right: 0.5rem; /* Behålls för knappar som ligger bredvid varandra utanför en action-group */
+    font-size: var(--font-size-base);
+    font-weight: bold;
+    line-height: var(--line-height-base);
+    text-align: center; text-decoration: none; vertical-align: middle;
+    cursor: pointer; user-select: none;
+    border: none;
+    border-radius: var(--border-radius);
+    gap: 0.5rem;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
-.button:last-child { margin-right: 0; }
+.button:last-child { margin-right: 0; } /* Gäller fortfarande om knappar ligger direkt bredvid varandra */
 .button svg { width: 1.2em; height: 1.2em; }
 
 .button-default { color: var(--button-default-text); background-color: var(--button-default-bg); border: 1px solid var(--button-default-border); }
 .button-default:hover, .button-default:focus { background-color: var(--button-default-hover-bg); }
 .button-primary { background-color: var(--button-primary-bg); color: var(--button-primary-text); }
 .button-primary:hover, .button-primary:focus { background-color: var(--button-primary-hover-bg); }
-.button-secondary { background-color: var(--secondary-color); color: var(--primary-color-dark); [data-theme="dark"] & { color: var(--text-color); }}
+.button-secondary { background-color: var(--secondary-color); color: var(--primary-color-dark); }
+[data-theme="dark"] .button-secondary { color: var(--text-color); } /* Korrigerad selektor för mörkt tema */
 .button-secondary:hover, .button-secondary:focus { background-color: color-mix(in srgb, var(--secondary-color) 85%, black); }
 .button-accent { background-color: var(--button-accent-bg); color: var(--button-accent-text); }
 .button-accent:hover, .button-accent:focus { background-color: var(--button-accent-hover-bg); }
@@ -207,75 +208,102 @@ a:hover, a:focus { color: var(--primary-color-dark); text-decoration: none; }
 .form-group { margin-bottom: 1rem; }
 .form-label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
 
-.form-control, 
-input[type="text"], 
-input[type="url"],
-input[type="email"], 
-textarea,
-select { 
-    display: block; width: 100%; 
-    padding: 0.6rem; 
-    font-family: var(--font-family-base); 
-    font-size: var(--font-size-base); 
-    font-weight: 400; 
-    line-height: var(--line-height-base); 
-    color: var(--text-color); 
-    background-color: var(--input-background-color); 
-    background-clip: padding-box; 
-    border: 2px solid var(--border-color); 
-    appearance: none; 
-    border-radius: var(--border-radius); 
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; 
+/* Global stil för .form-actions om det är det vanligaste beteendet */
+.form-actions {
+    display: flex;      /* Gör den till en flex-container */
+    flex-wrap: wrap;    /* Tillåt wrapping på små skärmar */
+    gap: 1rem;          /* Standardavstånd mellan knappar/grupper */
+    margin-top: 1.5rem; /* Standardmarginal ovanför */
+    width: 100%;        /* Ta upp full bredd som default */
+    /* justify-content: flex-start; */ /* Default, om du inte vill ha flex-end globalt */
 }
-.form-group > .form-control, 
+
+/* Specifik stil för .form-actions som ska ha space-between för sina grupper */
+.form-actions.space-between-groups {
+    justify-content: space-between; /* Sprid ut vänster och höger grupp */
+    align-items: center; /* Linjera grupperna vertikalt om de har olika höjd */
+}
+
+/* Stilar för de inre grupperna */
+.form-actions .action-group-left,
+.form-actions .action-group-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Avstånd mellan knappar *inuti* en grupp */
+    flex-wrap: wrap;
+}
+/* Ta bort margin-right från knappar inuti dessa grupper, då gap hanterar det */
+.form-actions .action-group-left .button,
+.form-actions .action-group-right .button {
+    margin-right: 0;
+}
+
+
+.form-control,
+input[type="text"],
+input[type="url"],
+input[type="email"],
+textarea,
+select {
+    display: block; width: 100%;
+    padding: 0.6rem;
+    font-family: var(--font-family-base);
+    font-size: var(--font-size-base);
+    font-weight: 400;
+    line-height: var(--line-height-base);
+    color: var(--text-color);
+    background-color: var(--input-background-color);
+    background-clip: padding-box;
+    border: 2px solid var(--border-color);
+    appearance: none;
+    border-radius: var(--border-radius);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.form-group > .form-control,
 .form-group > input[type="text"],
 .form-group > input[type="url"],
 .form-group > input[type="email"],
 .form-group > textarea,
 .form-group > select {
-    margin-top: 0; 
+    margin-top: 0;
 }
 textarea.form-control, textarea { min-height: calc(var(--line-height-base) * 3em + 1.2rem + 4px); resize: vertical; }
 
-/* Specifik styling för mindre formkontroller (t.ex. språkväljare) */
 .form-control-small {
-    padding: 0.4rem 0.6rem !important; /* Mindre padding */
-    font-size: 0.875rem !important; /* Mindre text */
-    height: auto !important; /* Låt höjden anpassas */
-    min-width: 100px; /* Så den inte blir för smal */
-    width: auto; /* Låt innehållet styra bredden lite mer */
-    margin-top: 0 !important; /* Ta bort eventuell margin-top */
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.875rem !important;
+    height: auto !important;
+    min-width: 100px;
+    width: auto;
+    margin-top: 0 !important;
 }
 
-
-/* --- TEMPORÄR LÖSNING FÖR CHECKBOXAR (VISAR DEFAULT) --- */
 .form-check { display: flex; align-items: center; margin-bottom: 0.5rem; min-height: 1.5rem; }
-.form-check-input { 
-    appearance: auto; 
-    opacity: 1; 
-    width: auto; 
-    height: auto; 
-    position: static; 
-    margin-top: 0; 
-    margin-right: 0.5em; 
-    font-family: inherit; 
+.form-check-input {
+    appearance: auto;
+    opacity: 1;
+    width: auto;
+    height: auto;
+    position: static;
+    margin-top: 0;
+    margin-right: 0.5em;
+    font-family: inherit;
 }
 .form-check-label { cursor: pointer; padding-left: 0; }
-/* --- SLUT TEMPORÄR LÖSNING FÖR CHECKBOXAR --- */
 
 :focus-visible { outline: 3px solid var(--primary-color); outline-offset: 2px; }
 .button:focus, .form-control:focus, input[type="text"]:focus, input[type="url"]:focus, textarea:focus, select:focus { outline: none; }
-.button:focus-visible, .form-control:focus-visible, 
-input[type="text"]:focus-visible, input[type="url"]:focus-visible, textarea:focus-visible, select:focus-visible { 
-    border-color: var(--primary-color) !important; 
-    outline: 2px solid var(--primary-color) !important; 
-    outline-offset: 1px !important; 
-    box-shadow: 0 0 0 0.2rem var(--focus-ring-color) !important; 
+.button:focus-visible, .form-control:focus-visible,
+input[type="text"]:focus-visible, input[type="url"]:focus-visible, textarea:focus-visible, select:focus-visible {
+    border-color: var(--primary-color) !important;
+    outline: 2px solid var(--primary-color) !important;
+    outline-offset: 1px !important;
+    box-shadow: 0 0 0 0.2rem var(--focus-ring-color) !important;
 }
 .form-check-input:focus-visible + .form-check-label { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 
 input:-webkit-autofill,
-input:-webkit-autofill:hover, 
+input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
@@ -283,12 +311,12 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  border: 2px solid var(--border-color) !important; 
-  -webkit-text-fill-color: var(--text-color) !important; 
-  -webkit-box-shadow: 0 0 0px 1000px var(--input-background-color) inset !important; 
-  transition: background-color 5000s ease-in-out 0s !important; 
-  font-family: var(--font-family-base) !important; 
-  font-size: var(--font-size-base) !important; 
+  border: 2px solid var(--border-color) !important;
+  -webkit-text-fill-color: var(--text-color) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--input-background-color) inset !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  font-family: var(--font-family-base) !important;
+  font-size: var(--font-size-base) !important;
 }
 
 .hidden { display: none !important; }
@@ -296,64 +324,122 @@ select:-webkit-autofill:focus {
 
 .text-danger { color: var(--danger-color); } .text-success { color: var(--success-color); } .text-warning { color: var(--warning-color); } .text-info { color: var(--info-color); } .text-muted { color: var(--text-color-muted); }
 
-/* Globala kontroller (språkväljare, tema-toggle) */
 .global-controls {
     position: fixed;
     top: 1rem;
     right: 1rem;
-    z-index: 2000; 
+    z-index: 2000;
     display: flex;
     align-items: center;
-    gap: 0.75rem; 
-    background-color: var(--plate-background-color); 
+    gap: 0.75rem;
+    background-color: var(--plate-background-color);
     padding: 0.5rem;
     border-radius: var(--border-radius);
     box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 .language-selector-container { display: flex; align-items: center; }
-#language-selector.form-control.form-control-small { /* Mer specifik selektor */
-    /* Ärver från .form-control, men .form-control-small kan finjustera */
-}
-#theme-toggle.button { 
-    position: static; 
+#language-selector.form-control.form-control-small { }
+#theme-toggle.button {
+    position: static;
     top: auto;
     right: auto;
-    padding: 0.5rem 0.8rem; /* Behåll specifik padding för denna knapp */
+    padding: 0.5rem 0.8rem;
     gap: 0.4rem;
-    /* Ärver .button-default stylingen */
 }
 #theme-toggle svg { width: 18px; height: 18px; }
 
 
 .info-block dl { margin-bottom: var(--spacing-unit); } .info-block dt { font-weight: 700; color: var(--text-color); } .info-block dd { margin-left: 0; margin-bottom: 0.5rem; color: var(--text-color-muted); }
+/* Generella item-list stilar - sample list använder dessa också nu */
 .item-list { list-style: none; padding: 0; }
-.item-list-item { border: 1px solid var(--border-color); border-radius: var(--border-radius); margin-bottom: var(--spacing-unit); background-color: var(--plate-background-color); display: flex; flex-direction: column; align-items: stretch; padding: 1rem;}
-.item-list-item .sample-info { margin-bottom: 0.75rem; width: 100%; }
-.item-list-item .sample-info h3 { font-size: 1.2rem; margin-top: 0; margin-bottom: 0.35rem; color: var(--text-color); }
-.item-list-item .sample-info p { font-size: 0.9rem; color: var(--text-color-muted); margin-bottom: 0.35rem; line-height: 1.4; }
-.item-list-item .sample-info p strong { color: var(--text-color); font-weight: 500; }
-.item-list-item .sample-info .content-types-display { font-size: 0.85rem; margin-top: 0.5rem; }
-.item-list-item .sample-info .content-types-display ul { list-style: disc; margin-left: 1.25rem; padding-left: 0.5rem; }
-.item-list-item .sample-info .content-types-display li { margin-bottom: 0.1rem; }
-.item-list-item .sample-actions-wrapper { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 0.5rem; }
-.item-list-item .sample-actions-main { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.item-list-item {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--spacing-unit);
+    background-color: var(--plate-background-color); /* Byt till plate-background-color för konsistens */
+    display: flex;
+    flex-direction: column; /* Stapla info och actions */
+    align-items: stretch; /* Sträck ut barnen */
+    padding: 1rem;
+}
+.item-list-item .sample-info {
+    margin-bottom: 0.75rem; /* Utrymme till actions */
+    width: 100%;
+}
+.item-list-item .sample-info h3 {
+    font-size: 1.2rem;
+    margin-top: 0;
+    margin-bottom: 0.35rem;
+    color: var(--text-color); /* Ändrad från primary-color för att matcha annan text */
+}
+.item-list-item .sample-info p {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.35rem;
+    line-height: 1.4;
+}
+.item-list-item .sample-info p strong {
+    color: var(--text-color);
+    font-weight: 500;
+}
+.item-list-item .sample-info .content-types-display {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+.item-list-item .sample-info .content-types-display ul {
+    list-style: disc;
+    margin-left: 1.25rem; /* Justera efter behov */
+    padding-left: 0.5rem;
+}
+.item-list-item .sample-info .content-types-display li {
+    margin-bottom: 0.1rem;
+}
+.item-list-item .sample-actions-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 0.5rem; /* Lite mer utrymme ovanför knapparna */
+}
+.item-list-item .sample-actions-main {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+/* Knappar inuti .sample-actions-main och .sample-actions-delete ska inte ha margin-right */
+.item-list-item .sample-actions-main .button,
+.item-list-item .sample-actions-delete .button {
+    margin-right: 0;
+}
+
 .button.button-small { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
 .button.button-small svg { width: 1em; height: 1em; }
 
-@media (max-width: 600px) { 
-    .item-list-item .sample-actions-wrapper { flex-direction: column; align-items: stretch; }
-    .item-list-item .sample-actions-main { margin-bottom: 0.5rem; justify-content: flex-start; }
+@media (max-width: 600px) {
+    .item-list-item .sample-actions-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .item-list-item .sample-actions-main {
+        margin-bottom: 0.5rem;
+        justify-content: flex-start; /* Knappar till vänster när de stackas */
+    }
     .item-list-item .sample-actions-main .button,
-    .item-list-item .sample-actions-delete .button { width: 100%; margin-bottom: 0.5rem; }
+    .item-list-item .sample-actions-delete .button {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
     .item-list-item .sample-actions-main .button:last-child,
-    .item-list-item .sample-actions-delete .button:last-child { margin-bottom: 0; }
+    .item-list-item .sample-actions-delete .button:last-child {
+        margin-bottom: 0;
+    }
 }
-@media (max-width: 576px) { 
-    body { padding: 1rem; } 
-    #app-container { padding: 0.5rem; } 
-    h1 { font-size: 1.75rem; } h2 { font-size: 1.5rem; } 
-    .button { padding: 0.5rem 1rem; font-size: 0.9rem; } 
-    .global-controls { /* Justera för små skärmar */
+@media (max-width: 576px) {
+    body { padding: 1rem 0.5rem; } /* Justerat för mindre padding på sidorna */
+    #app-container { padding: 0 0.5rem; } /* Justerat */
+    h1 { font-size: 1.75rem; } h2 { font-size: 1.5rem; }
+    .button { padding: 0.5rem 1rem; font-size: 0.9rem; }
+    .global-controls {
         padding: 0.3rem;
         gap: 0.3rem;
     }
@@ -361,10 +447,11 @@ select:-webkit-autofill:focus {
         padding: 0.3rem 0.5rem;
         font-size: 0.8rem;
     }
-    #theme-toggle.button { 
-        top: 0.5rem; right: 0.5rem; padding: 0.4rem 0.6rem; gap: 0.3rem; 
-    } 
-    #theme-toggle svg { width: 16px; height: 16px; } 
+    #theme-toggle.button {
+        /* top: 0.5rem; right: 0.5rem; */ /* Tas bort, positioneras av flex i .global-controls */
+        padding: 0.4rem 0.6rem; gap: 0.3rem;
+    }
+    #theme-toggle svg { width: 16px; height: 16px; }
 }
 
 body, #app-container, .button, .form-control, input[type="text"], input[type="url"], textarea, select, .item-list-item, .view-container, .content-plate, #theme-toggle
@@ -382,11 +469,22 @@ body, #app-container, .button, .form-control, input[type="text"], input[type="ur
 #global-message-area[hidden] { display: none; }
 .global-message-close-btn { background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; padding: 0 0.5rem; opacity: 0.7; position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); }
 .global-message-close-btn:hover, .global-message-close-btn:focus { opacity: 1; }
-#global-message-area.message-info { background-color: var(--info-color-light); border-color: var(--info-color); color: var(--info-color); [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-info .global-message-close-btn { color: var(--info-color); [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-success { background-color: var(--success-color-light); border-color: var(--success-color); color: var(--success-color); [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-success .global-message-close-btn { color: var(--success-color); [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-warning { background-color: var(--warning-color-light); border-color: var(--warning-color); color: #856404; [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-warning .global-message-close-btn { color: #856404; [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-error { background-color: var(--danger-color-light); border-color: var(--danger-color); color: #721c24; [data-theme="dark"] & { color: var(--text-color); } }
-#global-message-area.message-error .global-message-close-btn { color: #721c24; [data-theme="dark"] & { color: var(--text-color); } }
+#global-message-area.message-info { background-color: var(--info-color-light); border-color: var(--info-color); color: #004085; } /* Återställd textfärg för info ljus */
+[data-theme="dark"] #global-message-area.message-info { background-color: #0c5460; border-color: var(--info-color); color: var(--text-color); }
+#global-message-area.message-info .global-message-close-btn { color: #004085; } /* Återställd */
+[data-theme="dark"] #global-message-area.message-info .global-message-close-btn { color: var(--text-color); }
+
+#global-message-area.message-success { background-color: var(--success-color-light); border-color: var(--success-color); color: #155724; } /* Återställd textfärg för success ljus */
+[data-theme="dark"] #global-message-area.message-success { background-color: #126128; border-color: var(--success-color); color: var(--text-color); }
+#global-message-area.message-success .global-message-close-btn { color: #155724; } /* Återställd */
+[data-theme="dark"] #global-message-area.message-success .global-message-close-btn { color: var(--text-color); }
+
+#global-message-area.message-warning { background-color: var(--warning-color-light); border-color: var(--warning-color); color: #856404; }
+[data-theme="dark"] #global-message-area.message-warning { background-color: #806600; border-color: var(--warning-color); color: var(--text-color); }
+#global-message-area.message-warning .global-message-close-btn { color: #856404; }
+[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn { color: var(--text-color); }
+
+#global-message-area.message-error { background-color: var(--danger-color-light); border-color: var(--danger-color); color: #721c24; }
+[data-theme="dark"] #global-message-area.message-error { background-color: #5a1219; border-color: var(--danger-color); color: var(--text-color); }
+#global-message-area.message-error .global-message-close-btn { color: #721c24; }
+[data-theme="dark"] #global-message-area.message-error .global-message-close-btn { color: var(--text-color); }

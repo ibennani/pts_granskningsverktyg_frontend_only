@@ -22,7 +22,7 @@ export const AuditOverviewComponent = (function () {
 
     // Helper function to safely get the translation function
     function get_t_internally() {
-        if (Translation_t) return Translation_t; // Om redan tilldelad via assign_globals
+        if (Translation_t) return Translation_t;
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
@@ -46,7 +46,7 @@ export const AuditOverviewComponent = (function () {
             Helpers_escape_html = window.Helpers.escape_html;
             Helpers_get_current_iso_datetime_utc = window.Helpers.get_current_iso_datetime_utc;
             Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing;
-            Helpers_load_css = window.Helpers.load_css; // Lade till denna
+            Helpers_load_css = window.Helpers.load_css;
 
         } else console.error("AuditOverview: Helpers module not found on window.");
         if (window.State) {
@@ -61,7 +61,7 @@ export const AuditOverviewComponent = (function () {
         if (window.ExportLogic) {
             ExportLogic_export_to_csv = window.ExportLogic.export_to_csv;
             ExportLogic_export_to_excel = window.ExportLogic.export_to_excel;
-        } // else console.warn("AuditOverview: ExportLogic module not found on window. Exports will not work.");
+        }
     }
 
 
@@ -143,7 +143,7 @@ export const AuditOverviewComponent = (function () {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
         await init_sub_components();
-        if (Helpers_load_css) { // Använd Helpers_load_css från assign_globals
+        if (Helpers_load_css) {
             try { await Helpers_load_css(CSS_PATH); }
             catch (error) { console.warn("Failed to load CSS for AuditOverviewComponent:", error); }
         }
@@ -175,7 +175,6 @@ export const AuditOverviewComponent = (function () {
 
         plate_element.appendChild(Helpers_create_element('h1', { text_content: t('audit_overview_title') }));
 
-        // --- Sektion 1: Granskningsinformation ---
         const section1 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section1.appendChild(Helpers_create_element('h2', { text_content: t('audit_info_title') }));
         const info_grid = Helpers_create_element('div', { class_name: 'info-grid' });
@@ -192,8 +191,8 @@ export const AuditOverviewComponent = (function () {
         info_grid.appendChild(create_info_item('auditor_name', md.auditorName));
 
         info_grid.appendChild(create_info_item('rule_file_title', rf_meta.title));
-        info_grid.appendChild(create_info_item('Version (Regelfil)', rf_meta.version)); // Nyckeln finns redan
-        info_grid.appendChild(create_info_item('status', t(`audit_status_${current_audit.auditStatus}`))); // Nycklar som audit_status_in_progress finns
+        info_grid.appendChild(create_info_item('Version (Regelfil)', rf_meta.version));
+        info_grid.appendChild(create_info_item('status', t(`audit_status_${current_audit.auditStatus}`)));
 
         if(Helpers_format_iso_to_local_datetime) {
             info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_audit.startTime)));
@@ -211,8 +210,6 @@ export const AuditOverviewComponent = (function () {
         }
         plate_element.appendChild(section1);
 
-
-        // --- Sektion 2: Stickprovslista ---
         const section2 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section2.appendChild(Helpers_create_element('h2', { text_content: t('sample_list_title') }));
         if (sample_list_container_element) {
@@ -220,41 +217,50 @@ export const AuditOverviewComponent = (function () {
             if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
                 sample_list_component_instance.render();
             }
-        } else { section2.appendChild(Helpers_create_element('p', {text_content: t('error_loading_sample_list_for_overview')}));} // ANVÄNDER i18n
+        } else { section2.appendChild(Helpers_create_element('p', {text_content: t('error_loading_sample_list_for_overview')}));}
         plate_element.appendChild(section2);
 
-        // --- Sektion 3: Åtgärdsknapprad ---
         const section3 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section3.appendChild(Helpers_create_element('h2', { text_content: t('audit_actions_title') }));
+        
+        // NYTT: Wrapper för åtgärdsknappar
         const actions_div = Helpers_create_element('div', { class_name: 'audit-overview-actions' });
+        const left_actions_group = Helpers_create_element('div', { class_name: 'action-group-left' });
+        const right_actions_group = Helpers_create_element('div', { class_name: 'action-group-right' });
 
         const save_button = Helpers_create_element('button', { class_name: ['button', 'button-default'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('save', ['currentColor'], 18) : '') + `<span>${t('save_audit_to_file')}</span>` });
         save_button.addEventListener('click', handle_save_audit_to_file);
-        actions_div.appendChild(save_button);
+        left_actions_group.appendChild(save_button); // Till vänster
 
         if (current_audit.auditStatus === 'in_progress') {
             const lock_btn = Helpers_create_element('button', { class_name: ['button', 'button-warning'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('lock_audit', ['currentColor'], 18) : '') + `<span>${t('lock_audit')}</span>` });
             lock_btn.addEventListener('click', handle_lock_audit);
-            actions_div.appendChild(lock_btn);
+            right_actions_group.appendChild(lock_btn); // Till höger
         }
 
         if (current_audit.auditStatus === 'locked') {
             const unlock_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('unlock_audit', ['currentColor'], 18) : '') + `<span>${t('unlock_audit')}</span>` });
             unlock_btn.addEventListener('click', handle_unlock_audit);
-            actions_div.appendChild(unlock_btn);
+            left_actions_group.appendChild(unlock_btn); // Till vänster
 
             if(ExportLogic_export_to_csv) {
                 const csv_btn = Helpers_create_element('button', { class_name: ['button', 'button-info'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('export', ['currentColor'], 18) : '') + `<span>${t('export_to_csv')}</span>` });
                 csv_btn.addEventListener('click', handle_export_csv);
-                actions_div.appendChild(csv_btn);
+                left_actions_group.appendChild(csv_btn); // Till vänster
             }
             if(ExportLogic_export_to_excel) {
                 const excel_btn = Helpers_create_element('button', { class_name: ['button', 'button-info'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('export', ['currentColor'], 18) : '') + `<span>${t('export_to_excel')}</span>` });
                 excel_btn.addEventListener('click', handle_export_excel);
-                actions_div.appendChild(excel_btn);
+                left_actions_group.appendChild(excel_btn); // Till vänster
             }
         }
-        section3.appendChild(actions_div);
+        
+        // Lägg till grupperna i huvudcontainern för åtgärder
+        if (left_actions_group.hasChildNodes()) actions_div.appendChild(left_actions_group);
+        if (right_actions_group.hasChildNodes()) actions_div.appendChild(right_actions_group);
+        
+        if (actions_div.hasChildNodes()) section3.appendChild(actions_div); // Lägg bara till om den har innehåll
+        
         plate_element.appendChild(section3);
     }
 
@@ -263,7 +269,6 @@ export const AuditOverviewComponent = (function () {
             sample_list_component_instance.destroy();
         }
         sample_list_container_element = null;
-        // Nollställ andra referenser om nödvändigt
         app_container_ref = null;
         router_ref = null;
         global_message_element_ref = null;
