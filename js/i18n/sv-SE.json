@@ -203,5 +203,6 @@
   "todo_previous_requirement": "TODO: Navigera till föregående krav.",
   "todo_next_requirement": "TODO: Navigera till nästa krav.",
   "todo_next_unhandled_requirement": "TODO: Navigera till nästa ohanterade krav.",
-  "checks_short": "kontroller"
+  "checks_short": "kontroller",
+  "requirements_audited_for_sample": "Granskade krav"
 }

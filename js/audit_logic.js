@@ -7,8 +7,8 @@
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
-                let str = `**${key}**`;
-                if (replacements) {
+                let str = replacements && replacements.defaultValue ? replacements.defaultValue : `**${key}**`;
+                if (replacements && !replacements.defaultValue) {
                     for (const rKey in replacements) {
                         str += ` (${rKey}: ${replacements[rKey]})`;
                     }
@@ -18,11 +18,9 @@
     }
 
     function calculate_check_status(check_object, pass_criteria_statuses_map) {
-        // pass_criteria_statuses_map är ett objekt: { pc_id1: 'passed', pc_id2: 'failed', ... }
         if (!check_object || !check_object.passCriteria || check_object.passCriteria.length === 0) {
-            return "not_audited"; // Om inga passCriteria, kan inte bedömas.
+            return "not_audited";
         }
-
         let audited_criteria_count = 0;
         let passed_criteria_count_for_or_logic = 0;
         let all_criteria_passed_for_and_logic = true;
@@ -38,36 +36,27 @@
                 any_criterion_failed = true;
                 all_criteria_passed_for_and_logic = false;
             }
-            // 'not_audited' räknas inte som granskat kriterium för att avgöra checkens status
         }
-
         if (audited_criteria_count === 0) {
             return "not_audited";
         }
-
         if (audited_criteria_count < check_object.passCriteria.length) {
             return "partially_audited";
         }
-
-        // Om vi kommer hit är alla kriterier granskade (audited_criteria_count === check_object.passCriteria.length)
         if (check_object.logic === "OR") {
             return passed_criteria_count_for_or_logic > 0 ? "passed" : "failed";
-        } else { // Default är AND-logik
+        } else {
             return all_criteria_passed_for_and_logic ? "passed" : "failed";
         }
     }
 
     function calculate_requirement_status(requirement_object, requirement_result_object) {
         if (!requirement_object || !requirement_object.checks || requirement_object.checks.length === 0) {
-            // Om inga checks finns, och status inte är manuellt satt (t.ex. vid import), är den 'not_audited'.
-            // Om status finns (från t.ex. manuell bedömning innan checks fanns) så används den.
-            return requirement_result_object.status && requirement_result_object.status !== 'not_audited' ? requirement_result_object.status : "not_audited";
+            return requirement_result_object?.status && requirement_result_object.status !== 'not_audited' ? requirement_result_object.status : "not_audited";
         }
-
         if (!requirement_result_object || !requirement_result_object.checkResults) {
             return "not_audited";
         }
-
         let all_checks_passed = true;
         let any_check_failed = false;
         let any_check_partially_audited = false;
@@ -75,9 +64,7 @@
 
         for (const check of requirement_object.checks) {
             const check_result = requirement_result_object.checkResults[check.id];
-            // Om en check inte finns i resultaten än (bör inte hända med initieringen), behandla som not_audited.
             const check_status = check_result ? check_result.status : 'not_audited';
-
             if (check_status === "failed") {
                 any_check_failed = true;
                 all_checks_passed = false;
@@ -87,17 +74,12 @@
             } else if (check_status === "not_audited") {
                 any_check_not_audited = true;
                 all_checks_passed = false;
-            } else if (check_status === "passed") {
-                // Gör inget specifikt, all_checks_passed förblir true om inget annat inträffar
             }
         }
-
         if (any_check_failed) return "failed";
         if (any_check_partially_audited) return "partially_audited";
         if (any_check_not_audited) return "not_audited";
         if (all_checks_passed) return "passed";
-
-        // Fallback, bör inte nås om logiken är komplett
         return "not_audited";
     }
 
@@ -106,16 +88,44 @@
         const all_requirements_array = Object.values(rule_file_content.requirements);
         return all_requirements_array.filter(req => {
             if (!req.contentType || !Array.isArray(req.contentType) || req.contentType.length === 0) {
-                return true; // Alltid relevant om inga contentTypes är specificerade på kravet
+                return true;
             }
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
     }
 
+    function get_ordered_relevant_requirement_keys(rule_file_content, sample_object) {
+        const t = get_t_func();
+        const relevant_req_objects = get_relevant_requirements_for_sample(rule_file_content, sample_object);
+
+        if (!relevant_req_objects || relevant_req_objects.length === 0) {
+            return [];
+        }
+
+        relevant_req_objects.sort((req_a, req_b) => {
+            const main_cat_a_text = req_a.metadata?.mainCategory?.text || t('uncategorized', { defaultValue: 'Uncategorized' });
+            const main_cat_b_text = req_b.metadata?.mainCategory?.text || t('uncategorized', { defaultValue: 'Uncategorized' });
+            let comparison = main_cat_a_text.localeCompare(main_cat_b_text);
+            if (comparison !== 0) return comparison;
+
+            const sub_cat_a_text = req_a.metadata?.subCategory?.text || t('other_requirements', { defaultValue: 'Other Requirements' });
+            const sub_cat_b_text = req_b.metadata?.subCategory?.text || t('other_requirements', { defaultValue: 'Other Requirements' });
+            comparison = sub_cat_a_text.localeCompare(sub_cat_b_text);
+            if (comparison !== 0) return comparison;
+
+            const title_a = req_a.title || '';
+            const title_b = req_b.title || '';
+            return title_a.localeCompare(title_b);
+        });
+
+        return relevant_req_objects.map(req => req.key);
+    }
+
     const public_api = {
         calculate_requirement_status,
         calculate_check_status,
-        get_relevant_requirements_for_sample
+        get_relevant_requirements_for_sample,
+        get_ordered_relevant_requirement_keys
     };
 
     window.AuditLogic = public_api;

@@ -12,7 +12,7 @@ export const RequirementAuditComponent = (function () {
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css;
     let State_getCurrentAudit, State_setCurrentAudit;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
-    let AuditLogic_calculate_check_status, AuditLogic_calculate_requirement_status;
+    let AuditLogic_calculate_check_status, AuditLogic_calculate_requirement_status, AuditLogic_get_ordered_relevant_requirement_keys; // NY: AuditLogic_get_ordered_relevant_requirement_keys
     // --- Slut på globala referenser ---
 
     let global_message_element_ref;
@@ -23,6 +23,11 @@ export const RequirementAuditComponent = (function () {
     let actual_observation_input, comment_to_auditor_input, comment_to_actor_input;
     let checks_ui_container_element = null;
     let requirement_status_display_element = null;
+
+    // För navigeringsknappar
+    let prev_req_button_top, next_req_button_top, next_unhandled_button_top;
+    let prev_req_button_bottom, next_req_button_bottom, next_unhandled_button_bottom;
+    let ordered_requirement_keys_for_sample = []; // Håller den sorterade listan av kravnycklar
 
 
     function get_t_internally() {
@@ -76,7 +81,8 @@ export const RequirementAuditComponent = (function () {
         if (window.AuditLogic) {
             AuditLogic_calculate_check_status = window.AuditLogic.calculate_check_status;
             AuditLogic_calculate_requirement_status = window.AuditLogic.calculate_requirement_status;
-             if (!AuditLogic_calculate_check_status || !AuditLogic_calculate_requirement_status) {
+            AuditLogic_get_ordered_relevant_requirement_keys = window.AuditLogic.get_ordered_relevant_requirement_keys; // NY
+             if (!AuditLogic_calculate_check_status || !AuditLogic_calculate_requirement_status || !AuditLogic_get_ordered_relevant_requirement_keys) { // Kontrollera nya
                 console.error("ReqAudit: One or more AuditLogic functions are missing!"); all_assigned = false;
             }
         } else { console.error("ReqAudit: AuditLogic module is missing!"); all_assigned = false; }
@@ -85,7 +91,7 @@ export const RequirementAuditComponent = (function () {
     }
 
     async function init(_app_container, _router, _params) {
-        console.log("[ReqAudit] Init started");
+        // console.log("[ReqAudit] Init started");
         if (!assign_globals()) {
             console.error("RequirementAuditComponent: Failed to assign global dependencies in init.");
         }
@@ -96,95 +102,87 @@ export const RequirementAuditComponent = (function () {
         if (NotificationComponent_get_global_message_element_reference) {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
-        console.log("[ReqAudit] Globals assigned, params set:", JSON.parse(JSON.stringify(_params || {})));
+        // console.log("[ReqAudit] Globals assigned, params set:", JSON.parse(JSON.stringify(_params || {})));
 
         if (Helpers_load_css) {
             try {
                 const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
                 if (!link_tag) {
                     await Helpers_load_css(CSS_PATH);
-                    console.log("[ReqAudit] CSS loaded:", CSS_PATH);
+                    // console.log("[ReqAudit] CSS loaded:", CSS_PATH);
                 } else {
-                    console.log("[ReqAudit] CSS already loaded:", CSS_PATH);
+                    // console.log("[ReqAudit] CSS already loaded:", CSS_PATH);
                 }
             } catch (error) {
                 console.warn("Failed to load CSS for RequirementAuditComponent:", error);
             }
         }
-        console.log("[ReqAudit] Init finished");
+        // console.log("[ReqAudit] Init finished");
     }
 
     function load_data_and_ensure_results_structure() {
-        console.log("[ReqAudit] load_data_and_ensure_results_structure START");
+        // console.log("[ReqAudit] load_data_and_ensure_results_structure START");
         const current_audit = State_getCurrentAudit();
 
-        if (!current_audit) {
-            console.error("[ReqAudit] load_data: current_audit is null or undefined.");
+        if (!current_audit || !current_audit.ruleFileContent ||
+            !params_ref || !params_ref.sampleId || !params_ref.requirementId) {
+            // console.error("[ReqAudit] load_data: Core data missing.");
             current_sample_object = null; current_requirement_object = null; current_requirement_result = null;
             return false;
         }
-        if (!current_audit.ruleFileContent) {
-            console.error("[ReqAudit] load_data: current_audit.ruleFileContent is null or undefined.");
-            current_sample_object = null; current_requirement_object = null; current_requirement_result = null;
-            return false;
-        }
-        if (!params_ref || !params_ref.sampleId || !params_ref.requirementId) {
-            console.error("[ReqAudit] load_data: Missing sampleId or requirementId in params_ref.", params_ref);
-            current_sample_object = null; current_requirement_object = null; current_requirement_result = null;
-            return false;
-        }
-
         current_sample_object = current_audit.samples.find(s => s.id === params_ref.sampleId);
         if (!current_sample_object) {
-            console.error(`[ReqAudit] load_data: Sample with ID ${params_ref.sampleId} not found.`);
+            // console.error(`[ReqAudit] load_data: Sample with ID ${params_ref.sampleId} not found.`);
             current_requirement_object = null; current_requirement_result = null;
             return false;
         }
-
         if (!current_audit.ruleFileContent.requirements) {
-            console.error("[ReqAudit] load_data: ruleFileContent.requirements is missing!");
+            // console.error("[ReqAudit] load_data: ruleFileContent.requirements is missing!");
             current_requirement_object = null; current_requirement_result = null;
             return false;
         }
         current_requirement_object = current_audit.ruleFileContent.requirements[params_ref.requirementId];
         if (!current_requirement_object) {
-            console.error(`[ReqAudit] load_data: Requirement with ID ${params_ref.requirementId} not found in ruleFile.`);
+            // console.error(`[ReqAudit] load_data: Requirement with ID ${params_ref.requirementId} not found in ruleFile.`);
             current_requirement_result = null;
             return false;
         }
-        console.log("[ReqAudit] load_data: current_requirement_object loaded:", current_requirement_object.id);
-
+        // console.log("[ReqAudit] load_data: current_requirement_object loaded:", current_requirement_object.id);
 
         if (!current_sample_object.requirementResults) current_sample_object.requirementResults = {};
         if (!current_sample_object.requirementResults[current_requirement_object.id]) {
-            console.log(`[ReqAudit] Initializing requirementResults for req ID: ${current_requirement_object.id}`);
             current_sample_object.requirementResults[current_requirement_object.id] = {
                 status: 'not_audited', actualObservation: '', commentToAuditor: '', commentToActor: '',
                 lastStatusUpdate: null, checkResults: {}
             };
         }
         current_requirement_result = current_sample_object.requirementResults[current_requirement_object.id];
-        console.log("[ReqAudit] load_data: current_requirement_result obtained/initialized.");
-
 
         (current_requirement_object.checks || []).forEach(check => {
             if (!current_requirement_result.checkResults[check.id]) {
-                console.log(`[ReqAudit] Initializing checkResults for check ID: ${check.id}`);
                 current_requirement_result.checkResults[check.id] = { status: 'not_audited', passCriteria: {} };
             }
             (check.passCriteria || []).forEach(pc => {
                 if (current_requirement_result.checkResults[check.id].passCriteria[pc.id] === undefined) {
-                    console.log(`[ReqAudit] Initializing passCriteria status for pc ID: ${pc.id} under check ID: ${check.id}`);
                     current_requirement_result.checkResults[check.id].passCriteria[pc.id] = 'not_audited';
                 }
             });
         });
-        State_setCurrentAudit(current_audit); // Save potentially initialized structures
-        console.log("[ReqAudit] load_data_and_ensure_results_structure END - Success");
+        // Pre-fetch and cache the ordered list of requirement keys for this sample
+        if (AuditLogic_get_ordered_relevant_requirement_keys) {
+            ordered_requirement_keys_for_sample = AuditLogic_get_ordered_relevant_requirement_keys(current_audit.ruleFileContent, current_sample_object);
+        } else {
+            ordered_requirement_keys_for_sample = [];
+            console.error("[ReqAudit] AuditLogic.get_ordered_relevant_requirement_keys is not available!");
+        }
+
+        State_setCurrentAudit(current_audit);
+        // console.log("[ReqAudit] load_data_and_ensure_results_structure END - Success");
         return true;
     }
 
     function auto_save_text_data() {
+        // ... (oförändrad)
         if (!current_requirement_result || !State_setCurrentAudit || !State_getCurrentAudit) return;
         let changed = false;
         if (actual_observation_input && current_requirement_result.actualObservation !== actual_observation_input.value) {
@@ -203,11 +201,11 @@ export const RequirementAuditComponent = (function () {
             }
             const current_audit = State_getCurrentAudit();
             State_setCurrentAudit(current_audit);
-            // console.log("Autosaved text data and updated timestamp.");
         }
     }
 
     function handle_pass_criterion_status_change(check_id, pc_id, new_status) {
+        // ... (oförändrad)
         const t = get_t_internally();
         if (!current_requirement_result ||
             !current_requirement_result.checkResults ||
@@ -217,12 +215,10 @@ export const RequirementAuditComponent = (function () {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_internal_data_structure_pc'), 'error');
             return;
         }
-
         if (current_requirement_result.checkResults[check_id].passCriteria[pc_id] === new_status) {
             new_status = 'not_audited';
         }
         current_requirement_result.checkResults[check_id].passCriteria[pc_id] = new_status;
-
         const check_object_from_rulefile = current_requirement_object.checks.find(c => c.id === check_id);
         if (check_object_from_rulefile && AuditLogic_calculate_check_status) {
             const calculated_check_status = AuditLogic_calculate_check_status(
@@ -230,27 +226,19 @@ export const RequirementAuditComponent = (function () {
                 current_requirement_result.checkResults[check_id].passCriteria
             );
             current_requirement_result.checkResults[check_id].status = calculated_check_status;
-        } else {
-            console.warn("[ReqAudit] Could not find check object or AuditLogic.calculate_check_status to recalculate check status.");
         }
-
         if (AuditLogic_calculate_requirement_status) {
             const calculated_req_status = AuditLogic_calculate_requirement_status(
                 current_requirement_object,
                 current_requirement_result
             );
             current_requirement_result.status = calculated_req_status;
-        } else {
-            console.warn("[ReqAudit] Could not find AuditLogic.calculate_requirement_status to recalculate requirement status.");
         }
-
         if (Helpers_get_current_iso_datetime_utc) {
             current_requirement_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
         }
-
         const current_audit_for_save = State_getCurrentAudit();
         State_setCurrentAudit(current_audit_for_save);
-
         if (checks_ui_container_element) {
             render_checks_section(checks_ui_container_element);
         }
@@ -261,6 +249,7 @@ export const RequirementAuditComponent = (function () {
     }
 
     function render_audit_section_internal(title_key, content_data, parent_element) {
+        // ... (oförändrad)
         const t = get_t_internally();
         if (content_data && ((typeof content_data === 'string' && content_data.trim() !== '') || (Array.isArray(content_data) && content_data.length > 0))) {
             const section = Helpers_create_element('div', { class_name: 'audit-section' });
@@ -282,54 +271,45 @@ export const RequirementAuditComponent = (function () {
     }
 
     function render_checks_section(container_element) {
+        // ... (oförändrad)
         const t = get_t_internally();
         container_element.innerHTML = '';
-
         const current_audit_state = State_getCurrentAudit();
         const is_audit_locked = current_audit_state && current_audit_state.auditStatus === 'locked';
-
         if (!current_requirement_object || !current_requirement_object.checks || current_requirement_object.checks.length === 0) {
             container_element.appendChild(Helpers_create_element('p', { class_name: 'text-muted', text_content: t('no_checks_for_this_requirement') }));
             return;
         }
-
         current_requirement_object.checks.forEach(check => {
             const check_wrapper = Helpers_create_element('div', { class_name: 'check-item', attributes: {'data-check-id': check.id }});
             check_wrapper.appendChild(Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check.condition }));
-
             const check_status_in_result = current_requirement_result.checkResults[check.id]?.status || 'not_audited';
             const check_status_text = t(`audit_status_${check_status_in_result}`, {defaultValue: check_status_in_result});
             check_wrapper.appendChild(Helpers_create_element('p', {
                 class_name: 'check-status-display',
                 html_content: `<strong>${t('check_status')}:</strong> <span class="status-text status-${check_status_in_result}">${check_status_text}</span>`
             }));
-
             if (check.passCriteria && check.passCriteria.length > 0) {
                 const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                 check.passCriteria.forEach(pc => {
                     const pc_item_li = Helpers_create_element('li', { class_name: 'pass-criterion-item', attributes: {'data-pc-id': pc.id } });
                     pc_item_li.appendChild(Helpers_create_element('p', { class_name: 'pass-criterion-requirement', text_content: pc.requirement }));
-
                     const current_pc_status = current_requirement_result.checkResults[check.id]?.passCriteria[pc.id] || 'not_audited';
                     const pc_status_text = t(`audit_status_${current_pc_status}`, {defaultValue: current_pc_status});
-
                     const status_display_div = Helpers_create_element('div', { class_name: 'pass-criterion-status' });
                     status_display_div.innerHTML = `<strong>${t('status')}:</strong> <span class="status-text status-${current_pc_status}">${pc_status_text}</span>`;
                     pc_item_li.appendChild(status_display_div);
-
                     if (!is_audit_locked) {
                         const pc_actions_div = Helpers_create_element('div', { class_name: 'pass-criterion-actions' });
-
                         const passed_button = Helpers_create_element('button', {
                             class_name: ['button', 'button-success', 'button-small', current_pc_status === 'passed' ? 'active' : ''],
-                            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle_green_yellow', ['currentColor', 'var(--success-color-light)'], 16) : '') + `<span>${t('pass_criterion_approved')}</span>`
+                            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_up', ['currentColor'], 16) : '') + `<span>${t('pass_criterion_approved')}</span>`
                         });
                         passed_button.addEventListener('click', () => handle_pass_criterion_status_change(check.id, pc.id, 'passed'));
                         pc_actions_div.appendChild(passed_button);
-
                         const failed_button = Helpers_create_element('button', {
                             class_name: ['button', 'button-danger', 'button-small', current_pc_status === 'failed' ? 'active' : ''],
-                            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('cancel_circle_red_pink', ['currentColor', 'var(--danger-color-light)'], 16) : '') + `<span>${t('pass_criterion_failed')}</span>`
+                            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_down', ['currentColor'], 16) : '') + `<span>${t('pass_criterion_failed')}</span>`
                         });
                         failed_button.addEventListener('click', () => handle_pass_criterion_status_change(check.id, pc.id, 'failed'));
                         pc_actions_div.appendChild(failed_button);
@@ -342,6 +322,71 @@ export const RequirementAuditComponent = (function () {
             container_element.appendChild(check_wrapper);
         });
     }
+
+    // --- NAVIGERINGSFUNKTIONER ---
+    function get_current_requirement_index_in_ordered_list() {
+        if (!ordered_requirement_keys_for_sample || ordered_requirement_keys_for_sample.length === 0) {
+            return -1;
+        }
+        return ordered_requirement_keys_for_sample.indexOf(params_ref.requirementId); // params_ref.requirementId ÄR nu en req.key (UUID)
+    }
+
+    function navigate_to_requirement_by_index(index) {
+        if (index >= 0 && index < ordered_requirement_keys_for_sample.length) {
+            const new_requirement_key = ordered_requirement_keys_for_sample[index];
+            router_ref('requirement_audit', { sampleId: current_sample_object.id, requirementId: new_requirement_key });
+        } else {
+            console.warn("[ReqAudit] Attempted to navigate to an out-of-bounds index:", index);
+        }
+    }
+
+    function go_to_previous_requirement() {
+        const current_index = get_current_requirement_index_in_ordered_list();
+        if (current_index > 0) {
+            navigate_to_requirement_by_index(current_index - 1);
+        }
+    }
+
+    function go_to_next_requirement() {
+        const current_index = get_current_requirement_index_in_ordered_list();
+        if (current_index < ordered_requirement_keys_for_sample.length - 1) {
+            navigate_to_requirement_by_index(current_index + 1);
+        }
+    }
+
+    function find_next_unhandled_requirement_key() {
+        const current_index = get_current_requirement_index_in_ordered_list();
+        if (current_index === -1) return null; // Ska inte hända om vi är på en kravsida
+
+        for (let i = current_index + 1; i < ordered_requirement_keys_for_sample.length; i++) {
+            const req_key = ordered_requirement_keys_for_sample[i];
+            const req_result = current_sample_object.requirementResults[req_key];
+            if (!req_result || req_result.status === 'not_audited' || req_result.status === 'partially_audited') {
+                return req_key;
+            }
+        }
+        // Om inget hittas framåt, börja om från början upp till nuvarande
+        for (let i = 0; i < current_index; i++) {
+            const req_key = ordered_requirement_keys_for_sample[i];
+            const req_result = current_sample_object.requirementResults[req_key];
+            if (!req_result || req_result.status === 'not_audited' || req_result.status === 'partially_audited') {
+                return req_key;
+            }
+        }
+        return null; // Alla är hanterade
+    }
+
+    function go_to_next_unhandled_requirement() {
+        const t = get_t_internally();
+        const next_unhandled_key = find_next_unhandled_requirement_key();
+        if (next_unhandled_key) {
+            router_ref('requirement_audit', { sampleId: current_sample_object.id, requirementId: next_unhandled_key });
+        } else {
+            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('all_requirements_handled_for_sample'), 'info'); // Ny i18n-nyckel
+        }
+    }
+    // --- SLUT NAVIGERINGSFUNKTIONER ---
+
 
     function render_navigation_buttons(is_top_or_bottom = 'bottom') {
         const t = get_t_internally();
@@ -359,28 +404,41 @@ export const RequirementAuditComponent = (function () {
         nav_group_left.appendChild(back_to_list_btn);
 
         const current_audit_state = State_getCurrentAudit();
-        // ---- FELSÖKNINGSLOGG FÖR NAVIGERINSKNAPPAR ----
-        console.log(`[ReqAudit] render_navigation_buttons (${is_top_or_bottom}): current_audit_state exists:`, !!current_audit_state);
-        if (current_audit_state) {
-            console.log(`[ReqAudit] render_navigation_buttons (${is_top_or_bottom}): auditStatus = "${current_audit_state.auditStatus}"`);
-        }
-        // ---- SLUT FELSÖKNINGSLOGG ----
+        const current_index = get_current_requirement_index_in_ordered_list();
 
         if (current_audit_state && current_audit_state.auditStatus !== 'locked') {
-            console.log(`[ReqAudit] render_navigation_buttons (${is_top_or_bottom}): Rendering navigation buttons (not locked).`);
-            const prev_req_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) : '') + `<span>${t('previous_requirement')}</span>`});
-            prev_req_btn.addEventListener('click', () => NotificationComponent_show_global_message(t('todo_previous_requirement'), 'info'));
-            nav_group_right.appendChild(prev_req_btn);
+            const prev_button_ref = is_top_or_bottom === 'top' ? prev_req_button_top : prev_req_button_bottom;
+            const next_button_ref = is_top_or_bottom === 'top' ? next_req_button_top : next_req_button_bottom;
+            const next_unhandled_button_ref = is_top_or_bottom === 'top' ? next_unhandled_button_top : next_unhandled_button_bottom;
 
-            const next_req_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: `<span>${t('next_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward', ['currentColor'], 18) : '') });
-            next_req_btn.addEventListener('click', () => NotificationComponent_show_global_message(t('todo_next_requirement'), 'info'));
-            nav_group_right.appendChild(next_req_btn);
+            const temp_prev_req_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) : '') + `<span>${t('previous_requirement')}</span>`});
+            temp_prev_req_btn.addEventListener('click', go_to_previous_requirement);
+            if (current_index <= 0) { // Första kravet eller ingen lista
+                temp_prev_req_btn.disabled = true;
+                temp_prev_req_btn.classList.add('button-disabled');
+            }
+            nav_group_right.appendChild(temp_prev_req_btn);
+            if (is_top_or_bottom === 'top') prev_req_button_top = temp_prev_req_btn; else prev_req_button_bottom = temp_prev_req_btn;
 
-            const next_unhandled_btn = Helpers_create_element('button', { class_name: ['button', 'button-primary'], html_content: `<span>${t('next_unhandled_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward_alt', ['currentColor'], 18) : '') });
-            next_unhandled_btn.addEventListener('click', () => NotificationComponent_show_global_message(t('todo_next_unhandled_requirement'), 'info'));
-            nav_group_right.appendChild(next_unhandled_btn);
-        } else {
-            console.log(`[ReqAudit] render_navigation_buttons (${is_top_or_bottom}): NOT rendering navigation buttons (audit locked or state missing).`);
+
+            const temp_next_req_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: `<span>${t('next_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward', ['currentColor'], 18) : '') });
+            temp_next_req_btn.addEventListener('click', go_to_next_requirement);
+            if (current_index >= ordered_requirement_keys_for_sample.length - 1) { // Sista kravet
+                temp_next_req_btn.disabled = true;
+                temp_next_req_btn.classList.add('button-disabled');
+            }
+            nav_group_right.appendChild(temp_next_req_btn);
+            if (is_top_or_bottom === 'top') next_req_button_top = temp_next_req_btn; else next_req_button_bottom = temp_next_req_btn;
+
+
+            const temp_next_unhandled_btn = Helpers_create_element('button', { class_name: ['button', 'button-primary'], html_content: `<span>${t('next_unhandled_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward_alt', ['currentColor'], 18) : '') });
+            temp_next_unhandled_btn.addEventListener('click', go_to_next_unhandled_requirement);
+            if (find_next_unhandled_requirement_key() === null) { // Inga fler ohanterade
+                temp_next_unhandled_btn.disabled = true;
+                temp_next_unhandled_btn.classList.add('button-disabled');
+            }
+            nav_group_right.appendChild(temp_next_unhandled_btn);
+            if (is_top_or_bottom === 'top') next_unhandled_button_top = temp_next_unhandled_btn; else next_unhandled_button_bottom = temp_next_unhandled_btn;
         }
 
         nav_buttons_div.appendChild(nav_group_left);
@@ -389,48 +447,46 @@ export const RequirementAuditComponent = (function () {
     }
 
     function render() {
-        console.log("[ReqAudit] render START"); // Loggning: Start av render
+        // console.log("[ReqAudit] render START");
         const t = get_t_internally();
         if (!app_container_ref || !Helpers_create_element || !t) {
-            console.error("[ReqAudit] Core dependencies for render are missing (app_container_ref, Helpers_create_element, or t).");
+            console.error("[ReqAudit] Core dependencies for render are missing.");
             if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_requirement_audit_view')}</p>`;
             return;
         }
         app_container_ref.innerHTML = '';
-        
-        console.log("[ReqAudit] Calling load_data_and_ensure_results_structure...");
+
         const data_loaded_successfully = load_data_and_ensure_results_structure();
-        console.log("[ReqAudit] load_data_and_ensure_results_structure returned:", data_loaded_successfully);
+        // console.log("[ReqAudit] load_data_and_ensure_results_structure returned:", data_loaded_successfully);
 
         if (!data_loaded_successfully) {
-            console.error("[ReqAudit] Data loading failed. Aborting render.");
+            // console.error("[ReqAudit] Data loading failed. Aborting render.");
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_loading_sample_or_requirement_data'), "error");
             const back_button = Helpers_create_element('button', {class_name: ['button', 'button-default'], text_content: t('back_to_requirement_list')});
             back_button.addEventListener('click', () => router_ref('requirement_list', { sampleId: params_ref ? params_ref.sampleId : '' }));
             app_container_ref.appendChild(back_button);
             return;
         }
-        console.log("[ReqAudit] Data loaded. Proceeding with plate_element creation.");
+        // console.log("[ReqAudit] Data loaded. Proceeding with plate_element creation.");
 
         const plate_element = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
         app_container_ref.appendChild(plate_element);
-        console.log("[ReqAudit] Plate element appended.");
 
         if (global_message_element_ref) {
             plate_element.appendChild(global_message_element_ref);
             if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
         }
-        console.log("[ReqAudit] Global message handled.");
 
         const req = current_requirement_object;
-        if (!req) { // Extra säkerhetskoll
+        if (!req) {
             console.error("[ReqAudit] current_requirement_object is null/undefined after successful data load. Aborting further render.");
             plate_element.innerHTML = `<p>${t('error_loading_sample_or_requirement_data')}</p>`;
             return;
         }
-        console.log("[ReqAudit] Rendering header for requirement:", req.id);
+        // console.log("[ReqAudit] Rendering header for requirement:", req.id);
 
         const header_div = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
+        // ... (header rendering oförändrad) ...
         header_div.appendChild(Helpers_create_element('h1', { text_content: req.title }));
         if (req.standardReference && req.standardReference.text) {
             const ref_p = Helpers_create_element('p', { class_name: 'standard-reference' });
@@ -445,29 +501,22 @@ export const RequirementAuditComponent = (function () {
             }
             header_div.appendChild(ref_p);
         }
-        
         requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display'});
-        // Säkerställ att current_requirement_result och dess status finns
         const overall_status_key = current_requirement_result?.status || 'not_audited';
         const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
         header_div.appendChild(requirement_status_display_element);
         plate_element.appendChild(header_div);
-        console.log("[ReqAudit] Header div appended.");
+
 
         render_audit_section_internal('requirement_expected_observation', req.expectedObservation, plate_element);
-        console.log("[ReqAudit] Rendered expected_observation.");
         render_audit_section_internal('requirement_instructions', req.instructions, plate_element);
-        console.log("[ReqAudit] Rendered instructions.");
         render_audit_section_internal('requirement_tips', req.tips, plate_element);
-        console.log("[ReqAudit] Rendered tips.");
         render_audit_section_internal('requirement_exceptions', req.exceptions, plate_element);
-        console.log("[ReqAudit] Rendered exceptions.");
         render_audit_section_internal('requirement_common_errors', req.commonErrors, plate_element);
-        console.log("[ReqAudit] Rendered common_errors.");
 
         if (req.metadata) {
-            console.log("[ReqAudit] Rendering metadata section.");
+            // ... (metadata rendering oförändrad) ...
             const meta_section = Helpers_create_element('div', { class_name: 'audit-section' });
             meta_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
             const grid = Helpers_create_element('div', { class_name: 'requirement-metadata-grid' });
@@ -479,28 +528,21 @@ export const RequirementAuditComponent = (function () {
             }
             meta_section.appendChild(grid);
             plate_element.appendChild(meta_section);
-            console.log("[ReqAudit] Metadata section rendered.");
         }
 
-        console.log("[ReqAudit] About to call render_navigation_buttons (top)");
         plate_element.appendChild(render_navigation_buttons('top'));
-        console.log("[ReqAudit] Called render_navigation_buttons (top)");
 
         checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
         checks_ui_container_element.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
-        console.log("[ReqAudit] Rendering checks section...");
         render_checks_section(checks_ui_container_element);
         plate_element.appendChild(checks_ui_container_element);
-        console.log("[ReqAudit] Checks section rendered.");
 
-        console.log("[ReqAudit] Rendering input fields container...");
         const input_fields_container = Helpers_create_element('div', { class_name: 'input-fields-container audit-section' });
+        // ... (input fields rendering oförändrad) ...
         input_fields_container.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title')}));
         let fg, label;
-
         const current_audit_state = State_getCurrentAudit();
         const is_audit_locked = current_audit_state && current_audit_state.auditStatus === 'locked';
-        console.log("[ReqAudit] is_audit_locked:", is_audit_locked);
 
         fg = Helpers_create_element('div', {class_name: 'form-group'});
         label = Helpers_create_element('label', {attributes: {for: 'actualObservation'}, text_content: t('actual_observation')});
@@ -541,16 +583,14 @@ export const RequirementAuditComponent = (function () {
         fg.appendChild(label); fg.appendChild(comment_to_actor_input);
         input_fields_container.appendChild(fg);
         plate_element.appendChild(input_fields_container);
-        console.log("[ReqAudit] Input fields container rendered.");
 
-        console.log("[ReqAudit] About to call render_navigation_buttons (bottom)");
+
         plate_element.appendChild(render_navigation_buttons('bottom'));
-        console.log("[ReqAudit] Called render_navigation_buttons (bottom)");
-        console.log("[ReqAudit] render END");
+        // console.log("[ReqAudit] render END");
     }
 
     function destroy() {
-        console.log("[ReqAudit] destroy called");
+        // console.log("[ReqAudit] destroy called");
         if (actual_observation_input) actual_observation_input.removeEventListener('input', auto_save_text_data);
         if (comment_to_auditor_input) comment_to_auditor_input.removeEventListener('input', auto_save_text_data);
         if (comment_to_actor_input) comment_to_actor_input.removeEventListener('input', auto_save_text_data);
@@ -559,6 +599,9 @@ export const RequirementAuditComponent = (function () {
         actual_observation_input = null; comment_to_auditor_input = null; comment_to_actor_input = null;
         app_container_ref = null; router_ref = null; params_ref = null;
         global_message_element_ref = null; checks_ui_container_element = null; requirement_status_display_element = null;
+        ordered_requirement_keys_for_sample = []; // Rensa listan
+        prev_req_button_top = null; next_req_button_top = null; next_unhandled_button_top = null;
+        prev_req_button_bottom = null; next_req_button_bottom = null; next_unhandled_button_bottom = null;
     }
 
     return {

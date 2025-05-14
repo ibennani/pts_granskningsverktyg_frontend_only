@@ -203,6 +203,7 @@
     "todo_previous_requirement": "TODO: Navigate to previous requirement.",
     "todo_next_requirement": "TODO: Navigate to next requirement.",
     "todo_next_unhandled_requirement": "TODO: Navigate to next unhandled requirement.",
-    "checks_short": "checks"
+    "checks_short": "checks",
+    "requirements_audited_for_sample": "Reviewed requirements"
   }
   
