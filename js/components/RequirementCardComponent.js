@@ -1,13 +1,10 @@
+// file: js/components/RequirementCardComponent.js
 export const RequirementCardComponent = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/requirement_card_component.css';
-    // const { t } = Translation; // Hämta t dynamiskt inuti funktioner
-    // const { create_element, escape_html } = Helpers; // Samma här
 
-    // Helper function to safely get the translation function
     function get_t_internally() {
-        // Försök hämta från window.Translation om det finns, annars en fallback.
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
@@ -41,80 +38,83 @@ export const RequirementCardComponent = (function () {
         const t = get_t_internally();
         const create_element_func = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.create_element === 'function')
             ? window.Helpers.create_element
-            : (tag, opts) => { // Mycket enkel fallback för create_element
+            : (tag, opts) => {
                 console.error("RequirementCardComponent: Helpers.create_element not available!");
                 const el = document.createElement(tag);
                 if(opts && opts.text_content) el.textContent = opts.text_content;
+                if(opts && opts.class_name) el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
                 return el;
             };
+        const escape_html_func = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
+            ? window.Helpers.escape_html
+            : (str) => str;
 
         const card_li = create_element_func('li', { class_name: 'requirement-card' });
 
-        const status_text_for_aria = t('audit_status_' + requirement_status, {defaultValue: requirement_status});
-        const reference_text_for_aria = requirement.standardReference ? requirement.standardReference.text : '';
+        // Wrapper för innehållet, ersätter den tidigare .requirement-card-button som täckte allt
+        const card_content_wrapper = create_element_func('div', { class_name: 'requirement-card-inner-content' });
 
-        const aria_label_text = t('requirement_card_aria_label', {
-            title: requirement.title,
-            reference: reference_text_for_aria,
-            statusText: status_text_for_aria
-        });
-
-        const button = create_element_func('button', {
-            class_name: 'requirement-card-button',
-            attributes: {
-                'type': 'button',
-                'aria-label': aria_label_text // ANVÄNDER i18n
-            }
-        });
-        button.addEventListener('click', () => {
-            if (router_cb && typeof router_cb === 'function') {
-                router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.id });
-            }
-        });
 
         const indicator = create_element_func('span', {
             class_name: ['status-indicator', `status-${requirement_status}`],
             attributes: { 'aria-hidden': 'true' }
         });
+        card_content_wrapper.appendChild(indicator);
 
-        const content_div = create_element_func('div', { class_name: 'requirement-card-content' });
-        const title_h = create_element_func('h3', {
-            class_name: 'requirement-card-title',
+        const text_content_div = create_element_func('div', { class_name: 'requirement-card-text-content' });
+
+        // Titel blir en knapp som navigerar till granskningsvyn
+        const title_button = create_element_func('button', {
+            class_name: 'requirement-card-title-button', // Ny klass för styling
             text_content: requirement.title
         });
-        content_div.appendChild(title_h);
+        title_button.addEventListener('click', () => {
+            if (router_cb && typeof router_cb === 'function') {
+                router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.id });
+            } else {
+                console.warn("RequirementCard: router_cb not provided or not a function for title navigation.");
+            }
+        });
+        const title_h_container = create_element_func('h3', { class_name: 'requirement-card-title-container'}); // Behåll H3 för semantik
+        title_h_container.appendChild(title_button);
+        text_content_div.appendChild(title_h_container);
+
 
         if (requirement.standardReference && requirement.standardReference.text) {
-            const ref_p = create_element_func('span', {
-                class_name: 'requirement-card-reference',
-                text_content: requirement.standardReference.text
-            });
-            content_div.appendChild(ref_p);
+            let reference_element;
+            if (requirement.standardReference.url) {
+                reference_element = create_element_func('a', {
+                    class_name: 'requirement-card-reference-link', // Ny klass för styling
+                    text_content: requirement.standardReference.text,
+                    href: requirement.standardReference.url,
+                    attributes: { target: '_blank', rel: 'noopener noreferrer' }
+                });
+            } else {
+                reference_element = create_element_func('span', {
+                    class_name: 'requirement-card-reference-text', // Ny klass för styling
+                    text_content: requirement.standardReference.text
+                });
+            }
+            const ref_wrapper = create_element_func('div', {class_name: 'requirement-card-reference-wrapper'}); // Wrapper för styling
+            ref_wrapper.appendChild(reference_element);
+            text_content_div.appendChild(ref_wrapper);
         }
-
-        button.appendChild(indicator);
-        button.appendChild(content_div);
-        card_li.appendChild(button);
+        card_content_wrapper.appendChild(text_content_div);
+        card_li.appendChild(card_content_wrapper);
 
         return card_li;
     }
 
-    // Exponera create-funktionen, och eventuellt en init om den ska ladda CSS mer strukturerat.
-    // För nu, med `load_styles_if_needed` anropad i `create_card_element`, är det enklare.
     const public_api = {
         create: create_card_element
     };
 
-    // Gör komponenten tillgänglig globalt om den används så av RequirementListComponent
     if (typeof window.RequirementCardComponent === 'undefined') {
         window.RequirementCardComponent = public_api;
     } else {
-        // Om den redan finns, kanske slå samman eller varna, men för enkelhetens skull, ersätt.
         console.warn("RequirementCardComponent already defined on window. Overwriting.");
         window.RequirementCardComponent = public_api;
     }
     
-    // console.log("[RequirementCardComponent.js] IIFE executed.");
-
-    return public_api; // Returnera även för eventuell direkt import
+    return public_api;
 })();

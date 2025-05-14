@@ -1,16 +1,17 @@
 /* Styles for RequirementAuditComponent */
 .requirement-audit-plate {
-    /* Använder .content-plate globalt */
+    /* Använder .content-plate globalt, inga specifika ändringar här just nu */
 }
 
-.requirement-audit-header h1 { /* requirement.title */
-    font-size: 1.6rem;
+.requirement-audit-header h1 {
+    font-size: 1.8rem; /* Lite större för kravets titel */
     color: var(--primary-color-dark);
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.25rem;
 }
 .requirement-audit-header .standard-reference {
     font-size: 0.9rem;
-    margin-bottom: 1.5rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.5rem;
 }
 .requirement-audit-header .standard-reference a {
     color: var(--primary-color);
@@ -19,89 +20,197 @@
 .requirement-audit-header .standard-reference a:hover {
     text-decoration: underline;
 }
-
-.audit-section {
+.requirement-audit-header .overall-requirement-status-display {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 0.75rem; /* Lite utrymme från standardreferensen */
     margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px dashed var(--secondary-color);
+    padding: 0.75rem 1rem; /* Mer padding */
+    border: 1px solid var(--border-color); /* Tydligare kant */
+    border-radius: var(--border-radius);
+    background-color: var(--background-color); /* Ljus bakgrund för att sticka ut lite */
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Inre skugga för djup */
 }
-.audit-section:last-child {
+[data-theme="dark"] .requirement-audit-header .overall-requirement-status-display {
+    background-color: color-mix(in srgb, var(--background-color) 90%, black); /* Lite mörkare i mörkt läge */
+    border-color: var(--secondary-color);
+}
+
+.audit-section { /* Generell sektionsstyling, kan ärvas eller specialiseras */
+    margin-bottom: 2rem; /* Mer luft mellan sektioner */
+    padding-bottom: 1.5rem; /* Mer padding under */
+    border-bottom: 1px solid var(--secondary-color); /* Tydligare avdelare */
+}
+.audit-section:last-of-type { /* Ta bort kantlinje på sista sektionen */
     border-bottom: none;
     margin-bottom: 0;
+    padding-bottom: 0.5rem; /* Mindre padding om det är sista */
 }
 
-.audit-section h2 { /* För sektionsrubriker som "Förväntad observation", "Instruktioner" */
-    font-size: 1.1rem;
-    color: var(--text-color);
+.audit-section h2 { /* Rubriker för "Förväntad observation", "Instruktioner", "Kontrollpunkter" etc. */
+    font-size: 1.3rem; /* Större sektionsrubriker */
+    color: var(--primary-color); /* Använd primärfärg */
     font-weight: 500;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase; /* Stora bokstäver för sektionsrubriker */
-    letter-spacing: 0.05em;
+    margin-bottom: 1rem; /* Mer utrymme till innehållet */
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+    text-transform: none; /* Ta bort uppercase om det är för mycket */
+    letter-spacing: normal; /* Normalt letter-spacing */
 }
 .audit-section p,
 .audit-section ul,
 .audit-section ol {
-    font-size: 0.95rem;
-    color: var(--text-color-muted);
-    margin-bottom: 0.75rem;
+    font-size: 1rem; /* Något större brödtext i sektionerna */
+    color: var(--text-color); /* Standard textfärg, inte muted överallt */
+    margin-bottom: 1rem;
     line-height: 1.7;
 }
 .audit-section ul, .audit-section ol {
-    padding-left: 1.5rem; /* Indrag för listor */
-}
-.audit-section code { /* För eventuell kod i instruktioner etc. */
-    background-color: var(--button-default-bg);
-    padding: 0.1em 0.4em;
-    border-radius: 3px;
-    font-size: 0.9em;
-}
-[data-theme="dark"] .audit-section code {
-    background-color: var(--button-default-hover-bg); /* Lite mörkare för kodblock i dark mode */
+    padding-left: 1.75rem; /* Lite mer indrag för listor */
 }
 
-
+/* Requirement Metadata (om det finns specifika behov utöver globalt) */
 .requirement-metadata-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.5rem 1rem;
-    font-size: 0.9rem;
-}
-.requirement-metadata-grid p {
-    margin-bottom: 0.25rem;
-    color: var(--text-color-muted);
-}
-.requirement-metadata-grid strong {
-    color: var(--text-color);
+    /* Ärver från globalt eller tidigare komponent-CSS, kan justeras här */
 }
 
-
+/* Styles for Checks Section */
 .checks-container {
-    margin-top: 1.5rem;
+    margin-top: 2rem; /* Mer luft ovanför kontrollpunktssektionen */
+}
+.check-item {
+    background-color: var(--plate-background-color);
+    padding: 1.25rem; /* Mer padding inuti varje check-item */
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-left: 5px solid var(--accent-color); /* Tydligare accentkant */
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.06);
+}
+[data-theme="dark"] .check-item {
+    background-color: color-mix(in srgb, var(--plate-background-color) 92%, black);
+    border-left-color: color-mix(in srgb, var(--accent-color) 80%, white);
 }
 
+.check-condition-title { /* H3 för check.condition */
+    font-size: 1.15rem; /* Något mindre än H2, men större än vanlig text */
+    color: var(--text-color);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+.check-status-display { /* Visar beräknad status för en check */
+    font-size: 0.9rem;
+    font-style: italic;
+    color: var(--text-color-muted);
+    margin-bottom: 1rem;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+    display: inline-block; /* Så att bakgrunden bara täcker texten */
+}
+[data-theme="dark"] .check-status-display {
+    background-color: var(--input-background-color);
+}
+
+.pass-criteria-list {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1rem; /* Lite luft ovanför listan med pass criteria */
+}
+.pass-criterion-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+    background-color: var(--background-color);
+}
+[data-theme="dark"] .pass-criterion-item {
+    background-color: color-mix(in srgb, var(--background-color) 95%, black ); /* Lite mörkare än body för kontrast */
+    border-color: var(--border-color);
+}
+.pass-criterion-requirement {
+    margin-bottom: 0.75rem;
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+.pass-criterion-status { /* Visar status för ett enskilt passCriterion */
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.75rem;
+    font-style: italic;
+}
+.pass-criterion-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+/* Aktivt läge för godkänt/underkänt knappar */
+.pass-criterion-actions .button.active {
+    box-shadow: inset 0 0 0 2px var(--primary-color); /* Inre ram för aktiv knapp */
+    /* Eller om du vill ändra bakgrundsfärgen mer drastiskt */
+}
+.pass-criterion-actions .button.button-success.active {
+    background-color: color-mix(in srgb, var(--success-color) 70%, black) !important;
+    color: white !important;
+}
+.pass-criterion-actions .button.button-danger.active {
+    background-color: color-mix(in srgb, var(--danger-color) 70%, black) !important;
+    color: white !important;
+}
+
+/* Status textfärger (kan flyttas till globalt om det används på fler ställen) */
+.status-text.status-passed { color: var(--success-color); font-weight: bold; }
+.status-text.status-failed { color: var(--danger-color); font-weight: bold; }
+.status-text.status-partially_audited { color: var(--warning-color); font-weight: bold; }
+.status-text.status-not_audited { color: var(--text-color-muted); }
+
+
+/* Input Fields Section */
 .input-fields-container {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
 }
 .input-fields-container .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem; /* Lite mer utrymme mellan textfälten */
 }
 .input-fields-container textarea.form-control {
-    min-height: 80px; /* Lite högre textareas */
+    min-height: 100px; /* Lite högre textareas som standard här */
+    font-size: 0.95rem; /* Något mindre text i textareas */
+}
+.input-fields-container textarea.form-control.readonly-textarea {
+    background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color)); /* Ljusgrå för att indikera readonly */
+    color: var(--text-color-muted);
+    cursor: default; /* Inte not-allowed om det bara är visning */
+    border-color: var(--secondary-color);
+}
+[data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
+    background-color: color-mix(in srgb, var(--input-background-color) 85%, black);
+    border-color: var(--secondary-color);
 }
 
-
+/* Navigation Buttons */
 .audit-navigation-buttons {
-    margin-top: 2rem;
-    padding-top: 1rem;
+    margin-top: 2.5rem; /* Mer utrymme ovanför knappraderna */
+    padding-top: 1.5rem; /* Mer utrymme inuti knappraden */
     border-top: 1px solid var(--border-color);
     display: flex;
-    justify-content: space-between; /* Sprid ut knapparna */
+    justify-content: space-between;
     flex-wrap: wrap;
     gap: 1rem;
+}
+.audit-navigation-buttons.top-nav {
+    border-top: none;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem; /* Samma padding som bottom-nav */
+    margin-top: 1.5rem; /* Justera efter behov */
 }
 .audit-navigation-buttons .nav-group-left,
 .audit-navigation-buttons .nav-group-right {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    align-items: center; /* Linjera knappar om de har olika höjd (t.ex. om texten wrappar) */
 }

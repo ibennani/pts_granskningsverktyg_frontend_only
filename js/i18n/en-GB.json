@@ -192,5 +192,16 @@
     "view_samples_button": "View Samples",
     "visit_url": "Visit",
     "warning_save_file_newer_version": "Warning: The save file is from a newer version of the tool ({fileVersionInFile} vs {appVersion}).",
-    "yes": "Yes"
+    "yes": "Yes",
+    "audit_status_partially_audited": "Partially audited",
+    "no_checks_for_this_requirement": "No checks defined for this requirement.",
+    "check_status": "Check status",
+    "overall_requirement_status": "Overall requirement status",
+    "pass_criterion_approved": "Passed",
+    "pass_criterion_failed": "Failed",
+    "error_internal_data_structure_pc": "Internal error: Invalid data structure for updating pass criterion.",
+    "todo_previous_requirement": "TODO: Navigate to previous requirement.",
+    "todo_next_requirement": "TODO: Navigate to next requirement.",
+    "todo_next_unhandled_requirement": "TODO: Navigate to next unhandled requirement."    
   }
+  

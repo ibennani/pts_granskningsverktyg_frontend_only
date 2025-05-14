@@ -192,5 +192,15 @@
   "view_samples_button": "Visa stickprov",
   "visit_url": "Besök",
   "warning_save_file_newer_version": "Varning: Sparfilen är från en nyare version av verktyget ({fileVersionInFile} vs {appVersion}).",
-  "yes": "Ja"
+  "yes": "Ja",
+  "audit_status_partially_audited": "Delvis granskad",
+  "no_checks_for_this_requirement": "Inga kontrollpunkter definierade för detta krav.",
+  "check_status": "Status för kontrollpunkt",
+  "overall_requirement_status": "Övergripande status för kravet",
+  "pass_criterion_approved": "Godkänt",
+  "pass_criterion_failed": "Underkänt",
+  "error_internal_data_structure_pc": "Internt fel: Felaktig datastruktur för att uppdatera godkännandekriterium.",
+  "todo_previous_requirement": "TODO: Navigera till föregående krav.",
+  "todo_next_requirement": "TODO: Navigera till nästa krav.",
+  "todo_next_unhandled_requirement": "TODO: Navigera till nästa ohanterade krav."
 }

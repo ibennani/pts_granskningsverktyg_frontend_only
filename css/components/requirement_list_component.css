@@ -1,6 +1,6 @@
 /* Styles for RequirementListComponent */
-.requirement-list-plate { 
-    /* Använder .content-plate globalt */
+.requirement-list-plate {
+    /* Använder .content-plate globalt, inga specifika ändringar här just nu */
 }
 
 /* Header för vyn - Stickprovsinfo */
@@ -10,14 +10,14 @@
     border-bottom: 2px solid var(--primary-color); /* Tydligare avdelare */
 }
 .requirement-list-header h1 { /* Stickprovets namn */
-    font-size: 1.8rem; 
+    font-size: 1.8rem;
     margin-bottom: 0.25rem;
     color: var(--primary-color-dark); /* Mörkare primärfärg för H1 här */
 }
 .requirement-list-header .sample-info-display { /* Typ av sida */
     font-size: 1rem;
     color: var(--text-color-muted);
-    margin-bottom: 0; /* Ingen extra marginal om det är sista elementet i headern */
+    margin-bottom: 0;
 }
 .requirement-list-header .sample-info-display strong {
     color: var(--text-color);
@@ -26,12 +26,10 @@
 /* Navigationsfältet (Tillbaka-knapp) */
 .requirements-navigation-bar {
     margin-bottom: 1.5rem;
-    /* border-bottom: 1px solid var(--border-color); Borttagen, header har nu tydligare avdelare */
-    /* padding-bottom: 1rem; */
     display: flex;
-    justify-content: flex-start; 
+    justify-content: flex-start;
 }
-.requirements-navigation-bar.bottom { 
+.requirements-navigation-bar.bottom {
     margin-top: 2.5rem; /* Mer utrymme uppåt */
     border-top: 1px solid var(--border-color);
     padding-top: 1.5rem; /* Mer utrymme nedåt */
@@ -43,14 +41,14 @@
 }
 .requirements-list-content .main-category-title { /* H2 */
     font-size: 1.5rem; /* Större */
-    color: var(--primary-color); /* Standard primärfärg */
+    color: var(--primary-color);
     margin-bottom: 0.75rem;
     padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--secondary-color);
 }
 .requirements-list-content .sub-category-title { /* H3 */
     font-size: 1.25rem; /* Större */
-    color: var(--text-color); /* Standard textfärg, men fetare */
+    color: var(--text-color);
     margin-top: 1.5rem; /* Mer luft ovanför subkategori */
     margin-bottom: 0.6rem;
     font-weight: 500;
@@ -58,44 +56,98 @@
 
 .requirements-list-content .requirement-items-ul { /* ul för kraven under en subkategori */
     list-style: none;
-    padding-left: 0; /* Ingen default padding för ul */
+    padding-left: 0;
 }
 
-.requirements-list-content .requirement-item { /* li för varje krav */
-    padding: 0.8rem 1rem; /* Lite mer padding */
-    margin-bottom: 0.75rem;
+/* Styling för fallback-läget (om RequirementCardComponent inte används) */
+.requirements-list-content .requirement-item { /* li för varje krav i fallback */
+    padding: 1rem;
+    margin-bottom: 1rem;
     border: 1px solid var(--border-color);
-    /* border-left: 4px solid var(--accent-color); Använd accentfärg för kanten */
-    border-left: 4px solid color-mix(in srgb, var(--primary-color) 60%, transparent); /* Subtilare kant */
-
-    background-color: var(--plate-background-color); 
+    border-left: 4px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
+    background-color: var(--plate-background-color);
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: 1px 1px 3px rgba(0,0,0,0.04);
 }
 [data-theme="dark"] .requirements-list-content .requirement-item {
     border-left-color: color-mix(in srgb, var(--primary-color) 70%, transparent);
-    background-color: color-mix(in srgb, var(--plate-background-color) 95%, black); /* Lite mörkare än plattan */
+    background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
 }
 
-.requirements-list-content .requirement-title { /* H4 för kravets titel */
-    font-weight: 500; /* Fetare än vanlig text, men inte lika fet som H3 */
-    color: var(--text-color);
+.requirements-list-content .requirement-title-container { /* H4 som omsluter titel-knappen */
+    margin: 0 0 0.3rem 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+.requirements-list-content .fallback-title-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
     font-size: 1.1rem;
-    margin:0 0 0.3rem 0;
-}
-.requirements-list-content .requirement-reference {
-    font-size: 0.9rem;
-    margin-bottom: 0.25rem;
-}
-.requirements-list-content .requirement-reference a {
+    font-weight: 500;
     color: var(--primary-color);
-    text-decoration: none; /* Ta bort understrykning, hover-effekt räcker */
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
 }
-.requirements-list-content .requirement-reference a:hover {
+.requirements-list-content .fallback-title-button:hover,
+.requirements-list-content .fallback-title-button:focus {
     text-decoration: underline;
     color: var(--primary-color-dark);
 }
-/* Ta bort om du inte använder statusindikatorn här än */
-/* .requirements-list-content .requirement-status-indicator { 
-    font-size: 0.8rem; font-style: italic; color: var(--text-color-muted); margin-top: 0.25rem; 
-}*/
+.requirements-list-content .fallback-title-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.requirements-list-content .requirement-reference-wrapper {
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+.requirements-list-content .fallback-reference-link,
+.requirements-list-content .fallback-reference-text {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    display: inline-block;
+}
+.requirements-list-content .fallback-reference-link {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+.requirements-list-content .fallback-reference-link:hover,
+.requirements-list-content .fallback-reference-link:focus {
+    text-decoration: underline;
+    color: var(--primary-color-dark);
+}
+.requirements-list-content .fallback-reference-link:focus-visible {
+     outline: 2px solid var(--primary-color);
+     outline-offset: 1px;
+}
+
+.requirements-list-content .requirement-status-indicator-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+    margin-top: 0.5rem;
+}
+.requirements-list-content .status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+/* Statusfärger för indikatorn (matcha RequirementCardComponent) */
+.requirements-list-content .status-indicator.status-passed { background-color: var(--success-color); }
+.requirements-list-content .status-indicator.status-failed { background-color: var(--danger-color); }
+.requirements-list-content .status-indicator.status-not_audited { background-color: var(--secondary-color); }
+.requirements-list-content .status-indicator.status-partially_audited { background-color: var(--warning-color); }
+
+[data-theme="dark"] .requirements-list-content .status-indicator.status-passed { background-color: var(--success-color); }
+[data-theme="dark"] .requirements-list-content .status-indicator.status-failed { background-color: var(--danger-color); }
+[data-theme="dark"] .requirements-list-content .status-indicator.status-not_audited { background-color: var(--text-color-muted); }
+[data-theme="dark"] .requirements-list-content .status-indicator.status-partially_audited { background-color: var(--warning-color); } /* Kan behöva justeras för mörkt tema */
