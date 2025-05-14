@@ -238,6 +238,14 @@ export const RequirementListComponent = (function () {
         const sample_audit_status_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-audit-progress' });
         sample_audit_status_p.innerHTML = `<strong>${t('requirements_audited_for_sample', {defaultValue: 'Reviewed requirements'})}:</strong> ${audited_requirements_count}/${total_relevant_requirements}`;
         header_div.appendChild(sample_audit_status_p);
+
+        // Lägg till ProgressBarComponent här
+        if (window.ProgressBarComponent && typeof window.ProgressBarComponent.create === 'function') {
+            const progress_bar = window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {
+                // label: t('overall_sample_progress_label') // Valfri, mer specifik etikett
+            });
+            header_div.appendChild(progress_bar);
+        }
         
         plate_element.appendChild(header_div);
 

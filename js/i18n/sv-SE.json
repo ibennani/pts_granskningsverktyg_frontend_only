@@ -204,5 +204,12 @@
   "todo_next_requirement": "TODO: Navigera till nästa krav.",
   "todo_next_unhandled_requirement": "TODO: Navigera till nästa ohanterade krav.",
   "checks_short": "kontroller",
-  "requirements_audited_for_sample": "Granskade krav"
+  "requirements_audited_for_sample": "Granskade krav",
+  "progress_bar_label": "Progress",
+  "overall_audit_progress_title": "Total Granskningsframsteg",
+  "total_requirements_audited_label": "Totalt antal granskade krav",
+  "audit_sample_short": "Granska",
+  "audit_next_incomplete_requirement": "Granska nästa",
+  "view_audited_sample": "Visa resultat"
+
 }

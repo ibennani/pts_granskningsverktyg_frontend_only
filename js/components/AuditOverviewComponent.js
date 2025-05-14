@@ -15,6 +15,7 @@ export const AuditOverviewComponent = (function () {
     let State_getCurrentAudit, State_setCurrentAudit;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
+    let AuditLogic_calculate_overall_audit_progress; // <-- NY Global referens
 
     let global_message_element_ref;
     let sample_list_component_instance;
@@ -80,6 +81,12 @@ export const AuditOverviewComponent = (function () {
                 // Inte kritiskt för alla funktioner, så all_assigned sätts inte till false.
             }
         } // else console.warn("AuditOverview: ExportLogic module not found on window.");
+
+        if (window.AuditLogic && window.AuditLogic.calculate_overall_audit_progress) {
+            AuditLogic_calculate_overall_audit_progress = window.AuditLogic.calculate_overall_audit_progress;
+        } else {
+            console.error("AuditOverview: AuditLogic.calculate_overall_audit_progress is missing!"); all_assigned = false;
+        }
         return all_assigned;
     }
 
@@ -280,7 +287,26 @@ export const AuditOverviewComponent = (function () {
 
         plate_element.appendChild(Helpers_create_element('h1', { text_content: t('audit_overview_title') }));
 
-        // Sektion 1: Granskningsinformation
+        // NY: Lägg till övergripande progress här
+        if (AuditLogic_calculate_overall_audit_progress && window.ProgressBarComponent) {
+            const progress_data = AuditLogic_calculate_overall_audit_progress(current_audit);
+            
+            const overall_progress_section = Helpers_create_element('section', { class_name: 'audit-overview-section overall-progress-section' });
+            overall_progress_section.appendChild(Helpers_create_element('h2', { text_content: t('overall_audit_progress_title', {defaultValue: "Overall Audit Progress"}) }));
+            
+            const progress_info_text_p = Helpers_create_element('p', { class_name: 'info-item' });
+            progress_info_text_p.innerHTML = `<strong>${t('total_requirements_audited_label', {defaultValue: "Total requirements reviewed"})}:</strong> <span class="value">${progress_data.audited} / ${progress_data.total}</span>`;
+            overall_progress_section.appendChild(progress_info_text_p);
+
+            const overall_progress_bar = window.ProgressBarComponent.create(progress_data.audited, progress_data.total, {
+                id: 'overall-audit-progress-bar',
+                // label: t('overall_audit_progress_bar_label', {defaultValue: "Overall audit progress"}) // Mer specifik label om önskat
+            });
+            overall_progress_section.appendChild(overall_progress_bar);
+            plate_element.appendChild(overall_progress_section); // Lägg till före den gamla Sektion 1
+        }
+
+        // Den gamla Sektion 1: Granskningsinformation
         const section1 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section1.appendChild(Helpers_create_element('h2', { text_content: t('audit_info_title') }));
         const info_grid = Helpers_create_element('div', { class_name: 'info-grid' });

@@ -204,6 +204,12 @@
     "todo_next_requirement": "TODO: Navigate to next requirement.",
     "todo_next_unhandled_requirement": "TODO: Navigate to next unhandled requirement.",
     "checks_short": "checks",
-    "requirements_audited_for_sample": "Reviewed requirements"
+    "requirements_audited_for_sample": "Reviewed requirements",
+    "progress_bar_label": "Progress",
+    "overall_audit_progress_title": "Overall Audit Progress",
+    "total_requirements_audited_label": "Total requirements reviewed",
+    "audit_sample_short": "Review",
+    "audit_next_incomplete_requirement": "Review next",
+    "view_audited_sample": "View results"
   }
   
