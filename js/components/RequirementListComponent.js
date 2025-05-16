@@ -6,18 +6,19 @@ const RequirementListComponent_internal = (function () {
     const CSS_PATH = 'css/components/requirement_list_component.css';
     let app_container_ref;
     let router_ref;
-    let params_ref; // För sampleId
+    let params_ref; 
 
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_load_css, Helpers_add_protocol_if_missing;
-    let State_getCurrentAudit, State_setCurrentAudit; // setCurrentAudit används inte, men bra att ha om det skulle behövas
-    let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
+    let State_getCurrentAudit; // setCurrentAudit används inte här
+    let NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let AuditLogic_get_relevant_requirements_for_sample, AuditLogic_calculate_requirement_status;
 
     let global_message_element_ref;
     let current_sample_object = null;
     let relevant_requirements = [];
     let requirements_by_category = {};
+    let content_div_for_delegation = null; // Referens för eventdelegering
 
     function get_t_internally() {
         if (Translation_t) return Translation_t;
@@ -52,17 +53,16 @@ const RequirementListComponent_internal = (function () {
 
         if (window.State) {
             State_getCurrentAudit = window.State.getCurrentAudit;
-            State_setCurrentAudit = window.State.setCurrentAudit; // Behåll även om den inte används aktivt just nu
-            if (!State_getCurrentAudit || !State_setCurrentAudit) {
-                 console.error("ReqList: One or more State functions are missing!"); all_assigned = false;
+            // State_setCurrentAudit används inte här, så vi behöver inte kontrollera den specifikt
+            if (!State_getCurrentAudit) {
+                 console.error("ReqList: State.getCurrentAudit function is missing!"); all_assigned = false;
             }
         } else { console.error("ReqList: State module is missing!"); all_assigned = false; }
 
         if (window.NotificationComponent) {
-            NotificationComponent_show_global_message = window.NotificationComponent.show_global_message;
             NotificationComponent_clear_global_message = window.NotificationComponent.clear_global_message;
             NotificationComponent_get_global_message_element_reference = window.NotificationComponent.get_global_message_element_reference;
-            if (!NotificationComponent_show_global_message || !NotificationComponent_clear_global_message || !NotificationComponent_get_global_message_element_reference) {
+            if (!NotificationComponent_clear_global_message || !NotificationComponent_get_global_message_element_reference) {
                  console.error("ReqList: One or more NotificationComponent functions are missing!"); all_assigned = false;
             }
         } else { console.error("ReqList: NotificationComponent module is missing!"); all_assigned = false; }
@@ -77,19 +77,28 @@ const RequirementListComponent_internal = (function () {
 
         return all_assigned;
     }
+    
+    // Eventhanterare för klick på kravlistan
+    function handle_requirement_list_click(event) {
+        const target_button = event.target.closest('button.list-title-button[data-requirement-id][data-sample-id]');
+        
+        if (target_button && router_ref) {
+            const requirement_id = target_button.dataset.requirementId;
+            const sample_id = target_button.dataset.sampleId;
+            router_ref('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
+        }
+    }
 
     function load_data() {
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent || !params_ref || !params_ref.sampleId) {
             current_sample_object = null;
             relevant_requirements = [];
-            console.error("ReqList: Current audit, ruleFileContent, or sampleId missing in load_data.");
             return false;
         }
 
         current_sample_object = current_audit.samples.find(s => s.id === params_ref.sampleId);
         if (!current_sample_object) {
-            console.error(`ReqList: Sample with ID ${params_ref.sampleId} not found.`);
             relevant_requirements = [];
             return false;
         }
@@ -98,7 +107,6 @@ const RequirementListComponent_internal = (function () {
             relevant_requirements = AuditLogic_get_relevant_requirements_for_sample(current_audit.ruleFileContent, current_sample_object);
         } else {
             relevant_requirements = [];
-            console.error("ReqList: AuditLogic_get_relevant_requirements_for_sample is not available.");
         }
         prepare_requirement_data();
         return true;
@@ -112,11 +120,11 @@ const RequirementListComponent_internal = (function () {
         relevant_requirements.forEach(req => {
             const main_cat_key_actual = req.metadata?.mainCategory?.id || 'uncategorized';
             const main_cat_text_for_grouping = req.metadata?.mainCategory?.text || t('uncategorized', {defaultValue: 'Uncategorized'});
-            const main_cat_display_key = main_cat_text_for_grouping; // Använd texten som nyckel för sortering och visning
+            const main_cat_display_key = main_cat_text_for_grouping;
 
             if (!requirements_by_category[main_cat_display_key]) {
                 requirements_by_category[main_cat_display_key] = {
-                    id: main_cat_key_actual, // Behåll ursprungligt ID om det behövs
+                    id: main_cat_key_actual,
                     text: main_cat_text_for_grouping,
                     subCategories: {}
                 };
@@ -124,11 +132,11 @@ const RequirementListComponent_internal = (function () {
 
             const sub_cat_key_actual = req.metadata?.subCategory?.id || 'default_sub';
             const sub_cat_text_for_grouping = req.metadata?.subCategory?.text || t('other_requirements', {defaultValue: 'Other Requirements'});
-            const sub_cat_display_key = sub_cat_text_for_grouping; // Använd texten som nyckel
+            const sub_cat_display_key = sub_cat_text_for_grouping;
 
             if (!requirements_by_category[main_cat_display_key].subCategories[sub_cat_display_key]) {
                 requirements_by_category[main_cat_display_key].subCategories[sub_cat_display_key] = {
-                    id: sub_cat_key_actual, // Behåll ursprungligt ID
+                    id: sub_cat_key_actual,
                     text: sub_cat_text_for_grouping,
                     requirements: []
                 };
@@ -136,7 +144,6 @@ const RequirementListComponent_internal = (function () {
             requirements_by_category[main_cat_display_key].subCategories[sub_cat_display_key].requirements.push(req);
         });
 
-        // Sortera kraven inom varje underkategori efter titel
         for (const main_cat_key in requirements_by_category) {
             for (const sub_cat_key in requirements_by_category[main_cat_key].subCategories) {
                 requirements_by_category[main_cat_key].subCategories[sub_cat_key].requirements.sort((a, b) => {
@@ -195,14 +202,14 @@ const RequirementListComponent_internal = (function () {
             if (app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_requirement_list_view')}</p>`;
             return;
         }
-        if (!load_data()) { // Ladda och förbered data
+        if (!load_data()) {
             if (app_container_ref) app_container_ref.innerHTML = `<p>${t('error_loading_data_for_view', {viewName: 'RequirementList'})}</p>`;
-            const back_button = create_navigation_bar(); // Skapa navigeringsknapp även vid fel
+            const back_button = create_navigation_bar();
             if (back_button) app_container_ref.appendChild(back_button);
             return;
         }
 
-        app_container_ref.innerHTML = ''; // Rensa container
+        app_container_ref.innerHTML = '';
         const plate_element = Helpers_create_element('div', { class_name: 'content-plate requirement-list-plate' });
         app_container_ref.appendChild(plate_element);
 
@@ -214,7 +221,6 @@ const RequirementListComponent_internal = (function () {
         const top_nav_bar = create_navigation_bar();
         if (top_nav_bar) plate_element.appendChild(top_nav_bar);
 
-        // Header-information för stickprovet
         const header_div = Helpers_create_element('div', { class_name: 'requirement-list-header' });
         header_div.appendChild(Helpers_create_element('h1', { text_content: current_sample_object.description || t('undefined_description', {defaultValue: "Undefined Sample"}) }));
         
@@ -224,11 +230,9 @@ const RequirementListComponent_internal = (function () {
 
         let audited_requirements_count = 0;
         const total_relevant_requirements = relevant_requirements.length;
-
         relevant_requirements.forEach(req_obj => {
-            // req_obj här är hela kravobjektet från ruleFileContent.requirements, tack vare get_relevant_requirements_for_sample
             const result = current_sample_object.requirementResults ? current_sample_object.requirementResults[req_obj.id] : null;
-            const status = AuditLogic_calculate_requirement_status(req_obj, result); 
+            const status = AuditLogic_calculate_requirement_status(req_obj, result);
             if (status === 'passed' || status === 'failed') {
                 audited_requirements_count++;
             }
@@ -238,59 +242,55 @@ const RequirementListComponent_internal = (function () {
         header_div.appendChild(sample_audit_status_p);
 
         if (window.ProgressBarComponent && typeof window.ProgressBarComponent.create === 'function') {
-            const progress_bar = window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {
-                // Du kan lägga till fler optioner här om ProgressBarComponent stöder det
-            });
+            const progress_bar = window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {});
             header_div.appendChild(progress_bar);
         }
         
         plate_element.appendChild(header_div);
 
-        // Lista med krav
-        const content_div = Helpers_create_element('div', { class_name: 'requirements-list-content' });
-        if (relevant_requirements.length === 0) {
-            content_div.appendChild(Helpers_create_element('p', { text_content: t('no_relevant_requirements_for_sample') }));
+        // Skapa content_div och fäst lyssnare om den inte redan finns
+        if (!content_div_for_delegation) {
+            content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
+            content_div_for_delegation.addEventListener('click', handle_requirement_list_click);
         } else {
-            // Sortera huvudkategorier baserat på deras textuella nyckel
-            const sorted_main_category_keys = Object.keys(requirements_by_category).sort((a, b) => a.localeCompare(b));
+            content_div_for_delegation.innerHTML = ''; // Rensa bara om den finns
+        }
 
+        if (relevant_requirements.length === 0) {
+            content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_relevant_requirements_for_sample') }));
+        } else {
+            const sorted_main_category_keys = Object.keys(requirements_by_category).sort((a, b) => a.localeCompare(b));
             sorted_main_category_keys.forEach(main_cat_key => {
                 const main_cat = requirements_by_category[main_cat_key];
                 const main_cat_group = Helpers_create_element('div', {class_name: 'category-group'});
                 main_cat_group.appendChild(Helpers_create_element('h2', {class_name: 'main-category-title', text_content: main_cat.text}));
-                
-                // Sortera underkategorier baserat på deras textuella nyckel
                 const sorted_sub_category_keys = Object.keys(main_cat.subCategories).sort((a, b) => a.localeCompare(b));
-
                 sorted_sub_category_keys.forEach(sub_cat_key => {
                     const sub_cat = main_cat.subCategories[sub_cat_key];
                     main_cat_group.appendChild(Helpers_create_element('h3', {class_name: 'sub-category-title', text_content: sub_cat.text}));
                     const req_ul = Helpers_create_element('ul', {class_name: 'requirement-items-ul'});
-                    
-                    // Kraven är redan sorterade efter titel i prepare_requirement_data
                     sub_cat.requirements.forEach(req => {
                         const req_result_object = current_sample_object.requirementResults ? current_sample_object.requirementResults[req.id] : null;
                         const status = AuditLogic_calculate_requirement_status(req, req_result_object);
                         
                         const li = Helpers_create_element('li', {class_name: 'requirement-item compact-twoline'});
-                        // Rad 1: Titel (klickbar knapp)
                         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-row' });
                         const title_h_container = Helpers_create_element('h4', {class_name: 'requirement-title-container'});
                         const title_button = Helpers_create_element('button', {
                             class_name: 'list-title-button',
-                            text_content: req.title
+                            text_content: req.title,
+                            // Lägg till data-attribut för delegering
+                            attributes: {
+                                'data-requirement-id': req.key, // Använd req.key för ID till kravet i ruleFile
+                                'data-sample-id': current_sample_object.id
+                            }
                         });
-                        title_button.addEventListener('click', () => {
-                            router_ref('requirement_audit', { sampleId: current_sample_object.id, requirementId: req.key }); // req.key är korrekt här
-                        });
+                        // INGEN addEventListener HÄR LÄNGRE
                         title_h_container.appendChild(title_button);
                         title_row_div.appendChild(title_h_container);
                         li.appendChild(title_row_div);
 
-                        // Rad 2: Status, antal kontroller, referens
                         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
-                        
-                        // Statusindikator och text
                         const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
                         const status_indicator_span = Helpers_create_element('span', {
                            class_name: ['status-indicator', `status-${status}`],
@@ -300,7 +300,6 @@ const RequirementListComponent_internal = (function () {
                         status_indicator_wrapper.appendChild(document.createTextNode(` ${t('audit_status_' + status, {defaultValue: status})}`));
                         details_row_div.appendChild(status_indicator_wrapper);
 
-                        // Antal kontroller (granskade/totala)
                         const total_checks_count = req.checks ? req.checks.length : 0;
                         let audited_checks_count = 0;
                         if (req_result_object && req_result_object.checkResults && req.checks) {
@@ -309,8 +308,8 @@ const RequirementListComponent_internal = (function () {
                                 if (check_definition_for_status && window.AuditLogic && typeof window.AuditLogic.calculate_check_status === 'function') {
                                     const single_check_status = window.AuditLogic.calculate_check_status(
                                         check_definition_for_status,
-                                        check_res_from_data.passCriteria, // map of pass criteria statuses
-                                        check_res_from_data.overallStatus    // overall manual status for the check
+                                        check_res_from_data.passCriteria,
+                                        check_res_from_data.overallStatus 
                                     );
                                     if (single_check_status === 'passed' || single_check_status === 'failed') {
                                         audited_checks_count++;
@@ -324,12 +323,11 @@ const RequirementListComponent_internal = (function () {
                         });
                         details_row_div.appendChild(checks_info_span);
 
-                        // Standardreferens (om den finns)
                         if (req.standardReference && req.standardReference.text) {
                             let reference_element;
                             if (req.standardReference.url) {
                                 let url_to_use = req.standardReference.url;
-                                if (Helpers_add_protocol_if_missing) { // Kontrollera att funktionen finns
+                                if (Helpers_add_protocol_if_missing) {
                                     url_to_use = Helpers_add_protocol_if_missing(url_to_use);
                                 }
                                 reference_element = Helpers_create_element('a', {
@@ -343,7 +341,7 @@ const RequirementListComponent_internal = (function () {
                                 });
                             } else {
                                 reference_element = Helpers_create_element('span', {
-                                    class_name: 'list-reference-text', // Annan klass om det inte är en länk
+                                    class_name: 'list-reference-text',
                                     text_content: req.standardReference.text
                                 });
                             }
@@ -354,32 +352,26 @@ const RequirementListComponent_internal = (function () {
                     });
                     main_cat_group.appendChild(req_ul);
                 });
-                content_div.appendChild(main_cat_group);
+                content_div_for_delegation.appendChild(main_cat_group);
             });
         }
-        plate_element.appendChild(content_div);
-
-        // Navigationsfält längst ner
+        plate_element.appendChild(content_div_for_delegation); // Lägg till content_div i plate_element
+        
         const bottom_nav_bar = create_navigation_bar(true);
         if (bottom_nav_bar) plate_element.appendChild(bottom_nav_bar);
     }
 
     function destroy() {
-        // Rensa referenser för att undvika minnesläckor
-        app_container_ref = null;
-        router_ref = null;
-        params_ref = null;
-        global_message_element_ref = null;
-        current_sample_object = null;
-        relevant_requirements = [];
-        requirements_by_category = {};
+        if (content_div_for_delegation) {
+            content_div_for_delegation.removeEventListener('click', handle_requirement_list_click);
+            content_div_for_delegation = null;
+        }
+        app_container_ref = null; router_ref = null; params_ref = null;
+        global_message_element_ref = null; current_sample_object = null;
+        relevant_requirements = []; requirements_by_category = {};
     }
 
-    return {
-        init,
-        render,
-        destroy
-    };
+    return { init, render, destroy };
 })();
 
 export const RequirementListComponent = RequirementListComponent_internal;

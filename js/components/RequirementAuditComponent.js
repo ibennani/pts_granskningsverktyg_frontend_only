@@ -7,21 +7,19 @@ export const RequirementAuditComponent = (function () {
     let router_ref;
     let params_ref;
 
-    // --- Globala referenser ---
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css;
     let State_getCurrentAudit, State_setCurrentAudit;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let AuditLogic_calculate_check_status, AuditLogic_calculate_requirement_status, AuditLogic_get_ordered_relevant_requirement_keys;
 
-    // --- Lokala variabler för komponenten ---
     let global_message_element_ref;
     let current_sample_object = null;
     let current_requirement_object = null;
     let current_requirement_result = null;
 
     let actual_observation_input, comment_to_auditor_input, comment_to_actor_input;
-    let checks_ui_container_element = null;
+    let checks_ui_container_element = null; // För eventdelegering
     let requirement_status_display_element = null;
 
     let ordered_requirement_keys_for_sample = [];
@@ -43,6 +41,7 @@ export const RequirementAuditComponent = (function () {
     }
 
     function assign_globals() {
+        // ... (assign_globals som tidigare, ingen ändring här) ...
         let all_assigned = true;
         if (window.Translation && window.Translation.t) { Translation_t = window.Translation.t; }
         else { console.error("ReqAudit: Translation.t is missing!"); all_assigned = false; }
@@ -87,7 +86,35 @@ export const RequirementAuditComponent = (function () {
         return all_assigned;
     }
 
+    // Eventhanterare för klick inom checks_ui_container_element
+    function handle_checks_container_click(event) {
+        const target_button = event.target.closest('button[data-action]');
+        if (!target_button) return;
+
+        const action = target_button.dataset.action;
+        const check_item_element = target_button.closest('.check-item[data-check-id]');
+        const pc_item_element = target_button.closest('.pass-criterion-item[data-pc-id]');
+
+        if (!check_item_element) return; // Alla actions bör vara inom ett check-item
+        const check_id = check_item_element.dataset.checkId;
+
+        if (action === 'set-check-complies') {
+            handle_check_overall_status_change(check_id, 'passed');
+        } else if (action === 'set-check-not-complies') {
+            handle_check_overall_status_change(check_id, 'failed');
+        } else if (pc_item_element) { // Om det är en pass-criterion knapp
+            const pc_id = pc_item_element.dataset.pcId;
+            if (action === 'set-pc-passed') {
+                handle_pass_criterion_status_change(check_id, pc_id, 'passed');
+            } else if (action === 'set-pc-failed') {
+                handle_pass_criterion_status_change(check_id, pc_id, 'failed');
+            }
+        }
+    }
+
+
     async function init(_app_container, _router, _params) {
+        // ... (init som tidigare, ingen ändring här) ...
         if (!assign_globals()) {
             console.error("RequirementAuditComponent: Failed to assign global dependencies in init.");
         }
@@ -111,6 +138,9 @@ export const RequirementAuditComponent = (function () {
         }
     }
 
+    // ... (load_data_and_ensure_results_structure, auto_save_text_data, 
+    //      handle_check_overall_status_change, handle_pass_criterion_status_change, 
+    //      render_audit_section_internal som tidigare, inga ändringar där) ...
     function load_data_and_ensure_results_structure() {
         const current_audit = State_getCurrentAudit();
 
@@ -181,9 +211,7 @@ export const RequirementAuditComponent = (function () {
             ordered_requirement_keys_for_sample = AuditLogic_get_ordered_relevant_requirement_keys(current_audit.ruleFileContent, current_sample_object);
         } else {
             ordered_requirement_keys_for_sample = [];
-            console.error("[ReqAudit] AuditLogic.get_ordered_relevant_requirement_keys is not available!");
         }
-
         State_setCurrentAudit(current_audit);
         return true;
     }
@@ -200,7 +228,6 @@ export const RequirementAuditComponent = (function () {
         if (comment_to_actor_input && current_requirement_result.commentToActor !== comment_to_actor_input.value) {
             current_requirement_result.commentToActor = comment_to_actor_input.value; changed = true;
         }
-
         if (changed) {
             if (Helpers_get_current_iso_datetime_utc) {
                 current_requirement_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
@@ -212,34 +239,25 @@ export const RequirementAuditComponent = (function () {
     
     function handle_check_overall_status_change(check_id, new_overall_status) {
         const t = get_t_internally();
-        if (!current_requirement_result ||
-            !current_requirement_result.checkResults ||
-            !current_requirement_result.checkResults[check_id]) {
-            console.error("[ReqAudit] handle_check_overall_status_change: Invalid data structure for check ID:", check_id);
+        if (!current_requirement_result || !current_requirement_result.checkResults || !current_requirement_result.checkResults[check_id]) {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_internal_data_structure_pc'), 'error');
             return;
         }
-
         const check_result_obj = current_requirement_result.checkResults[check_id];
         const check_definition_from_rulefile = current_requirement_object.checks.find(c => c.id === check_id);
-
         if (check_result_obj.overallStatus === new_overall_status) {
             check_result_obj.overallStatus = 'not_audited';
         } else {
             check_result_obj.overallStatus = new_overall_status;
         }
-
         if (check_result_obj.overallStatus === 'failed') {
             if (check_definition_from_rulefile && check_definition_from_rulefile.passCriteria) {
                 check_definition_from_rulefile.passCriteria.forEach(pc => {
-                    if (!check_result_obj.passCriteria) { 
-                        check_result_obj.passCriteria = {};
-                    }
+                    if (!check_result_obj.passCriteria) { check_result_obj.passCriteria = {}; }
                     check_result_obj.passCriteria[pc.id] = 'passed';
                 });
             }
         }
-
         if (check_definition_from_rulefile && AuditLogic_calculate_check_status) {
             check_result_obj.status = AuditLogic_calculate_check_status(
                 check_definition_from_rulefile,
@@ -247,17 +265,10 @@ export const RequirementAuditComponent = (function () {
                 check_result_obj.overallStatus 
             );
         }
-
-        if (Helpers_get_current_iso_datetime_utc) {
-            current_requirement_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
-        }
+        if (Helpers_get_current_iso_datetime_utc) current_requirement_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
         const current_audit_for_save = State_getCurrentAudit();
         State_setCurrentAudit(current_audit_for_save);
-
-        if (checks_ui_container_element) {
-            render_checks_section(checks_ui_container_element);
-        }
-        
+        if (checks_ui_container_element) render_checks_section(checks_ui_container_element);
         if (requirement_status_display_element && AuditLogic_calculate_requirement_status) {
             const new_req_status = AuditLogic_calculate_requirement_status(current_requirement_object, current_requirement_result);
             if (current_requirement_result.status !== new_req_status) {
@@ -272,60 +283,32 @@ export const RequirementAuditComponent = (function () {
 
     function handle_pass_criterion_status_change(check_id, pc_id, new_status) {
         const t = get_t_internally();
-        if (!current_requirement_result ||
-            !current_requirement_result.checkResults ||
-            !current_requirement_result.checkResults[check_id] ||
-            !current_requirement_result.checkResults[check.id].passCriteria) {
-            console.error("[ReqAudit] handle_pass_criterion_status_change: Invalid data structure.");
+        if (!current_requirement_result || !current_requirement_result.checkResults || !current_requirement_result.checkResults[check_id] || !current_requirement_result.checkResults[check_id].passCriteria) {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_internal_data_structure_pc'), 'error');
             return;
         }
-
         const check_result_obj = current_requirement_result.checkResults[check_id];
-        
         if (check_result_obj.overallStatus === 'failed') {
-            if (NotificationComponent_show_global_message) {
-                NotificationComponent_show_global_message(t('cannot_change_criteria_if_check_not_compliant'), 'warning');
-            }
+            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('cannot_change_criteria_if_check_not_compliant'), 'warning');
             return;
         }
-        if (check_result_obj.overallStatus === 'not_audited') {
-             console.warn("[ReqAudit] Attempted to change pass criterion while overall check status is not_audited. This should ideally not happen if UI prevents it.");
-            return;
-        }
-
+        if (check_result_obj.overallStatus === 'not_audited') return;
         if (check_result_obj.passCriteria[pc_id] === new_status) {
             check_result_obj.passCriteria[pc_id] = 'not_audited';
         } else {
             check_result_obj.passCriteria[pc_id] = new_status;
         }
-
         const check_object_from_rulefile = current_requirement_object.checks.find(c => c.id === check_id);
         if (check_object_from_rulefile && AuditLogic_calculate_check_status) {
-             check_result_obj.status = AuditLogic_calculate_check_status(
-                check_object_from_rulefile,
-                check_result_obj.passCriteria,
-                check_result_obj.overallStatus 
-            );
+             check_result_obj.status = AuditLogic_calculate_check_status(check_object_from_rulefile, check_result_obj.passCriteria, check_result_obj.overallStatus );
         }
-
         if (AuditLogic_calculate_requirement_status) {
-            const calculated_req_status = AuditLogic_calculate_requirement_status(
-                current_requirement_object,
-                current_requirement_result
-            );
-            current_requirement_result.status = calculated_req_status;
+            current_requirement_result.status = AuditLogic_calculate_requirement_status(current_requirement_object, current_requirement_result);
         }
-
-        if (Helpers_get_current_iso_datetime_utc) {
-            current_requirement_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
-        }
+        if (Helpers_get_current_iso_datetime_utc) current_requirement_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
         const current_audit_for_save = State_getCurrentAudit();
         State_setCurrentAudit(current_audit_for_save);
-
-        if (checks_ui_container_element) {
-            render_checks_section(checks_ui_container_element);
-        }
+        if (checks_ui_container_element) render_checks_section(checks_ui_container_element);
         if (requirement_status_display_element) {
             const overall_status_text = t(`audit_status_${current_requirement_result.status}`, {defaultValue: current_requirement_result.status});
             requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${current_requirement_result.status}">${overall_status_text}</span>`;
@@ -365,10 +348,12 @@ export const RequirementAuditComponent = (function () {
         }
 
         current_requirement_object.checks.forEach(check => {
-            const check_wrapper = Helpers_create_element('div', { class_name: 'check-item', attributes: {'data-check-id': check.id }});
+            const check_wrapper = Helpers_create_element('div', { 
+                class_name: 'check-item', 
+                attributes: {'data-check-id': check.id } // För att identifiera checken vid delegering
+            });
             
-            const title_element = Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check.condition });
-            check_wrapper.appendChild(title_element);
+            check_wrapper.appendChild(Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check.condition }));
 
             const check_result_data = current_requirement_result.checkResults[check.id];
             const overall_manual_status_for_check = check_result_data?.overallStatus || 'not_audited';
@@ -376,86 +361,90 @@ export const RequirementAuditComponent = (function () {
             if (!is_audit_locked) {
                 const condition_actions_div = Helpers_create_element('div', { class_name: 'condition-actions' }); 
 
-                // KNAPP: "Stämmer" - IKON TILL HÖGER, NY IKON
                 const complies_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-success', 'button-small', overall_manual_status_for_check === 'passed' ? 'active' : ''],
-                    attributes: { 'aria-pressed': overall_manual_status_for_check === 'passed' ? 'true' : 'false' },
+                    attributes: { 
+                        'aria-pressed': overall_manual_status_for_check === 'passed' ? 'true' : 'false',
+                        'data-action': 'set-check-complies' // För delegering
+                    },
                     html_content: `<span>${t('check_complies')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle', ['currentColor'], 16) : '')
                 });
-                complies_button.addEventListener('click', () => handle_check_overall_status_change(check.id, 'passed'));
+                // INGEN addEventListener HÄR
                 condition_actions_div.appendChild(complies_button);
 
-                // KNAPP: "Stämmer inte" - IKON TILL HÖGER, NY IKON
                 const not_complies_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small', overall_manual_status_for_check === 'failed' ? 'active' : ''],
-                    attributes: { 'aria-pressed': overall_manual_status_for_check === 'failed' ? 'true' : 'false' },
+                    attributes: { 
+                        'aria-pressed': overall_manual_status_for_check === 'failed' ? 'true' : 'false',
+                        'data-action': 'set-check-not-complies' // För delegering
+                    },
                     html_content: `<span>${t('check_does_not_comply')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('cancel', ['currentColor'], 16) : '')
                 });
-                not_complies_button.addEventListener('click', () => handle_check_overall_status_change(check.id, 'failed'));
+                // INGEN addEventListener HÄR
                 condition_actions_div.appendChild(not_complies_button);
-                
                 check_wrapper.appendChild(condition_actions_div);
             }
             
             const calculated_check_status_for_display = check_result_data?.status || 'not_audited';
-            const check_status_text_key = `audit_status_${calculated_check_status_for_display}`;
-            const check_status_text = t(check_status_text_key, {defaultValue: calculated_check_status_for_display});
+            const check_status_text = t(`audit_status_${calculated_check_status_for_display}`, {defaultValue: calculated_check_status_for_display});
             check_wrapper.appendChild(Helpers_create_element('p', {
                 class_name: 'check-status-display',
                 html_content: `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status_for_display}">${check_status_text}</span>`
             }));
 
-            if (overall_manual_status_for_check === 'passed') { 
-                if (check.passCriteria && check.passCriteria.length > 0) {
-                    const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
-                    check.passCriteria.forEach(pc => {
-                        const pc_item_li = Helpers_create_element('li', { class_name: 'pass-criterion-item', attributes: {'data-pc-id': pc.id } });
-                        pc_item_li.appendChild(Helpers_create_element('p', { class_name: 'pass-criterion-requirement', text_content: pc.requirement }));
-                        
-                        const current_pc_status = check_result_data?.passCriteria[pc.id] || 'not_audited';
-                        const pc_status_text = t(`audit_status_${current_pc_status}`, {defaultValue: current_pc_status});
-                        const status_display_div = Helpers_create_element('div', { class_name: 'pass-criterion-status' });
-                        status_display_div.innerHTML = `<strong>${t('status')}:</strong> <span class="status-text status-${current_pc_status}">${pc_status_text}</span>`;
-                        pc_item_li.appendChild(status_display_div);
-
-                        if (!is_audit_locked) {
-                            const pc_actions_div = Helpers_create_element('div', { class_name: 'pass-criterion-actions' });
-                            
-                            // KNAPP: "Godkänd" (pass criterion) - IKON TILL HÖGER
-                            const passed_button = Helpers_create_element('button', {
-                                class_name: ['button', 'button-success', 'button-small', current_pc_status === 'passed' ? 'active' : ''],
-                                html_content: `<span>${t('pass_criterion_approved')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_up', ['currentColor'], 16) : '')
-                            });
-                            passed_button.addEventListener('click', () => handle_pass_criterion_status_change(check.id, pc.id, 'passed'));
-                            pc_actions_div.appendChild(passed_button);
-                            
-                            // KNAPP: "Underkänd" (pass criterion) - IKON TILL HÖGER
-                            const failed_button = Helpers_create_element('button', {
-                                class_name: ['button', 'button-danger', 'button-small', current_pc_status === 'failed' ? 'active' : ''],
-                                html_content: `<span>${t('pass_criterion_failed')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_down', ['currentColor'], 16) : '')
-                            });
-                            failed_button.addEventListener('click', () => handle_pass_criterion_status_change(check.id, pc.id, 'failed'));
-                            pc_actions_div.appendChild(failed_button);
-                            pc_item_li.appendChild(pc_actions_div);
-                        }
-                        pc_list.appendChild(pc_item_li);
+            if (overall_manual_status_for_check === 'passed' && check.passCriteria && check.passCriteria.length > 0) {
+                const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
+                check.passCriteria.forEach(pc => {
+                    const pc_item_li = Helpers_create_element('li', { 
+                        class_name: 'pass-criterion-item', 
+                        attributes: {'data-pc-id': pc.id } // För att identifiera pass criterion vid delegering
                     });
-                    check_wrapper.appendChild(pc_list);
-                }
+                    pc_item_li.appendChild(Helpers_create_element('p', { class_name: 'pass-criterion-requirement', text_content: pc.requirement }));
+                    
+                    const current_pc_status = check_result_data?.passCriteria[pc.id] || 'not_audited';
+                    const pc_status_text = t(`audit_status_${current_pc_status}`, {defaultValue: current_pc_status});
+                    pc_item_li.appendChild(Helpers_create_element('div', { 
+                        class_name: 'pass-criterion-status',
+                        html_content: `<strong>${t('status')}:</strong> <span class="status-text status-${current_pc_status}">${pc_status_text}</span>`
+                    }));
+
+                    if (!is_audit_locked) {
+                        const pc_actions_div = Helpers_create_element('div', { class_name: 'pass-criterion-actions' });
+                        const passed_button = Helpers_create_element('button', {
+                            class_name: ['button', 'button-success', 'button-small', current_pc_status === 'passed' ? 'active' : ''],
+                            attributes: { 'data-action': 'set-pc-passed' }, // För delegering
+                            html_content: `<span>${t('pass_criterion_approved')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_up', ['currentColor'], 16) : '')
+                        });
+                        // INGEN addEventListener HÄR
+                        pc_actions_div.appendChild(passed_button);
+                        
+                        const failed_button = Helpers_create_element('button', {
+                            class_name: ['button', 'button-danger', 'button-small', current_pc_status === 'failed' ? 'active' : ''],
+                            attributes: { 'data-action': 'set-pc-failed' }, // För delegering
+                            html_content: `<span>${t('pass_criterion_failed')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_down', ['currentColor'], 16) : '')
+                        });
+                        // INGEN addEventListener HÄR
+                        pc_actions_div.appendChild(failed_button);
+                        pc_item_li.appendChild(pc_actions_div);
+                    }
+                    pc_list.appendChild(pc_item_li);
+                });
+                check_wrapper.appendChild(pc_list);
             } else if (overall_manual_status_for_check === 'failed') { 
-                const info_text_key = 'check_marked_as_not_compliant_criteria_passed';
-                const info_text_default = "Kontrollpunkten är markerad som 'Stämmer inte'; underliggande kriterier har automatiskt markerats som godkända och visas ej.";
-                const info_p = Helpers_create_element('p', { 
+                check_wrapper.appendChild(Helpers_create_element('p', { 
                     class_name: 'text-muted', 
                     style: 'font-size: 0.9em; margin-top: 0.5rem; font-style: italic;',
-                    text_content: t(info_text_key, {defaultValue: info_text_default})
-                });
-                check_wrapper.appendChild(info_p);
+                    text_content: t('check_marked_as_not_compliant_criteria_passed', {defaultValue: "Kontrollpunkten är markerad som 'Stämmer inte'; underliggande kriterier har automatiskt markerats som godkända och visas ej."})
+                }));
             }
             container_element.appendChild(check_wrapper);
         });
     }
 
+    // ... (get_current_requirement_index_in_ordered_list, navigate_to_requirement_by_index, 
+    //      go_to_previous_requirement, go_to_next_requirement, 
+    //      find_next_unhandled_requirement_key, go_to_next_unhandled_requirement,
+    //      render_navigation_buttons som tidigare, inga ändringar där) ...
     function get_current_requirement_index_in_ordered_list() {
         if (!ordered_requirement_keys_for_sample || ordered_requirement_keys_for_sample.length === 0) {
             return -1;
@@ -467,8 +456,6 @@ export const RequirementAuditComponent = (function () {
         if (index >= 0 && index < ordered_requirement_keys_for_sample.length) {
             const new_requirement_key = ordered_requirement_keys_for_sample[index];
             router_ref('requirement_audit', { sampleId: current_sample_object.id, requirementId: new_requirement_key });
-        } else {
-            console.warn("[ReqAudit] Attempted to navigate to an out-of-bounds index:", index);
         }
     }
 
@@ -489,7 +476,6 @@ export const RequirementAuditComponent = (function () {
     function find_next_unhandled_requirement_key() {
         const current_index = get_current_requirement_index_in_ordered_list();
         if (current_index === -1) return null;
-
         for (let i = current_index + 1; i < ordered_requirement_keys_for_sample.length; i++) {
             const req_key = ordered_requirement_keys_for_sample[i];
             const req_result = current_sample_object.requirementResults[req_key];
@@ -521,20 +507,16 @@ export const RequirementAuditComponent = (function () {
         const t = get_t_internally();
         const nav_buttons_div = Helpers_create_element('div', { class_name: 'audit-navigation-buttons' });
         nav_buttons_div.classList.add(is_top_or_bottom === 'top' ? 'top-nav' : 'bottom-nav');
-
         const nav_group_left = Helpers_create_element('div', { class_name: 'nav-group-left' });
         const nav_group_right = Helpers_create_element('div', { class_name: 'nav-group-right' });
-
         const back_to_list_btn = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
             html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) : '') + `<span>${t('back_to_requirement_list')}</span>`
         });
         back_to_list_btn.addEventListener('click', () => router_ref('requirement_list', {sampleId: params_ref.sampleId}));
         nav_group_left.appendChild(back_to_list_btn);
-
         const current_audit_state = State_getCurrentAudit();
         const current_index = get_current_requirement_index_in_ordered_list();
-
         if (current_audit_state && current_audit_state.auditStatus !== 'locked') {
             if (current_index > 0) {
                 const temp_prev_req_btn = Helpers_create_element('button', {
@@ -544,7 +526,6 @@ export const RequirementAuditComponent = (function () {
                 temp_prev_req_btn.addEventListener('click', go_to_previous_requirement);
                 nav_group_right.appendChild(temp_prev_req_btn);
             }
-
             if (current_index < ordered_requirement_keys_for_sample.length - 1) {
                 const temp_next_req_btn = Helpers_create_element('button', {
                     class_name: ['button', 'button-secondary'],
@@ -553,7 +534,6 @@ export const RequirementAuditComponent = (function () {
                 temp_next_req_btn.addEventListener('click', go_to_next_requirement);
                 nav_group_right.appendChild(temp_next_req_btn);
             }
-
             if (find_next_unhandled_requirement_key() !== null) {
                 const temp_next_unhandled_btn = Helpers_create_element('button', {
                     class_name: ['button', 'button-primary'],
@@ -563,7 +543,6 @@ export const RequirementAuditComponent = (function () {
                 nav_group_right.appendChild(temp_next_unhandled_btn);
             }
         }
-
         nav_buttons_div.appendChild(nav_group_left);
         if(nav_group_right.hasChildNodes()) nav_buttons_div.appendChild(nav_group_right);
         return nav_buttons_div;
@@ -578,8 +557,7 @@ export const RequirementAuditComponent = (function () {
         }
         app_container_ref.innerHTML = '';
 
-        const data_loaded_successfully = load_data_and_ensure_results_structure();
-        if (!data_loaded_successfully) {
+        if (!load_data_and_ensure_results_structure()) { // Flyttad för att säkerställa att data är redo
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_loading_sample_or_requirement_data'), "error");
             const back_button = Helpers_create_element('button', {class_name: ['button', 'button-default'], text_content: t('back_to_requirement_list')});
             back_button.addEventListener('click', () => router_ref('requirement_list', { sampleId: params_ref ? params_ref.sampleId : '' }));
@@ -597,12 +575,12 @@ export const RequirementAuditComponent = (function () {
 
         const req = current_requirement_object;
         if (!req) {
-            console.error("[ReqAudit] current_requirement_object is null/undefined after successful data load. Aborting further render.");
             plate_element.innerHTML = `<p>${t('error_loading_sample_or_requirement_data')}</p>`;
             return;
         }
         
         const header_div = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
+        // ... (header rendering som tidigare) ...
         header_div.appendChild(Helpers_create_element('h1', { text_content: req.title }));
         if (req.standardReference && req.standardReference.text) {
             const ref_p = Helpers_create_element('p', { class_name: 'standard-reference' });
@@ -626,6 +604,7 @@ export const RequirementAuditComponent = (function () {
 
         render_audit_section_internal('requirement_expected_observation', req.expectedObservation, plate_element);
         render_audit_section_internal('requirement_instructions', req.instructions, plate_element);
+        // ... (render_audit_section_internal för andra sektioner som tidigare) ...
         render_audit_section_internal('requirement_tips', req.tips, plate_element);
         render_audit_section_internal('requirement_exceptions', req.exceptions, plate_element);
         render_audit_section_internal('requirement_common_errors', req.commonErrors, plate_element);
@@ -646,11 +625,18 @@ export const RequirementAuditComponent = (function () {
 
         plate_element.appendChild(render_navigation_buttons('top'));
 
-        checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
+        // Skapa checks_ui_container_element och fäst lyssnare om den inte redan finns
+        if (!checks_ui_container_element) {
+            checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
+            checks_ui_container_element.addEventListener('click', handle_checks_container_click);
+        } else {
+            checks_ui_container_element.innerHTML = ''; // Rensa om den finns för omrendering
+        }
         checks_ui_container_element.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
         render_checks_section(checks_ui_container_element); 
         plate_element.appendChild(checks_ui_container_element);
 
+        // ... (Input fields rendering som tidigare) ...
         const input_fields_container = Helpers_create_element('div', { class_name: 'input-fields-container audit-section' });
         input_fields_container.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title')}));
         let fg, label;
@@ -704,11 +690,17 @@ export const RequirementAuditComponent = (function () {
         if (actual_observation_input) actual_observation_input.removeEventListener('input', auto_save_text_data);
         if (comment_to_auditor_input) comment_to_auditor_input.removeEventListener('input', auto_save_text_data);
         if (comment_to_actor_input) comment_to_actor_input.removeEventListener('input', auto_save_text_data);
+        
+        if (checks_ui_container_element) { // Ta bort lyssnaren
+            checks_ui_container_element.removeEventListener('click', handle_checks_container_click);
+            checks_ui_container_element = null;
+        }
 
         current_sample_object = null; current_requirement_object = null; current_requirement_result = null;
         actual_observation_input = null; comment_to_auditor_input = null; comment_to_actor_input = null;
         app_container_ref = null; router_ref = null; params_ref = null;
-        global_message_element_ref = null; checks_ui_container_element = null; requirement_status_display_element = null;
+        global_message_element_ref = null; 
+        requirement_status_display_element = null;
         ordered_requirement_keys_for_sample = [];
     }
 
@@ -718,5 +710,3 @@ export const RequirementAuditComponent = (function () {
         destroy
     };
 })();
-
-// Export-satsen var redan korrekt för denna fil.

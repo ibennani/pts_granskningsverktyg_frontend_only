@@ -5,15 +5,16 @@ const SampleListComponent_internal = (function () {
 
     const CSS_PATH = 'css/components/sample_list_component.css';
     let list_container_ref;
-    let on_edit_callback;      // För SampleManagementView
-    let on_delete_callback;    // För SampleManagementView
-    let router_ref_from_parent; // För AuditOverview och SampleManagementView (för "Granska" / "Visa krav")
+    let on_edit_callback;
+    let on_delete_callback;
+    let router_ref_from_parent;
 
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_add_protocol_if_missing, Helpers_load_css;
     let State_getCurrentAudit;
     let AuditLogic_get_relevant_requirements_for_sample, AuditLogic_find_first_incomplete_requirement_key_for_sample, AuditLogic_calculate_requirement_status;
-    let NotificationComponent_show_global_message; // Används inte aktivt, men kan vara bra att ha
+    
+    let ul_element_for_delegation = null; // Referens till UL-elementet
 
     function get_t_internally() {
         if (Translation_t) return Translation_t;
@@ -62,23 +63,77 @@ const SampleListComponent_internal = (function () {
             }
         } else { console.error("SampleList: AuditLogic module is missing!"); all_assigned = false; }
 
-        if (window.NotificationComponent) { // Även om den inte används, bra att ha referensen om den skulle behövas
-            NotificationComponent_show_global_message = window.NotificationComponent.show_global_message;
-        } else {
-            // console.warn("SampleList: NotificationComponent not found, global messages will not be shown from here.");
-        }
-
         return all_assigned;
     }
+
+    // Eventhanterare för delegering
+    function handle_list_click(event) {
+        const t = get_t_internally();
+        const target = event.target;
+        const current_audit = State_getCurrentAudit(); // Hämta aktuell audit här
+
+        // Hitta närmaste knapp med data-action eller listobjekt
+        const action_button = target.closest('button[data-action]');
+        if (!action_button) return; // Klickade inte på en action-knapp
+
+        const sample_list_item_element = action_button.closest('.sample-list-item[data-sample-id]');
+        if (!sample_list_item_element) return; // Kunde inte hitta tillhörande listobjekt
+
+        const sample_id = sample_list_item_element.dataset.sampleId;
+        const action = action_button.dataset.action;
+        const sample = current_audit ? current_audit.samples.find(s => s.id === sample_id) : null;
+
+
+        if (!sample) {
+            console.warn(`SampleList: Could not find sample with ID ${sample_id} for action ${action}`);
+            return;
+        }
+
+        switch (action) {
+            case 'edit-sample':
+                if (typeof on_edit_callback === 'function') {
+                    on_edit_callback(sample_id);
+                }
+                break;
+            case 'delete-sample':
+                if (typeof on_delete_callback === 'function') {
+                    // Bekräftelsedialogen kan ligga kvar i on_delete_callback eller flyttas hit
+                    // För enkelhetens skull antar vi att on_delete_callback hanterar bekräftelsen.
+                    on_delete_callback(sample_id);
+                }
+                break;
+            case 'view-requirements':
+                if (router_ref_from_parent) {
+                    router_ref_from_parent('requirement_list', { sampleId: sample_id });
+                }
+                break;
+            case 'visit-url':
+                if (sample.url && Helpers_add_protocol_if_missing) {
+                    window.open(Helpers_add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
+                }
+                break;
+            case 'review-sample':
+                if (router_ref_from_parent && current_audit && AuditLogic_find_first_incomplete_requirement_key_for_sample) {
+                    const first_incomplete_req_key = AuditLogic_find_first_incomplete_requirement_key_for_sample(current_audit.ruleFileContent, sample);
+                    if (first_incomplete_req_key) {
+                        router_ref_from_parent('requirement_audit', { sampleId: sample.id, requirementId: first_incomplete_req_key });
+                    } else { // Om allt är klart, eller inga ofullständiga, gå till listan
+                        router_ref_from_parent('requirement_list', { sampleId: sample.id });
+                    }
+                }
+                break;
+        }
+    }
+
 
     async function init(_list_container, _on_edit_cb, _on_delete_cb, _router_cb) {
         if(!assign_globals()) {
             console.error("SampleListComponent: Failed to assign global dependencies in init.");
         }
         list_container_ref = _list_container;
-        on_edit_callback = _on_edit_cb;         // Specifikt för SampleManagementView
-        on_delete_callback = _on_delete_cb;     // Specifikt för SampleManagementView
-        router_ref_from_parent = _router_cb;    // För AuditOverview (granska-knapp) & SampleManagementView (visa krav)
+        on_edit_callback = _on_edit_cb;
+        on_delete_callback = _on_delete_cb;
+        router_ref_from_parent = _router_cb;
 
         if (Helpers_load_css) {
             try {
@@ -99,7 +154,7 @@ const SampleListComponent_internal = (function () {
             if (list_container_ref) list_container_ref.innerHTML = `<p>${t('error_render_component', {componentName: 'SampleList'})}</p>`;
             return;
         }
-        list_container_ref.innerHTML = '';
+        list_container_ref.innerHTML = ''; // Rensa tidigare innehåll
 
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent) {
@@ -116,13 +171,20 @@ const SampleListComponent_internal = (function () {
             return;
         }
 
-        const ul = Helpers_create_element('ul', { class_name: 'sample-list item-list' });
+        // Skapa UL-elementet och fäst eventlyssnaren om det inte redan är gjort
+        if (!ul_element_for_delegation) {
+            ul_element_for_delegation = Helpers_create_element('ul', { class_name: 'sample-list item-list' });
+            ul_element_for_delegation.addEventListener('click', handle_list_click);
+        } else {
+            ul_element_for_delegation.innerHTML = ''; // Rensa bara innehållet om UL redan finns
+        }
+        
         const is_audit_not_started = current_audit.auditStatus === 'not_started';
 
         current_audit.samples.forEach(sample => {
             const li = Helpers_create_element('li', {
                 class_name: 'sample-list-item item-list-item',
-                attributes: {'data-sample-id': sample.id}
+                attributes: {'data-sample-id': sample.id} // Viktigt för delegering
             });
 
             const info_div = Helpers_create_element('div', { class_name: 'sample-info' });
@@ -144,16 +206,14 @@ const SampleListComponent_internal = (function () {
             let audited_reqs_count = 0;
 
             relevant_reqs_for_sample_list.forEach(req_definition_from_list => {
-                const req_object_from_rulefile = current_audit.ruleFileContent.requirements[req_definition_from_list.key]; // Använd .key för att hämta definition
-                const req_result_from_sample = sample.requirementResults ? sample.requirementResults[req_definition_from_list.id] : null; // Använd .id för resultat
+                const req_object_from_rulefile = current_audit.ruleFileContent.requirements[req_definition_from_list.key];
+                const req_result_from_sample = sample.requirementResults ? sample.requirementResults[req_definition_from_list.id] : null;
                 
                 if (req_object_from_rulefile) {
                     const req_status = AuditLogic_calculate_requirement_status(req_object_from_rulefile, req_result_from_sample);
                     if (req_status === 'passed' || req_status === 'failed') {
                         audited_reqs_count++;
                     }
-                } else {
-                    console.warn(`SampleList: Could not find full requirement object in ruleFile for key: ${req_definition_from_list.key} (id: ${req_definition_from_list.id})`);
                 }
             });
 
@@ -183,70 +243,51 @@ const SampleListComponent_internal = (function () {
 
             const actions_wrapper_div = Helpers_create_element('div', { class_name: 'sample-actions-wrapper' });
             const main_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-main' });
-            const delete_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-delete' }); // För delete-knappen
+            const delete_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-delete' });
 
-            // "Visa alla krav"-knapp (renderas om det finns relevanta krav)
             if (total_relevant_reqs > 0) {
                 const view_reqs_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-secondary', 'button-small'],
-                    html_content: `<span>${t('view_all_requirements_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 16) : ''),
-                    attributes: { 'aria-label': `${t('view_all_requirements_button')}: ${sample.description}` }
+                    attributes: { 'data-action': 'view-requirements', 'aria-label': `${t('view_all_requirements_button')}: ${sample.description}` },
+                    html_content: `<span>${t('view_all_requirements_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 16) : '')
                 });
-                view_reqs_button.addEventListener('click', () => {
-                    if (router_ref_from_parent) router_ref_from_parent('requirement_list', { sampleId: sample.id });
-                });
+                // INGEN addEventListener HÄR
                 main_actions_div.appendChild(view_reqs_button);
             } else {
                 const no_reqs_info = Helpers_create_element('span', {class_name: 'text-muted button-small', text_content: t('no_relevant_requirements_for_sample_short', {defaultValue: "(No relevant requirements)"})});
                 main_actions_div.appendChild(no_reqs_info);
             }
 
-            // "Besök URL"-knapp (renderas om URL finns)
             if (sample.url) {
                 const visit_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-secondary', 'button-small'],
-                    html_content: `<span>${t('visit_url')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('visit_url', ['currentColor'], 16) : ''),
-                    attributes: { 'aria-label': `${t('visit_url')}: ${sample.description}` }
+                    attributes: { 'data-action': 'visit-url', 'aria-label': `${t('visit_url')}: ${sample.description}` },
+                    html_content: `<span>${t('visit_url')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('visit_url', ['currentColor'], 16) : '')
                 });
-                visit_button.addEventListener('click', () => {
-                    if (Helpers_add_protocol_if_missing) window.open(Helpers_add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
-                });
+                // INGEN addEventListener HÄR
                 main_actions_div.appendChild(visit_button);
             }
 
-            // "Granska"-knapp (renderas om granskning är "in_progress" och det finns relevanta krav)
             if (current_audit.auditStatus === 'in_progress' && total_relevant_reqs > 0) {
                 const first_incomplete_req_key = AuditLogic_find_first_incomplete_requirement_key_for_sample(current_audit.ruleFileContent, sample);
                 let review_button_text_key = first_incomplete_req_key ? 'audit_next_incomplete_requirement' : 'view_audited_sample';
                 
                 const review_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-primary', 'button-small'],
-                    html_content: `<span>${t(review_button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : ''),
-                    attributes: { 'aria-label': `${t(review_button_text_key)}: ${sample.description}` }
+                    attributes: { 'data-action': 'review-sample', 'aria-label': `${t(review_button_text_key)}: ${sample.description}` },
+                    html_content: `<span>${t(review_button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : '')
                 });
-                review_button.addEventListener('click', () => {
-                    if (router_ref_from_parent) {
-                        if (first_incomplete_req_key) {
-                            router_ref_from_parent('requirement_audit', { sampleId: sample.id, requirementId: first_incomplete_req_key });
-                        } else { // Om allt är klart, gå till listan för att se resultaten
-                            router_ref_from_parent('requirement_list', { sampleId: sample.id });
-                        }
-                    }
-                });
+                // INGEN addEventListener HÄR
                 main_actions_div.appendChild(review_button);
             }
 
-            // "Redigera"-knapp (renderas om granskning inte startat och callback finns)
             if (is_audit_not_started && typeof on_edit_callback === 'function') {
                 const edit_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-default', 'button-small'],
-                    html_content: `<span>${t('edit_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit', ['currentColor'], 16) : ''),
-                    attributes: { 'aria-label': `${t('edit_sample')}: ${sample.description}` }
+                    attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
+                    html_content: `<span>${t('edit_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit', ['currentColor'], 16) : '')
                 });
-                edit_button.addEventListener('click', () => {
-                    on_edit_callback(sample.id);
-                });
-                // Lägg till edit-knappen först bland huvudåtgärderna
+                // INGEN addEventListener HÄR
                 if (main_actions_div.firstChild) {
                     main_actions_div.insertBefore(edit_button, main_actions_div.firstChild);
                 } else {
@@ -254,16 +295,13 @@ const SampleListComponent_internal = (function () {
                 }
             }
 
-            // "Radera"-knapp (renderas om granskning inte startat och callback finns)
             if (is_audit_not_started && typeof on_delete_callback === 'function') {
                 const delete_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
-                    html_content: `<span>${t('delete_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('delete', ['currentColor'], 16) : ''),
-                    attributes: { 'aria-label': `${t('delete_sample')}: ${sample.description}` }
+                    attributes: { 'data-action': 'delete-sample', 'aria-label': `${t('delete_sample')}: ${sample.description}` },
+                    html_content: `<span>${t('delete_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('delete', ['currentColor'], 16) : '')
                 });
-                delete_button.addEventListener('click', () => {
-                    on_delete_callback(sample.id);
-                });
+                // INGEN addEventListener HÄR
                 delete_actions_div.appendChild(delete_button);
             }
 
@@ -271,13 +309,16 @@ const SampleListComponent_internal = (function () {
             if (delete_actions_div.hasChildNodes()) actions_wrapper_div.appendChild(delete_actions_div);
             if (actions_wrapper_div.hasChildNodes()) li.appendChild(actions_wrapper_div);
 
-            ul.appendChild(li);
+            ul_element_for_delegation.appendChild(li);
         });
-        list_container_ref.appendChild(ul);
+        list_container_ref.appendChild(ul_element_for_delegation);
     }
 
     function destroy() {
-        // Rensa referenser
+        if (ul_element_for_delegation) {
+            ul_element_for_delegation.removeEventListener('click', handle_list_click);
+            ul_element_for_delegation = null;
+        }
         list_container_ref = null;
         on_edit_callback = null;
         on_delete_callback = null;
