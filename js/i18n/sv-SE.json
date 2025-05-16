@@ -161,7 +161,7 @@
   "sample_added_successfully": "Stickprov tillagt i listan!",
   "sample_deleted_successfully": "Stickprov \"{sampleName}\" har raderats.",
   "sample_description_auto_filled": "Beskrivningen har automatiskt fyllts med sidtypen, men kan redigeras.",
-  "sample_list_title": "Tillagda stickprov",
+  "sample_list_title_with_count": "Tillagda stickprov: {count} st",
   "sample_management_title": "Hantera stickprov",
   "sample_updated_successfully": "Stickprov uppdaterat!",
   "save_audit_to_file": "Spara granskning till fil",

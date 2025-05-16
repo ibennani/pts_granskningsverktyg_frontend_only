@@ -161,7 +161,7 @@
     "sample_added_successfully": "Sample added to the list!",
     "sample_deleted_successfully": "Sample \"{sampleName}\" has been deleted.",
     "sample_description_auto_filled": "The description has been auto-filled with the page type, but can be edited.",
-    "sample_list_title": "Added samples",
+    "sample_list_title_with_count": "Added samples: {count}",
     "sample_management_title": "Sample management",
     "sample_updated_successfully": "Sample updated successfully!",
     "save_audit_to_file": "Save audit to file",
