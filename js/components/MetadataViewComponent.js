@@ -1,4 +1,6 @@
-export const MetadataViewComponent = (function () {
+// js/components/MetadataViewComponent.js
+
+const MetadataViewComponent_internal = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/metadata_view_component.css';
@@ -13,9 +15,8 @@ export const MetadataViewComponent = (function () {
     let case_number_input, actor_name_input, actor_link_input, auditor_name_input, internal_comment_input;
     let global_message_element_ref;
 
-    // Helper function to safely get the translation function
     function get_t_internally() {
-        if (Translation_t) return Translation_t; // Om redan tilldelad via assign_globals
+        if (Translation_t) return Translation_t;
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
@@ -93,9 +94,17 @@ export const MetadataViewComponent = (function () {
             return false;
         }
 
+        // Metadata should only be editable if audit is not started
         if (current_audit.auditStatus !== 'not_started') {
             console.warn("MetadataView: save_metadata called when audit status is not 'not_started'. No changes will be saved.");
-            return true;
+            // Return true to allow navigation if the button is just "View Samples"
+            return true; 
+        }
+        
+        // Ensure input elements are defined before accessing .value
+        if (!case_number_input || !actor_name_input || !actor_link_input || !auditor_name_input || !internal_comment_input) {
+            console.error("MetadataView: One or more input elements are not defined in save_metadata. This can happen if render was not called or form was not built.");
+            return false; 
         }
 
         let actor_link_value = actor_link_input.value.trim();
@@ -197,8 +206,7 @@ export const MetadataViewComponent = (function () {
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t("error_no_rulefile_loaded_for_metadata"), "error");
             const back_button = Helpers_create_element('button', {
                 class_name: ['button', 'button-default'],
-                // ÄNDRAD ORDNING: Text först, sedan ikon
-                html_content: `<span>${t('upload_rule_file_title')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('upload_file', ['currentColor'], 18) : ''), // Antag att 'upload_file' är en ikon
+                html_content: `<span>${t('upload_rule_file_title')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('upload_file', ['currentColor'], 18) : ''),
                 event_listeners: { click: () => { if(navigate_and_set_hash_ref) navigate_and_set_hash_ref('upload');} }
             });
             app_container_ref.appendChild(back_button);
@@ -247,8 +255,16 @@ export const MetadataViewComponent = (function () {
             internal_comment_input = comment_field.input_element;
             form.appendChild(comment_field.form_group);
 
+            const form_actions_wrapper_for_form = Helpers_create_element('div', { class_name: 'form-actions metadata-actions' });
+            const submit_button_editable = Helpers_create_element('button', {
+                class_name: ['button', 'button-primary'],
+                attributes: { type: 'submit' }, // Sätt type submit här
+                html_content: `<span>${t('continue_to_samples')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward', ['currentColor'], 18) : '')
+            });
+            form_actions_wrapper_for_form.appendChild(submit_button_editable);
+            form.appendChild(form_actions_wrapper_for_form); // Lägg actions inuti formen
             form_container.appendChild(form);
-        } else {
+        } else { // Inte redigerbar (audit har startat eller är låst)
             const static_display_div = Helpers_create_element('div', { class_name: 'static-metadata-display' });
             static_display_div.appendChild(create_static_field('case_number', metadata.caseNumber));
             static_display_div.appendChild(create_static_field('actor_name', metadata.actorName));
@@ -256,41 +272,22 @@ export const MetadataViewComponent = (function () {
             static_display_div.appendChild(create_static_field('auditor_name', metadata.auditorName));
             static_display_div.appendChild(create_static_field('internal_comment', metadata.internalComment));
             form_container.appendChild(static_display_div);
-        }
 
-        plate_element.appendChild(form_container);
-
-        const actions_div = Helpers_create_element('div', { class_name: 'metadata-actions' });
-        const submit_button_text_key = is_editable ? 'continue_to_samples' : 'view_samples_button';
-        const submit_button_icon = is_editable ? 'arrow_forward' : 'list';
-
-        const submit_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-primary'],
-            // ÄNDRAD ORDNING: Text först, sedan ikon
-            html_content: `<span>${t(submit_button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg(submit_button_icon, ['currentColor'], 18) : '')
-        });
-
-        if (is_editable) {
-            submit_button.setAttribute('type', 'submit');
-            const form_element = form_container.querySelector('form');
-            if (form_element) {
-                // Lägg actions_div (med knappen) inuti formen om redigerbart
-                const form_actions_wrapper_for_form = Helpers_create_element('div', { class_name: 'form-actions metadata-actions' }); // Använd form-actions för flex
-                form_actions_wrapper_for_form.appendChild(submit_button);
-                form_element.appendChild(form_actions_wrapper_for_form);
-
-            } else { 
-                actions_div.appendChild(submit_button);
-                plate_element.appendChild(actions_div);
-            }
-        } else {
-            submit_button.addEventListener('click', (e) => {
+            // Lägg till "View Samples" knapp utanför formuläret
+            const actions_div_readonly = Helpers_create_element('div', { class_name: 'metadata-actions' });
+            const view_samples_button = Helpers_create_element('button', {
+                class_name: ['button', 'button-primary'],
+                html_content: `<span>${t('view_samples_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 18) : '')
+            });
+            view_samples_button.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (navigate_and_set_hash_ref) navigate_and_set_hash_ref('sample_management');
             });
-            actions_div.appendChild(submit_button);
-            plate_element.appendChild(actions_div);
+            actions_div_readonly.appendChild(view_samples_button);
+            plate_element.appendChild(actions_div_readonly); // Läggs till plate_element direkt
         }
+
+        plate_element.appendChild(form_container);
     }
 
     function destroy() {
@@ -299,7 +296,10 @@ export const MetadataViewComponent = (function () {
         actor_link_input = null;
         auditor_name_input = null;
         internal_comment_input = null;
+        // app_container_ref och navigate_and_set_hash_ref ärvs och nollställs inte här.
     }
 
     return { init, render, destroy };
 })();
+
+export const MetadataViewComponent = MetadataViewComponent_internal;

@@ -222,3 +222,14 @@
     align-items: center;
 }
 
+/* --- BORTTAGEN CSS FÖR INAKTIVERADE NAVIGERINGSKNAPPAR --- */
+/* Ingen specifik :disabled-stil behövs längre eftersom knapparna inte renderas om de inte är funktionella. */
+/* Hela blocket nedan kan tas bort: */
+/*
+.audit-navigation-buttons .nav-group-right .button.button-secondary:disabled { ... }
+.audit-navigation-buttons .nav-group-right .button.button-primary:disabled { ... }
+.audit-navigation-buttons .nav-group-right .button:disabled svg { ... }
+[data-theme="dark"] .audit-navigation-buttons .nav-group-right .button.button-secondary:disabled { ... }
+[data-theme="dark"] .audit-navigation-buttons .nav-group-right .button.button-primary:disabled { ... }
+*/
+/* --- SLUT PÅ BORTTAGEN CSS --- */

@@ -1,6 +1,7 @@
-export const AddSampleFormComponent = (function () {
+// js/components/AddSampleFormComponent.js
+
+const AddSampleFormComponent_internal = (function () {
     'use-strict';
-    // console.log("[AddSampleFormComponent.js] FILE PARSED AND IIFE EXECUTING");
 
     const CSS_PATH = 'css/components/add_sample_form_component.css';
     let form_container_ref;
@@ -16,14 +17,14 @@ export const AddSampleFormComponent = (function () {
     let page_type_select, description_input, url_input;
     let content_types_group_element;
     let content_type_checkboxes = [];
-    let current_editing_sample_id = null;
-    let save_button_text_span_ref; // Byt namn för tydlighet
-    let save_button_icon_span_ref; // Byt namn för tydlighet
+    let current_editing_sample_id = null; // Hålls internt i komponenten
+    let save_button_text_span_ref;
+    let save_button_icon_span_ref;
     let previous_page_type_value = "";
 
-    // Helper function to safely get the translation function
+
     function get_t_internally() {
-        if (Translation_t) return Translation_t; // Om redan tilldelad via assign_globals
+        if (Translation_t) return Translation_t;
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
@@ -38,7 +39,6 @@ export const AddSampleFormComponent = (function () {
     }
 
     function assign_globals() {
-        // console.log("[AddSampleFormComponent.js] assign_globals CALLED");
         let all_assigned = true;
         if (window.Translation && window.Translation.t) { Translation_t = window.Translation.t; }
         else { console.error("AddSampleForm: Translation.t is missing!"); all_assigned = false; }
@@ -69,12 +69,10 @@ export const AddSampleFormComponent = (function () {
                 console.error("AddSampleForm: One or more NotificationComponent functions are missing!"); all_assigned = false;
             }
         } else { console.error("AddSampleForm: NotificationComponent module is missing!"); all_assigned = false; }
-        // console.log("[AddSampleFormComponent.js] assign_globals COMPLETED, all_assigned:", all_assigned);
         return all_assigned;
     }
 
     async function init(_form_container, _on_sample_saved_cb, _toggle_visibility_cb) {
-        // console.log("[AddSampleFormComponent.js] INIT CALLED");
         if (!assign_globals()) {
             console.error("AddSampleFormComponent: Failed to assign global dependencies in init. Component functionality will be impaired.");
         }
@@ -86,7 +84,6 @@ export const AddSampleFormComponent = (function () {
              try {
                 const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
                 if (!link_tag) {
-                    // console.log("[AddSampleFormComponent.js] Loading CSS:", CSS_PATH);
                     await Helpers_load_css(CSS_PATH);
                 }
             } catch (error) {
@@ -95,7 +92,6 @@ export const AddSampleFormComponent = (function () {
         } else {
             console.warn("[AddSampleFormComponent.js] Helpers_load_css not available, cannot load component CSS.");
         }
-        // console.log("[AddSampleFormComponent.js] INIT COMPLETED");
     }
 
     function update_description_from_page_type() {
@@ -105,7 +101,7 @@ export const AddSampleFormComponent = (function () {
             const new_page_type = page_type_select.value;
             if (new_page_type && (current_description === '' || current_description === previous_page_type_value)) {
                 description_input.value = new_page_type;
-                if (new_page_type !== current_description && new_page_type !== '') {
+                if (new_page_type !== current_description && new_page_type !== '') { // Visa meddelande bara om värdet faktiskt ändrades och inte är tomt
                     NotificationComponent_show_global_message(t('sample_description_auto_filled'), 'info');
                 }
             }
@@ -115,7 +111,6 @@ export const AddSampleFormComponent = (function () {
 
     function populate_form_fields(sample_data_to_populate_with = null) {
         const t = get_t_internally();
-        // console.log("[AddSampleFormComponent.js] populate_form_fields CALLED. Editing sample:", sample_data_to_populate_with ? sample_data_to_populate_with.id : "No (New Sample)");
         if (!State_getCurrentAudit || !t || !Helpers_create_element || !Helpers_generate_uuid_v4) {
             console.error("AddSampleForm: Core dependencies missing for populate_form_fields.");
             if (form_container_ref) {
@@ -126,10 +121,13 @@ export const AddSampleFormComponent = (function () {
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent || !current_audit.ruleFileContent.metadata) {
             console.error("AddSampleForm: Audit data or metadata for populating form is missing.");
+            if (form_container_ref) {
+                form_container_ref.innerHTML = `<p>${t('error_no_rulefile_for_form')}</p>`; // Generic error
+            }
             return;
         }
 
-        if (page_type_select) {
+        if (page_type_select) { // Kontrollera att elementet finns
             page_type_select.innerHTML = `<option value="">${t('select_option')}</option>`;
             (current_audit.ruleFileContent.metadata.pageTypes || []).forEach(pt => {
                 const option = Helpers_create_element('option', { value: pt, text_content: pt });
@@ -137,16 +135,17 @@ export const AddSampleFormComponent = (function () {
             });
         }
 
-        if (content_types_group_element) {
-            content_types_group_element.innerHTML = '';
-            content_type_checkboxes = [];
+        if (content_types_group_element) { // Kontrollera att elementet finns
+            content_types_group_element.innerHTML = ''; // Rensa tidigare
+            content_type_checkboxes = []; // Återställ arrayen
 
+            // Skapa legend om den inte redan finns (t.ex. om render körs flera ggr)
             if (!content_types_group_element.querySelector('legend')) {
                  content_types_group_element.appendChild(Helpers_create_element('legend', { text_content: t('content_types') }));
             }
 
             (current_audit.ruleFileContent.metadata.contentTypes || []).forEach(ct => {
-                const safe_ct_id = String(ct.id).replace(/[^a-zA-Z0-9-_]/g, '');
+                const safe_ct_id = String(ct.id).replace(/[^a-zA-Z0-9-_]/g, ''); // Säkerställ ID
                 const field_id = `content-type-${safe_ct_id}-${Helpers_generate_uuid_v4().substring(0,4)}`;
                 const div_wrapper = Helpers_create_element('div', { class_name: 'form-check' });
                 const checkbox_input = Helpers_create_element('input', {
@@ -167,9 +166,10 @@ export const AddSampleFormComponent = (function () {
             console.error("AddSampleForm: content_types_group_element is not defined in populate_form_fields.");
         }
 
+        // Fyll fält om vi redigerar, annars återställ
         if (sample_data_to_populate_with) {
             if (page_type_select) page_type_select.value = sample_data_to_populate_with.pageType || "";
-            previous_page_type_value = page_type_select ? page_type_select.value : "";
+            previous_page_type_value = page_type_select ? page_type_select.value : ""; // Sätt initialvärde
             if (description_input) description_input.value = sample_data_to_populate_with.description || "";
             if (url_input) url_input.value = sample_data_to_populate_with.url || "";
             content_type_checkboxes.forEach(cb => {
@@ -177,9 +177,9 @@ export const AddSampleFormComponent = (function () {
             });
             if (save_button_text_span_ref) save_button_text_span_ref.textContent = t('save_changes_button');
             if (save_button_icon_span_ref && Helpers_get_icon_svg) save_button_icon_span_ref.innerHTML = Helpers_get_icon_svg('save', ['currentColor'], 18);
-        } else {
+        } else { // Återställ för nytt stickprov
             if (page_type_select) page_type_select.value = "";
-            previous_page_type_value = "";
+            previous_page_type_value = ""; // Återställ
             if (description_input) description_input.value = "";
             if (url_input) url_input.value = "";
             content_type_checkboxes.forEach(cb => cb.checked = false);
@@ -191,16 +191,20 @@ export const AddSampleFormComponent = (function () {
     function validate_and_save_sample(event) {
         event.preventDefault();
         const t = get_t_internally();
-        // console.log("[AddSampleForm] validate_and_save_sample CALLED");
 
         if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
+
+        // Säkerställ att formulärelementen är definierade
+        if (!page_type_select || !description_input || !url_input || !content_type_checkboxes) {
+            console.error("AddSampleForm: Form elements not initialized before save.");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_render_add_sample_form_deps_missing'), 'error');
+            return;
+        }
 
         const page_type = page_type_select.value;
         const description = description_input.value.trim();
         let url_val = url_input.value.trim();
         const selected_content_types = content_type_checkboxes.filter(cb => cb.checked).map(cb => cb.value);
-
-        // console.log("[AddSampleForm] Form data:", { page_type, description, url_val, selected_content_types });
 
         let is_valid = true;
         if (!page_type) {
@@ -208,18 +212,16 @@ export const AddSampleFormComponent = (function () {
             if(page_type_select) page_type_select.focus();
             is_valid = false;
         }
-        if (!description && is_valid) {
+        if (!description && is_valid) { // Kontrollera bara om föregående var OK
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('field_is_required', {fieldName: t('description')}), 'error');
             if(description_input) description_input.focus();
             is_valid = false;
         }
-        if (selected_content_types.length === 0 && is_valid) {
+        if (selected_content_types.length === 0 && is_valid) { // Kontrollera bara om föregående var OK
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_min_one_content_type'), 'error');
-            if(content_type_checkboxes.length > 0) content_type_checkboxes[0].focus();
+            if(content_type_checkboxes.length > 0) content_type_checkboxes[0].focus(); // Fokus på första checkboxen
             is_valid = false;
         }
-
-        // console.log("[AddSampleForm] Validation result, is_valid:", is_valid);
 
         if (!is_valid) return;
 
@@ -239,50 +241,44 @@ export const AddSampleFormComponent = (function () {
             description: description,
             url: url_val,
             selectedContentTypes: selected_content_types,
+            // requirementResults kommer att ärvas eller skapas nytt
         };
 
-        if (current_editing_sample_id) {
+        if (current_editing_sample_id) { // Om vi redigerar
             const sample_index = current_audit.samples.findIndex(s => s.id === current_editing_sample_id);
             if (sample_index > -1) {
+                // Behåll befintliga requirementResults, men uppdatera resten
                 updated_sample_form_data.requirementResults = current_audit.samples[sample_index].requirementResults || {};
                 current_audit.samples[sample_index] = { ...current_audit.samples[sample_index], ...updated_sample_form_data };
-                // console.log("[AddSampleForm] SAMPLE UPDATED:", current_audit.samples[sample_index]);
                 if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('sample_updated_successfully'), "success");
             } else {
                 console.error("[AddSampleForm] Failed to find sample to update with ID:", current_editing_sample_id);
                 if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_sample_update_failed', {defaultValue: "Error: Could not update sample."}), "error");
-                return;
+                return; // Avbryt om vi inte kunde hitta stickprovet
             }
-        } else {
+        } else { // Nytt stickprov
             updated_sample_form_data.id = Helpers_generate_uuid_v4 ? Helpers_generate_uuid_v4() : Date.now().toString();
-            updated_sample_form_data.requirementResults = {};
-            if (!Array.isArray(current_audit.samples)) {
+            updated_sample_form_data.requirementResults = {}; // Tomma resultat för nytt stickprov
+            if (!Array.isArray(current_audit.samples)) { // Säkerställ att samples är en array
                 current_audit.samples = [];
             }
             current_audit.samples.push(updated_sample_form_data);
-            // console.log("[AddSampleForm] NEW SAMPLE PUSHED:", updated_sample_form_data);
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('sample_added_successfully'), "success");
         }
 
-        if(State_setCurrentAudit) {
-             State_setCurrentAudit(current_audit);
-             // console.log("[AddSampleForm] current_audit SAVED to State. Samples count:", current_audit.samples.length, "Samples:", JSON.parse(JSON.stringify(current_audit.samples)));
-        }
-        current_editing_sample_id = null;
-        if (form_element) form_element.reset();
-        previous_page_type_value = "";
-        populate_form_fields();
+        if(State_setCurrentAudit) State_setCurrentAudit(current_audit);
+        current_editing_sample_id = null; // Återställ redigerings-ID
+        if (form_element) form_element.reset(); // Rensa formuläret
+        previous_page_type_value = ""; // Återställ för autofill-logiken
+        populate_form_fields(); // Återställ fälten till "nytt stickprov"-läge
 
         if (on_sample_saved_callback) {
-            // console.log("[AddSampleForm] Calling on_sample_saved_callback");
             on_sample_saved_callback();
         }
-        // console.log("[AddSampleForm] validate_and_save_sample COMPLETED");
     }
 
     function render(sample_id_to_edit = null) {
         const t = get_t_internally();
-        // console.log("[AddSampleFormComponent.js] RENDER CALLED. Editing sample ID:", sample_id_to_edit);
         if (!form_container_ref || !Helpers_create_element || !t || !State_getCurrentAudit) {
             console.error("AddSampleForm: Core dependencies missing for render. Has init completed?");
             if(form_container_ref) {
@@ -290,12 +286,12 @@ export const AddSampleFormComponent = (function () {
             }
             return;
         }
-        form_container_ref.innerHTML = '';
-        current_editing_sample_id = sample_id_to_edit;
+        form_container_ref.innerHTML = ''; // Rensa container
+        current_editing_sample_id = sample_id_to_edit; // Sätt redigerings-ID
 
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent) {
-            form_container_ref.textContent = t('error_no_rulefile_for_form', {defaultValue: "Rule file missing."});
+            form_container_ref.textContent = t('error_no_rulefile_for_form', {defaultValue: "Rule file missing. Cannot build form."});
             return;
         }
 
@@ -307,9 +303,11 @@ export const AddSampleFormComponent = (function () {
         const form_wrapper = Helpers_create_element('div', { class_name: 'add-sample-form' });
         const form_title_text = current_editing_sample_id ? t('edit_sample') : t('add_new_sample');
         form_wrapper.appendChild(Helpers_create_element('h2', { text_content: form_title_text }));
-        form_element = Helpers_create_element('form');
+        
+        form_element = Helpers_create_element('form'); // Skapa <form>
         form_element.addEventListener('submit', validate_and_save_sample);
 
+        // Page Type
         const page_type_group_div = Helpers_create_element('div', { class_name: 'form-group' });
         page_type_group_div.appendChild(Helpers_create_element('label', { attributes: {for: 'pageTypeSelect'}, text_content: t('page_type') + '*' }));
         page_type_select = Helpers_create_element('select', { id: 'pageTypeSelect', class_name: 'form-control', attributes: { required: true }});
@@ -318,60 +316,84 @@ export const AddSampleFormComponent = (function () {
         page_type_group_div.appendChild(page_type_select);
         form_element.appendChild(page_type_group_div);
 
+        // Description
         const description_group_div = Helpers_create_element('div', { class_name: 'form-group' });
         description_group_div.appendChild(Helpers_create_element('label', { attributes: {for: 'sampleDescriptionInput'}, text_content: t('description') + '*' }));
         description_input = Helpers_create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true }});
         description_group_div.appendChild(description_input);
         form_element.appendChild(description_group_div);
 
+        // URL
         const url_group_div = Helpers_create_element('div', { class_name: 'form-group' });
         url_group_div.appendChild(Helpers_create_element('label', { attributes: {for: 'sampleUrlInput'}, text_content: t('url') }));
         url_input = Helpers_create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' }});
         url_group_div.appendChild(url_input);
         form_element.appendChild(url_group_div);
 
+        // Content Types
         content_types_group_element = Helpers_create_element('fieldset', { class_name: 'form-group content-types-group' });
+        // Legend och checkboxes läggs till i populate_form_fields
         form_element.appendChild(content_types_group_element);
 
+        // Actions
         const actions_div = Helpers_create_element('div', { class_name: 'form-actions' });
-        save_button_text_span_ref = Helpers_create_element('span'); // Bytte namn
-        save_button_icon_span_ref = Helpers_create_element('span'); // Bytte namn
+        save_button_text_span_ref = Helpers_create_element('span');
+        save_button_icon_span_ref = Helpers_create_element('span');
 
         const save_button = Helpers_create_element('button', {
             id: 'save-sample-btn',
             class_name: ['button', 'button-primary'],
-            attributes: { type: 'submit' }
+            attributes: { type: 'submit' } // Viktigt för formulär-submit
         });
-        // ÄNDRAD ORDNING: Text först, sedan ikon
-        save_button.appendChild(save_button_text_span_ref);
-        save_button.appendChild(save_button_icon_span_ref);
+        save_button.appendChild(save_button_text_span_ref); // Text först
+        save_button.appendChild(save_button_icon_span_ref); // Sedan ikon
         actions_div.appendChild(save_button);
 
         const show_list_button = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
-            attributes: { type: 'button' },
-            // ÄNDRAD ORDNING: Text först, sedan ikon
+            attributes: { type: 'button' }, // Inte submit
             html_content: `<span>${t('show_existing_samples')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 18) : '')
         });
         show_list_button.addEventListener('click', () => {
-            current_editing_sample_id = null;
-            if (toggle_visibility_callback) toggle_visibility_callback(false);
+            current_editing_sample_id = null; // Återställ redigerings-ID när man byter till listan
+            if (toggle_visibility_callback) toggle_visibility_callback(false); // Anropa callback för att visa listan
         });
         actions_div.appendChild(show_list_button);
         form_element.appendChild(actions_div);
 
-        form_wrapper.appendChild(form_element);
-        form_container_ref.appendChild(form_wrapper);
+        form_wrapper.appendChild(form_element); // Lägg till formuläret i wrappern
+        form_container_ref.appendChild(form_wrapper); // Lägg till wrappern i DOM
 
-        populate_form_fields(sample_data_for_edit);
-        // console.log("[AddSampleFormComponent.js] RENDER COMPLETED");
+        populate_form_fields(sample_data_for_edit); // Fyll i fält med data
     }
-
+    
+    // Lägg till current_editing_sample_id i destroy
     function destroy() {
-        form_element = null; page_type_select = null; description_input = null; url_input = null;
-        content_types_group_element = null; content_type_checkboxes = [];
-        save_button_text_span_ref = null; save_button_icon_span_ref = null; previous_page_type_value = ""; current_editing_sample_id = null;
+        // Rensa eventuella lyssnare om de inte tas bort när elementen tas bort från DOM
+        if (form_element) form_element.removeEventListener('submit', validate_and_save_sample);
+        if (page_type_select) page_type_select.removeEventListener('change', update_description_from_page_type);
+        
+        // Nollställ referenser
+        form_element = null;
+        page_type_select = null;
+        description_input = null;
+        url_input = null;
+        content_types_group_element = null;
+        content_type_checkboxes = [];
+        save_button_text_span_ref = null;
+        save_button_icon_span_ref = null;
+        previous_page_type_value = "";
+        current_editing_sample_id = null; // Viktigt att nollställa denna
+        // form_container_ref, on_sample_saved_callback, toggle_visibility_callback sätts vid init och behöver inte nollställas här
     }
 
-    return { init, render, destroy };
+
+    return { 
+        init, 
+        render, 
+        destroy,
+        get current_editing_sample_id() { return current_editing_sample_id; } // Exponera för SampleManagementView
+    };
 })();
+
+export const AddSampleFormComponent = AddSampleFormComponent_internal;

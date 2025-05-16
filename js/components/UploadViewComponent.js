@@ -1,4 +1,6 @@
-export const UploadViewComponent = (function () {
+// js/components/UploadViewComponent.js
+
+const UploadViewComponent_internal = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/upload_view_component.css';
@@ -31,40 +33,39 @@ export const UploadViewComponent = (function () {
         const file = event.target.files[0];
         if (file) {
             if (file.type !== "application/json") {
-                NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
                 if (rule_file_input_element) rule_file_input_element.value = '';
                 return;
             }
             const reader = new FileReader();
             reader.onload = function (e) {
                 try {
-                    // console.log("[UploadViewComponent] Raw file content from FileReader:", e.target.result);
                     const json_content = JSON.parse(e.target.result);
-                    const validation_result = ValidationLogic.validate_rule_file_json(json_content);
+                    const validation_result = window.ValidationLogic.validate_rule_file_json(json_content);
 
                     if (validation_result.isValid) {
-                        NotificationComponent.show_global_message(validation_result.message, 'success');
-                        const current_audit = State.getCurrentAudit() || State.initNewAudit();
+                        if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'success');
+                        const current_audit = window.State.getCurrentAudit() || window.State.initNewAudit();
                         current_audit.ruleFileContent = json_content;
-                        State.setCurrentAudit(current_audit);
+                        window.State.setCurrentAudit(current_audit);
                         router_ref('metadata');
                     } else {
-                        NotificationComponent.show_global_message(validation_result.message, 'error');
+                        if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
                         if (rule_file_input_element) rule_file_input_element.value = '';
                     }
                 } catch (error) {
                     console.error("Fel vid parsning av JSON från regelfil:", error);
-                    NotificationComponent.show_global_message(t('rule_file_invalid_json'), 'error');
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(t('rule_file_invalid_json'), 'error');
                     if (rule_file_input_element) rule_file_input_element.value = '';
                 }
             };
             reader.onerror = function() {
-                NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
                 if (rule_file_input_element) rule_file_input_element.value = '';
             };
             reader.readAsText(file);
         }
-        if(rule_file_input_element) rule_file_input_element.value = '';
+        if(rule_file_input_element) rule_file_input_element.value = ''; // Rensa alltid input efteråt
     }
 
     function handle_saved_audit_file_select(event) {
@@ -72,7 +73,7 @@ export const UploadViewComponent = (function () {
         const file = event.target.files[0];
         if (file) {
             if (file.type !== "application/json") {
-                NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
                 if (saved_audit_input_element) saved_audit_input_element.value = '';
                 return;
             }
@@ -80,33 +81,32 @@ export const UploadViewComponent = (function () {
             reader.onload = function (e) {
                 try {
                     const file_content_object = JSON.parse(e.target.result);
-                    const validation_result = ValidationLogic.validate_saved_audit_file(file_content_object);
+                    const validation_result = window.ValidationLogic.validate_saved_audit_file(file_content_object);
 
                     if (validation_result.isValid) {
-                        if (State.loadAuditFromFileData(file_content_object)) {
-                            NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
+                        if (window.State.loadAuditFromFileData(file_content_object)) {
+                            if (window.NotificationComponent) NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
                             router_ref('audit_overview');
                         } else {
-                            NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
+                            if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
                         }
                     } else {
-                        NotificationComponent.show_global_message(validation_result.message, 'error');
+                        if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
                     }
                 } catch (error) {
                     console.error("Fel vid parsning av JSON från sparad granskningsfil:", error);
-                    NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
                 }
             };
             reader.onerror = function() {
-                NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
             };
             reader.readAsText(file);
         }
-        if(saved_audit_input_element) saved_audit_input_element.value = '';
+        if(saved_audit_input_element) saved_audit_input_element.value = ''; // Rensa alltid input efteråt
     }
 
     async function init(_app_container, _router) {
-        // console.log("[UploadViewComponent] Init START");
         app_container_ref = _app_container;
         router_ref = _router;
         if (window.NotificationComponent && typeof window.NotificationComponent.get_global_message_element_reference === 'function') {
@@ -116,20 +116,22 @@ export const UploadViewComponent = (function () {
         }
         try {
             if (window.Helpers && typeof window.Helpers.load_css === 'function') {
-                await Helpers.load_css(CSS_PATH);
+                const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
+                if (!link_tag) {
+                    await window.Helpers.load_css(CSS_PATH);
+                }
             } else {
                 console.warn("[UploadViewComponent] Helpers.load_css not available.");
             }
         } catch (error) {
             console.warn(`Failed to load CSS for UploadViewComponent: ${CSS_PATH}`, error);
         }
-        // console.log("[UploadViewComponent] Init END");
     }
 
     function render() {
-        // console.log("[UploadViewComponent] Render START");
-        if (!app_container_ref) {
-            console.error("[UploadViewComponent] app_container_ref is MISSING in render!");
+        if (!app_container_ref || !window.Helpers || !window.Helpers.create_element) {
+            console.error("[UploadViewComponent] app_container_ref or Helpers.create_element is MISSING in render!");
+            if (app_container_ref) app_container_ref.innerHTML = "<p>Error rendering Upload View.</p>";
             return;
         }
         app_container_ref.innerHTML = '';
@@ -139,33 +141,31 @@ export const UploadViewComponent = (function () {
             app_container_ref.appendChild(global_message_element_ref);
         }
 
-        const title = Helpers.create_element('h1', { text_content: t('app_title') });
-        const intro_text = Helpers.create_element('p', { text_content: t('upload_view_intro') });
+        const title = window.Helpers.create_element('h1', { text_content: t('app_title') });
+        const intro_text = window.Helpers.create_element('p', { text_content: t('upload_view_intro') });
 
-        load_ongoing_audit_btn = Helpers.create_element('button', {
+        load_ongoing_audit_btn = window.Helpers.create_element('button', {
             id: 'load-ongoing-audit-btn',
             class_name: ['button', 'button-secondary'],
-            // Byt 'load_existing' till 'upload_file' om du vill ha en uppladdningspil
-            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '') // ELLER 'load_existing'
+            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '')
         });
 
-        start_new_audit_btn = Helpers.create_element('button', {
+        start_new_audit_btn = window.Helpers.create_element('button', {
             id: 'start-new-audit-btn',
             class_name: ['button', 'button-primary'],
-            // Byt 'start_new' till 'upload_file' för tydlig uppladdningsindikation
-            html_content: `<span>${t('start_new_audit')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '') // Tidigare 'start_new'
+            html_content: `<span>${t('start_new_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '')
         });
 
-        const button_group = Helpers.create_element('div', { class_name: 'button-group' });
+        const button_group = window.Helpers.create_element('div', { class_name: 'button-group' });
         button_group.appendChild(load_ongoing_audit_btn);
         button_group.appendChild(start_new_audit_btn);
 
-        rule_file_input_element = Helpers.create_element('input', {
+        rule_file_input_element = window.Helpers.create_element('input', {
             id: 'rule-file-input',
             attributes: { type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true' }
         });
 
-        saved_audit_input_element = Helpers.create_element('input', {
+        saved_audit_input_element = window.Helpers.create_element('input', {
             id: 'saved-audit-input',
             attributes: { type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true' }
         });
@@ -180,18 +180,16 @@ export const UploadViewComponent = (function () {
         if(rule_file_input_element) rule_file_input_element.addEventListener('change', handle_rule_file_select);
         load_ongoing_audit_btn.addEventListener('click', () => { if(saved_audit_input_element) saved_audit_input_element.click(); });
         if(saved_audit_input_element) saved_audit_input_element.addEventListener('change', handle_saved_audit_file_select);
-
-        // console.log("[UploadViewComponent] Render END, app_container_ref.childElementCount:", app_container_ref.childElementCount);
     }
 
     function destroy() {
-        // console.log("[UploadViewComponent] Destroyed");
         if (rule_file_input_element) rule_file_input_element.removeEventListener('change', handle_rule_file_select);
         if (saved_audit_input_element) saved_audit_input_element.removeEventListener('change', handle_saved_audit_file_select);
         rule_file_input_element = null;
         saved_audit_input_element = null;
         load_ongoing_audit_btn = null;
         start_new_audit_btn = null;
+        // app_container_ref och router_ref nollställs inte här då de sätts av main.js
     }
 
     return {
@@ -200,3 +198,5 @@ export const UploadViewComponent = (function () {
         destroy
     };
 })();
+
+export const UploadViewComponent = UploadViewComponent_internal;

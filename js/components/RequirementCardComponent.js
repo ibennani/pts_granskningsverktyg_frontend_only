@@ -1,8 +1,10 @@
 // file: js/components/RequirementCardComponent.js
-export const RequirementCardComponent = (function () {
+
+const RequirementCardComponent_internal = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/requirement_card_component.css';
+    let css_loaded = false; // För att bara ladda CSS en gång
 
     function get_t_internally() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
@@ -19,26 +21,29 @@ export const RequirementCardComponent = (function () {
     }
 
     async function load_styles_if_needed() {
-        if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.load_css === 'function') {
+        if (!css_loaded && typeof window.Helpers !== 'undefined' && typeof window.Helpers.load_css === 'function') {
             if (!document.querySelector(`link[href="${CSS_PATH}"]`)) {
                 try {
                     await window.Helpers.load_css(CSS_PATH);
+                    css_loaded = true;
                 } catch (error) {
                     console.warn("Failed to load CSS for RequirementCardComponent:", error);
                 }
+            } else {
+                css_loaded = true; // CSS redan i DOM
             }
-        } else {
-            console.warn("RequirementCardComponent: Helpers.load_css not available.");
+        } else if (!css_loaded) {
+            console.warn("RequirementCardComponent: Helpers.load_css not available or CSS loaded state unknown.");
         }
     }
 
     function create_card_element(requirement, sample_id, requirement_status, router_cb) {
-        load_styles_if_needed();
+        load_styles_if_needed(); // Ladda CSS om det behövs
 
         const t = get_t_internally();
         const create_element_func = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.create_element === 'function')
             ? window.Helpers.create_element
-            : (tag, opts) => {
+            : (tag, opts) => { // Fallback om Helpers inte finns
                 console.error("RequirementCardComponent: Helpers.create_element not available!");
                 const el = document.createElement(tag);
                 if(opts && opts.text_content) el.textContent = opts.text_content;
@@ -47,14 +52,14 @@ export const RequirementCardComponent = (function () {
             };
         const add_protocol_if_missing_func = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.add_protocol_if_missing === 'function')
             ? window.Helpers.add_protocol_if_missing
-            : (url) => url;
+            : (url) => url; // Fallback
 
         const card_li = create_element_func('li', { class_name: 'requirement-card' });
         const card_content_wrapper = create_element_func('div', { class_name: 'requirement-card-inner-content' });
 
         const indicator = create_element_func('span', {
             class_name: ['status-indicator', `status-${requirement_status}`],
-            attributes: { 'aria-hidden': 'true' }
+            attributes: { 'aria-hidden': 'true' } // Dekorativt
         });
         card_content_wrapper.appendChild(indicator);
 
@@ -67,7 +72,8 @@ export const RequirementCardComponent = (function () {
         });
         title_button.addEventListener('click', () => {
             if (router_cb && typeof router_cb === 'function') {
-                router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.key }); // Använder req.key
+                // Antag att requirement.key finns och är det ID som ska användas för routing
+                router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.key }); 
             } else {
                 console.warn("RequirementCard: router_cb not provided or not a function for title navigation.");
             }
@@ -104,15 +110,19 @@ export const RequirementCardComponent = (function () {
         return card_li;
     }
 
+    // Det enda som exponeras är create-funktionen
     const public_api = {
         create: create_card_element
     };
 
-    if (typeof window.RequirementCardComponent === 'undefined') {
-        window.RequirementCardComponent = public_api;
-    } else {
-        window.RequirementCardComponent = public_api;
-    }
+    // Denna globala tilldelning kan tas bort om komponenten endast importeras via ES6-moduler
+    // if (typeof window.RequirementCardComponent === 'undefined') {
+    //     window.RequirementCardComponent = public_api;
+    // } else {
+    //     window.RequirementCardComponent = public_api; 
+    // }
 
-    return public_api;
+    return public_api; // Returnera API:et för ES6-exporten
 })();
+
+export const RequirementCardComponent = RequirementCardComponent_internal;
