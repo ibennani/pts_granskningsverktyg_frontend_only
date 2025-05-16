@@ -148,17 +148,15 @@ export const RequirementAuditComponent = (function () {
         (current_requirement_object.checks || []).forEach(check => {
             if (!current_requirement_result.checkResults[check.id]) {
                 current_requirement_result.checkResults[check.id] = { 
-                    status: 'not_audited',          // Beräknad status från passCriteria (och overallStatus)
-                    overallStatus: 'not_audited',   // Status från "Stämmer"/"Stämmer inte" - default 'not_audited'
+                    status: 'not_audited',
+                    overallStatus: 'not_audited', 
                     passCriteria: {} 
                 };
             } else {
-                // Säkerställ att properties finns om checkResults[check.id] laddas från äldre sparfiler
                 if (current_requirement_result.checkResults[check.id].overallStatus === undefined) {
-                    current_requirement_result.checkResults[check.id].overallStatus = 'not_audited'; // Default
+                    current_requirement_result.checkResults[check.id].overallStatus = 'not_audited';
                 }
                 if (current_requirement_result.checkResults[check.id].status === undefined) {
-                    // Beräkna initial status om den saknas, baserat på nuvarande overallStatus och passCriteria
                      const check_definition = current_requirement_object.checks.find(c => c.id === check.id);
                      if(check_definition && AuditLogic_calculate_check_status){
                         current_requirement_result.checkResults[check.id].status = AuditLogic_calculate_check_status(
@@ -174,7 +172,6 @@ export const RequirementAuditComponent = (function () {
                     current_requirement_result.checkResults[check.id].passCriteria = {};
                 }
             }
-            // Initiera passCriteria-statusar om de inte finns
             (check.passCriteria || []).forEach(pc => {
                 if (current_requirement_result.checkResults[check.id].passCriteria[pc.id] === undefined) {
                     current_requirement_result.checkResults[check.id].passCriteria[pc.id] = 'not_audited';
@@ -229,23 +226,21 @@ export const RequirementAuditComponent = (function () {
         const check_definition_from_rulefile = current_requirement_object.checks.find(c => c.id === check_id);
 
         if (check_result_obj.overallStatus === new_overall_status) {
-            check_result_obj.overallStatus = 'not_audited'; // Toggle off
+            check_result_obj.overallStatus = 'not_audited';
         } else {
             check_result_obj.overallStatus = new_overall_status;
         }
 
-        // Om "Stämmer inte" (failed) väljs för hela kontrollpunkten:
         if (check_result_obj.overallStatus === 'failed') {
             if (check_definition_from_rulefile && check_definition_from_rulefile.passCriteria) {
                 check_definition_from_rulefile.passCriteria.forEach(pc => {
                     if (!check_result_obj.passCriteria) { 
                         check_result_obj.passCriteria = {};
                     }
-                    check_result_obj.passCriteria[pc.id] = 'passed'; // Markera alla underliggande som godkända
+                    check_result_obj.passCriteria[pc.id] = 'passed';
                 });
             }
         }
-        // Om overallStatus ändras från 'passed' till 'not_audited', behålls ifyllda passCriteria-värden.
 
         if (check_definition_from_rulefile && AuditLogic_calculate_check_status) {
             check_result_obj.status = AuditLogic_calculate_check_status(
@@ -290,20 +285,18 @@ export const RequirementAuditComponent = (function () {
 
         const check_result_obj = current_requirement_result.checkResults[check_id];
         
-        // Förhindra ändring av passkriterier om kontrollpunkten är markerad som "Stämmer inte"
         if (check_result_obj.overallStatus === 'failed') {
             if (NotificationComponent_show_global_message) {
-                NotificationComponent_show_global_message(t('cannot_change_criteria_if_check_not_compliant', {defaultValue: "Criteria cannot be changed when the control point is marked 'Does not comply'."}), 'warning');
+                NotificationComponent_show_global_message(t('cannot_change_criteria_if_check_not_compliant'), 'warning');
             }
             return;
         }
-        // Förhindra även ändring om overallStatus är 'not_audited' (eftersom listan inte visas)
-        // Detta bör dock inte kunna hända eftersom knapparna inte renderas då.
         if (check_result_obj.overallStatus === 'not_audited') {
-             console.warn("[ReqAudit] Attempted to change pass criterion while overall check status is not_audited. This should not happen.");
+             console.warn("[ReqAudit] Attempted to change pass criterion while overall check status is not_audited. This should ideally not happen if UI prevents it.");
+            // Du kan välja att visa ett meddelande här också, eller bara returnera.
+            // NotificationComponent_show_global_message(t('must_select_complies_first'), 'info');
             return;
         }
-
 
         if (check_result_obj.passCriteria[pc_id] === new_status) {
             check_result_obj.passCriteria[pc_id] = 'not_audited';
@@ -382,7 +375,7 @@ export const RequirementAuditComponent = (function () {
             check_wrapper.appendChild(title_element);
 
             const check_result_data = current_requirement_result.checkResults[check.id];
-            const overall_manual_status_for_check = check_result_data?.overallStatus || 'not_audited'; // Default 'not_audited'
+            const overall_manual_status_for_check = check_result_data?.overallStatus || 'not_audited';
 
             if (!is_audit_locked) {
                 const condition_actions_div = Helpers_create_element('div', { class_name: 'condition-actions' }); 
@@ -414,8 +407,7 @@ export const RequirementAuditComponent = (function () {
                 html_content: `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status_for_display}">${check_status_text}</span>`
             }));
 
-            // Visa passCriteria-listan ENDAST om "Stämmer" (overallStatus === 'passed') är valt
-            if (overall_manual_status_for_check === 'passed') {
+            if (overall_manual_status_for_check === 'passed') { // Visa endast om "Stämmer" är aktivt
                 if (check.passCriteria && check.passCriteria.length > 0) {
                     const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                     check.passCriteria.forEach(pc => {
@@ -459,8 +451,6 @@ export const RequirementAuditComponent = (function () {
                 });
                 check_wrapper.appendChild(info_p);
             }
-            // Om overall_manual_status_for_check === 'not_audited' (default), visas inget för passCriteria
-            
             container_element.appendChild(check_wrapper);
         });
     }
@@ -549,7 +539,7 @@ export const RequirementAuditComponent = (function () {
             temp_prev_req_btn.addEventListener('click', go_to_previous_requirement);
             if (current_index <= 0) {
                 temp_prev_req_btn.disabled = true;
-                temp_prev_req_btn.classList.add('button-disabled');
+                // Ta bort: temp_prev_req_btn.classList.add('button-disabled');
             }
             nav_group_right.appendChild(temp_prev_req_btn);
             if (is_top_or_bottom === 'top') prev_req_button_top = temp_prev_req_btn; else prev_req_button_bottom = temp_prev_req_btn;
@@ -559,7 +549,7 @@ export const RequirementAuditComponent = (function () {
             temp_next_req_btn.addEventListener('click', go_to_next_requirement);
             if (current_index >= ordered_requirement_keys_for_sample.length - 1) {
                 temp_next_req_btn.disabled = true;
-                temp_next_req_btn.classList.add('button-disabled');
+                // Ta bort: temp_next_req_btn.classList.add('button-disabled');
             }
             nav_group_right.appendChild(temp_next_req_btn);
             if (is_top_or_bottom === 'top') next_req_button_top = temp_next_req_btn; else next_req_button_bottom = temp_next_req_btn;
@@ -569,7 +559,7 @@ export const RequirementAuditComponent = (function () {
             temp_next_unhandled_btn.addEventListener('click', go_to_next_unhandled_requirement);
             if (find_next_unhandled_requirement_key() === null) {
                 temp_next_unhandled_btn.disabled = true;
-                temp_next_unhandled_btn.classList.add('button-disabled');
+                // Ta bort: temp_next_unhandled_btn.classList.add('button-disabled');
             }
             nav_group_right.appendChild(temp_next_unhandled_btn);
             if (is_top_or_bottom === 'top') next_unhandled_button_top = temp_next_unhandled_btn; else next_unhandled_button_bottom = temp_next_unhandled_btn;
@@ -724,7 +714,6 @@ export const RequirementAuditComponent = (function () {
         prev_req_button_top = null; next_req_button_top = null; next_unhandled_button_top = null;
         prev_req_button_bottom = null; next_req_button_bottom = null; next_unhandled_button_bottom = null;
     }
-
 
     return {
         init,
