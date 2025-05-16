@@ -275,7 +275,7 @@ export const RequirementAuditComponent = (function () {
         if (!current_requirement_result ||
             !current_requirement_result.checkResults ||
             !current_requirement_result.checkResults[check_id] ||
-            !current_requirement_result.checkResults[check_id].passCriteria) {
+            !current_requirement_result.checkResults[check.id].passCriteria) {
             console.error("[ReqAudit] handle_pass_criterion_status_change: Invalid data structure.");
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_internal_data_structure_pc'), 'error');
             return;
@@ -376,18 +376,20 @@ export const RequirementAuditComponent = (function () {
             if (!is_audit_locked) {
                 const condition_actions_div = Helpers_create_element('div', { class_name: 'condition-actions' }); 
 
+                // KNAPP: "Stämmer" - IKON TILL HÖGER, NY IKON
                 const complies_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-success', 'button-small', overall_manual_status_for_check === 'passed' ? 'active' : ''],
                     attributes: { 'aria-pressed': overall_manual_status_for_check === 'passed' ? 'true' : 'false' },
-                    html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('check', ['currentColor'], 16) : '') + `<span>${t('check_complies')}</span>`
+                    html_content: `<span>${t('check_complies')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle', ['currentColor'], 16) : '')
                 });
                 complies_button.addEventListener('click', () => handle_check_overall_status_change(check.id, 'passed'));
                 condition_actions_div.appendChild(complies_button);
 
+                // KNAPP: "Stämmer inte" - IKON TILL HÖGER, NY IKON
                 const not_complies_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small', overall_manual_status_for_check === 'failed' ? 'active' : ''],
                     attributes: { 'aria-pressed': overall_manual_status_for_check === 'failed' ? 'true' : 'false' },
-                    html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('close', ['currentColor'], 16) : '') + `<span>${t('check_does_not_comply')}</span>`
+                    html_content: `<span>${t('check_does_not_comply')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('cancel', ['currentColor'], 16) : '')
                 });
                 not_complies_button.addEventListener('click', () => handle_check_overall_status_change(check.id, 'failed'));
                 condition_actions_div.appendChild(not_complies_button);
@@ -403,7 +405,7 @@ export const RequirementAuditComponent = (function () {
                 html_content: `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status_for_display}">${check_status_text}</span>`
             }));
 
-            if (overall_manual_status_for_check === 'passed') {
+            if (overall_manual_status_for_check === 'passed') { 
                 if (check.passCriteria && check.passCriteria.length > 0) {
                     const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                     check.passCriteria.forEach(pc => {
@@ -418,16 +420,19 @@ export const RequirementAuditComponent = (function () {
 
                         if (!is_audit_locked) {
                             const pc_actions_div = Helpers_create_element('div', { class_name: 'pass-criterion-actions' });
+                            
+                            // KNAPP: "Godkänd" (pass criterion) - IKON TILL HÖGER
                             const passed_button = Helpers_create_element('button', {
                                 class_name: ['button', 'button-success', 'button-small', current_pc_status === 'passed' ? 'active' : ''],
-                                html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_up', ['currentColor'], 16) : '') + `<span>${t('pass_criterion_approved')}</span>`
+                                html_content: `<span>${t('pass_criterion_approved')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_up', ['currentColor'], 16) : '')
                             });
                             passed_button.addEventListener('click', () => handle_pass_criterion_status_change(check.id, pc.id, 'passed'));
                             pc_actions_div.appendChild(passed_button);
                             
+                            // KNAPP: "Underkänd" (pass criterion) - IKON TILL HÖGER
                             const failed_button = Helpers_create_element('button', {
                                 class_name: ['button', 'button-danger', 'button-small', current_pc_status === 'failed' ? 'active' : ''],
-                                html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_down', ['currentColor'], 16) : '') + `<span>${t('pass_criterion_failed')}</span>`
+                                html_content: `<span>${t('pass_criterion_failed')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_down', ['currentColor'], 16) : '')
                             });
                             failed_button.addEventListener('click', () => handle_pass_criterion_status_change(check.id, pc.id, 'failed'));
                             pc_actions_div.appendChild(failed_button);
@@ -713,3 +718,5 @@ export const RequirementAuditComponent = (function () {
         destroy
     };
 })();
+
+// Export-satsen var redan korrekt för denna fil.
