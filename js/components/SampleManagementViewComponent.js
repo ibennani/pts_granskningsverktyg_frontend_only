@@ -94,13 +94,14 @@ export const SampleManagementViewComponent = (function () {
         if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
             sample_list_component_instance.render();
         }
-        toggle_add_sample_form_visibility(false);
-        if (typeof render === 'function') {
+        toggle_add_sample_form_visibility(false); // Göm formuläret efter sparande
+        if (typeof render === 'function') { // Anropa den yttre render-funktionen
             render();
         } else {
             console.error("[SampleManagementView/on_sample_saved] Outer render function is not available.");
         }
     }
+
 
     function handle_edit_sample_request(sample_id) {
         const t = get_t_internally();
@@ -128,14 +129,15 @@ export const SampleManagementViewComponent = (function () {
             if(State_setCurrentAudit) State_setCurrentAudit(current_audit);
 
             if (is_form_visible && add_sample_form_component_instance && add_sample_form_component_instance.current_editing_sample_id === sample_id) {
-                toggle_add_sample_form_visibility(false);
+                toggle_add_sample_form_visibility(false); // Göm formuläret om det raderade stickprovet redigerades
             } else if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
-                sample_list_component_instance.render();
+                sample_list_component_instance.render(); // Annars, rendera bara om listan
             }
 
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('sample_deleted_successfully', {sampleName: sample_name_for_confirm}), "success");
 
-            if (typeof render === 'function') {
+            // Re-render hela vyn för att uppdatera start-knappens status
+             if (typeof render === 'function') {
                 render();
             } else {
                 console.error("[SampleManagementView] handle_delete_sample_request: render function is not defined for re-render!");
@@ -150,7 +152,7 @@ export const SampleManagementViewComponent = (function () {
         const is_readonly = current_audit && current_audit.auditStatus !== 'not_started';
 
         if (is_readonly && is_form_visible) {
-            is_form_visible = false;
+            is_form_visible = false; // Kan inte visa formuläret om granskningen är låst/påbörjad
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('audit_already_started_or_locked'), "info");
         }
 
@@ -158,21 +160,24 @@ export const SampleManagementViewComponent = (function () {
             if (is_form_visible) {
                 add_sample_form_container_element.removeAttribute('hidden');
                 sample_list_container_element.setAttribute('hidden', 'true');
-                toggle_form_button_element.innerHTML = (Helpers_get_icon_svg('list', ['currentColor'], 18) || '') + `<span>${t('show_existing_samples')}</span>`;
-                if (intro_text_element) intro_text_element.setAttribute('hidden', 'true');
+                // ÄNDRAD ORDNING: Text först, sedan ikon
+                toggle_form_button_element.innerHTML = `<span>${t('show_existing_samples')}</span>` + (Helpers_get_icon_svg('list', ['currentColor'], 18) || '');
+                if (intro_text_element) intro_text_element.setAttribute('hidden', 'true'); // Göm intro när formulär visas
                 if (add_sample_form_component_instance && typeof add_sample_form_component_instance.render === 'function') {
                      add_sample_form_component_instance.render(sample_id_to_edit);
                 } else { console.error("[SampleManagementView/toggle] AddSampleFormComponent.render is not a function or instance is null"); }
             } else {
                 add_sample_form_container_element.setAttribute('hidden', 'true');
                 sample_list_container_element.removeAttribute('hidden');
-                toggle_form_button_element.innerHTML = (Helpers_get_icon_svg('add', ['currentColor'], 18) || '') + `<span>${t('add_new_sample')}</span>`;
-                if (intro_text_element && !is_readonly) intro_text_element.removeAttribute('hidden');
-                else if (intro_text_element && is_readonly) intro_text_element.setAttribute('hidden', 'true');
+                // ÄNDRAD ORDNING: Text först, sedan ikon
+                toggle_form_button_element.innerHTML = `<span>${t('add_new_sample')}</span>` + (Helpers_get_icon_svg('add', ['currentColor'], 18) || '');
+                if (intro_text_element && !is_readonly) intro_text_element.removeAttribute('hidden'); // Visa intro om inte readonly
+                else if (intro_text_element && is_readonly) intro_text_element.setAttribute('hidden', 'true'); // Håll gömd om readonly
 
                 if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
                      sample_list_component_instance.render();
                 } else { console.error("[SampleManagementView/toggle] SampleListComponent.render is not a function or instance is null"); }
+                // Om formuläret stängs och inget specifikt stickprov redigerades, "återställ" formuläret internt
                 if (add_sample_form_component_instance && typeof add_sample_form_component_instance.render === 'function' && !sample_id_to_edit) {
                     add_sample_form_component_instance.render(null);
                 }
@@ -216,14 +221,16 @@ export const SampleManagementViewComponent = (function () {
 
             NotificationComponent_show_global_message(t('audit_started_successfully'), "success");
 
+            // Re-render för att uppdatera knapparnas tillstånd (speciellt toggle-knappen)
             if (typeof render === 'function') {
                 render();
             }
 
+            // Navigera efter en kort fördröjning för att meddelandet ska synas
             setTimeout(() => {
                 if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
                 router_ref('audit_overview');
-            }, 500);
+            }, 500); // Justera fördröjning vid behov
         } else if (current_audit.auditStatus !== 'not_started') {
             NotificationComponent_show_global_message(t('audit_already_started_or_locked'), "info");
         } else {
@@ -283,18 +290,21 @@ export const SampleManagementViewComponent = (function () {
             text_content: t('add_samples_intro_message')
         });
         plate_element.appendChild(intro_text_element);
-        if (is_form_visible || is_readonly_view) {
+        if (is_form_visible || is_readonly_view) { // Göm intro om formuläret visas eller om vyn är readonly
             intro_text_element.setAttribute('hidden', 'true');
         }
 
+        // Visa formulärspecifikt intro-meddelande om formuläret är synligt och inget annat meddelande visas
        if (is_form_visible && global_message_element_ref && NotificationComponent_show_global_message &&
             (global_message_element_ref.hasAttribute('hidden') || !global_message_element_ref.textContent.trim())) {
             NotificationComponent_show_global_message(t('add_sample_form_intro'), "info");
        }
 
+
         const top_actions_div = Helpers_create_element('div', { class_name: 'sample-management-actions' });
         toggle_form_button_element = Helpers_create_element('button', { class_name: ['button', 'button-default'] });
         toggle_form_button_element.addEventListener('click', () => {
+            // Om formuläret är synligt och vi ska stänga det, redigeras inget specifikt stickprov längre
             const editing_id_if_switching_off_form = is_form_visible ? null : undefined;
             toggle_add_sample_form_visibility(!is_form_visible, editing_id_if_switching_off_form);
         });
@@ -308,20 +318,22 @@ export const SampleManagementViewComponent = (function () {
             plate_element.appendChild(sample_list_container_element);
         } else { console.error("[SampleManagementView] sample_list_container_element is undefined before append in render!"); }
 
+        // Knappar längst ner (Starta granskning)
         const bottom_actions_div = Helpers_create_element('div', {
-            class_name: ['form-actions', 'space-between-groups'],
-            style: 'margin-top: 2rem; width: 100%;'
+            class_name: ['form-actions', 'space-between-groups'], // Använd globala klasser för flex
+            style: 'margin-top: 2rem; width: 100%;' // Behåll margin-top, bredd kan styras av .form-actions
         });
 
         const left_group_bottom = Helpers_create_element('div', { class_name: 'action-group-left' });
         const right_group_bottom = Helpers_create_element('div', { class_name: 'action-group-right' });
 
-        start_audit_button_element = null;
+        start_audit_button_element = null; // Återställ för varje render
         if (current_audit && current_audit.samples && current_audit.samples.length > 0 && current_audit.auditStatus === 'not_started') {
             start_audit_button_element = Helpers_create_element('button', {
                 id: 'start-audit-main-btn',
                 class_name: ['button', 'button-success'],
-                html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle_green_yellow', ['var(--button-success-text)', 'var(--button-success-hover-bg)'], 18) : '') + `<span>${t('start_audit')}</span>`
+                // ÄNDRAD ORDNING: Text först, sedan ikon
+                html_content: `<span>${t('start_audit')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle_green_yellow', ['var(--button-success-text)', 'var(--button-success-hover-bg)'], 18) : '')
             });
             start_audit_button_element.addEventListener('click', handle_start_audit);
             right_group_bottom.appendChild(start_audit_button_element);
@@ -330,25 +342,27 @@ export const SampleManagementViewComponent = (function () {
         // Lägg ALLTID till vänster grupp, även om den är tom, för att space-between ska fungera
         bottom_actions_div.appendChild(left_group_bottom);
 
-        if (right_group_bottom.hasChildNodes()) {
+        if (right_group_bottom.hasChildNodes()) { // Lägg bara till höger grupp om den har innehåll
             bottom_actions_div.appendChild(right_group_bottom);
         }
 
-        if (bottom_actions_div.hasChildNodes()) {
+        if (bottom_actions_div.hasChildNodes() && right_group_bottom.hasChildNodes()) { // Lägg bara till hela raden om det finns knappar i höger grupp
             plate_element.appendChild(bottom_actions_div);
         }
 
-        let initial_sample_id_to_edit = null;
+        // Bestäm initial synlighet för formuläret
+        let initial_sample_id_to_edit = null; // Om vi skulle vilja gå direkt till redigering via URL-parameter
         let should_form_be_visible_initially;
 
         if (is_readonly_view) {
-            should_form_be_visible_initially = false;
+            should_form_be_visible_initially = false; // Visa aldrig formulär om vyn är readonly
         } else if (current_audit && current_audit.samples && current_audit.samples.length === 0) {
-            should_form_be_visible_initially = true;
+            should_form_be_visible_initially = true; // Visa formulär om inga stickprov finns
         } else {
-            should_form_be_visible_initially = is_form_visible;
+            should_form_be_visible_initially = is_form_visible; // Annars, behåll nuvarande synlighet
         }
 
+        // Om formuläret var synligt men ska döljas (och inget stickprov redigeras), rendera om listan
         if (is_form_visible && !should_form_be_visible_initially && add_sample_form_component_instance && typeof add_sample_form_component_instance.render === 'function' && add_sample_form_component_instance.current_editing_sample_id === null) {
              if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
                 sample_list_component_instance.render();
@@ -356,7 +370,7 @@ export const SampleManagementViewComponent = (function () {
         }
 
         toggle_add_sample_form_visibility(should_form_be_visible_initially, initial_sample_id_to_edit);
-        update_button_states();
+        update_button_states(); // Säkerställ att knapparnas tillstånd är korrekta efter render
     }
 
     function destroy() {
@@ -370,7 +384,7 @@ export const SampleManagementViewComponent = (function () {
         toggle_form_button_element = null; start_audit_button_element = null;
         global_message_element_ref = null;
         intro_text_element = null;
-        is_form_visible = false;
+        is_form_visible = false; // Återställ tillstånd
     }
 
     return {

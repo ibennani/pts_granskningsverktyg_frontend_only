@@ -93,9 +93,6 @@ export const MetadataViewComponent = (function () {
             return false;
         }
 
-        // Om granskningen inte är 'not_started', ska fälten vara readonly och spara-knappen inte finnas.
-        // Men om man på något sätt lyckas anropa save_metadata, returnera true för att inte blockera flödet,
-        // men inga ändringar bör ha gjorts i UI.
         if (current_audit.auditStatus !== 'not_started') {
             console.warn("MetadataView: save_metadata called when audit status is not 'not_started'. No changes will be saved.");
             return true;
@@ -137,8 +134,6 @@ export const MetadataViewComponent = (function () {
 
         let input_element;
         const attributes = { type: type };
-        // Placeholder logik kan vara kvar om den är generell, annars tas den bort eller görs specifik.
-        // if (remove_placeholder) { /* Ingen placeholder */ }
 
         if (type === 'textarea') {
             input_element = Helpers_create_element('textarea', {
@@ -172,7 +167,6 @@ export const MetadataViewComponent = (function () {
                     attributes: { target: '_blank', rel: 'noopener noreferrer' }
                 }));
             } else {
-                 // Hantera nyradstecken för internalComment
                 if (label_key === 'internal_comment' && value.includes('\n')) {
                     value.split('\n').forEach((line, index) => {
                         if (index > 0) field_div.appendChild(Helpers_create_element('br'));
@@ -183,7 +177,7 @@ export const MetadataViewComponent = (function () {
                 }
             }
         } else {
-            field_div.appendChild(document.createTextNode(' ' + t('value_not_set', {defaultValue: '(Not set)'}))); // Nyckel för "Ej angivet"
+            field_div.appendChild(document.createTextNode(' ' + t('value_not_set', {defaultValue: '(Not set)'})));
         }
         return field_div;
     }
@@ -193,7 +187,7 @@ export const MetadataViewComponent = (function () {
         const t = get_t_internally();
         if (!app_container_ref || !Helpers_create_element || !t || !State_getCurrentAudit) {
             console.error("MetadataView: Core dependencies missing for render.");
-            if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_metadata_view')}</p>`; // ANVÄNDER i18n
+            if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_metadata_view')}</p>`;
             return;
         }
         app_container_ref.innerHTML = '';
@@ -202,8 +196,9 @@ export const MetadataViewComponent = (function () {
         if (!current_audit || !current_audit.ruleFileContent) {
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t("error_no_rulefile_loaded_for_metadata"), "error");
             const back_button = Helpers_create_element('button', {
-                text_content: t('upload_rule_file_title'),
                 class_name: ['button', 'button-default'],
+                // ÄNDRAD ORDNING: Text först, sedan ikon
+                html_content: `<span>${t('upload_rule_file_title')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('upload_file', ['currentColor'], 18) : ''), // Antag att 'upload_file' är en ikon
                 event_listeners: { click: () => { if(navigate_and_set_hash_ref) navigate_and_set_hash_ref('upload');} }
             });
             app_container_ref.appendChild(back_button);
@@ -240,7 +235,7 @@ export const MetadataViewComponent = (function () {
             actor_name_input = actor_field.input_element;
             form.appendChild(actor_field.form_group);
 
-            const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', metadata.actorLink, true); // remove_placeholder=true
+            const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', metadata.actorLink, true);
             actor_link_input = actor_link_field.input_element;
             form.appendChild(actor_link_field.form_group);
 
@@ -267,20 +262,25 @@ export const MetadataViewComponent = (function () {
 
         const actions_div = Helpers_create_element('div', { class_name: 'metadata-actions' });
         const submit_button_text_key = is_editable ? 'continue_to_samples' : 'view_samples_button';
-        const submit_button_icon = is_editable ? 'arrow_forward' : 'list'; // eller 'visibility'
+        const submit_button_icon = is_editable ? 'arrow_forward' : 'list';
 
         const submit_button = Helpers_create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg(submit_button_icon, ['currentColor'], 18) : '') + `<span>${t(submit_button_text_key)}</span>`
+            // ÄNDRAD ORDNING: Text först, sedan ikon
+            html_content: `<span>${t(submit_button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg(submit_button_icon, ['currentColor'], 18) : '')
         });
 
         if (is_editable) {
             submit_button.setAttribute('type', 'submit');
-             // Lägg till knappen inuti formuläret om det är redigerbart
             const form_element = form_container.querySelector('form');
             if (form_element) {
-                form_element.appendChild(actions_div);
-            } else { // Fallback om formuläret av någon anledning inte finns
+                // Lägg actions_div (med knappen) inuti formen om redigerbart
+                const form_actions_wrapper_for_form = Helpers_create_element('div', { class_name: 'form-actions metadata-actions' }); // Använd form-actions för flex
+                form_actions_wrapper_for_form.appendChild(submit_button);
+                form_element.appendChild(form_actions_wrapper_for_form);
+
+            } else { 
+                actions_div.appendChild(submit_button);
                 plate_element.appendChild(actions_div);
             }
         } else {
@@ -288,9 +288,9 @@ export const MetadataViewComponent = (function () {
                 e.preventDefault();
                 if (navigate_and_set_hash_ref) navigate_and_set_hash_ref('sample_management');
             });
-            plate_element.appendChild(actions_div); // Lägg till efter form_container om statisk
+            actions_div.appendChild(submit_button);
+            plate_element.appendChild(actions_div);
         }
-        actions_div.appendChild(submit_button);
     }
 
     function destroy() {
@@ -299,7 +299,6 @@ export const MetadataViewComponent = (function () {
         actor_link_input = null;
         auditor_name_input = null;
         internal_comment_input = null;
-        // Eventuella andra DOM-referenser eller lyssnare som behöver rensas manuellt
     }
 
     return { init, render, destroy };

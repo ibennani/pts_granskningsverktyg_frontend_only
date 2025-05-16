@@ -197,8 +197,6 @@
     "no_checks_for_this_requirement": "No checks defined for this requirement.",
     "check_status": "Check status",
     "overall_requirement_status": "Overall requirement status",
-    "pass_criterion_approved": "Passed",
-    "pass_criterion_failed": "Failed",
     "error_internal_data_structure_pc": "Internal error: Invalid data structure for updating pass criterion.",
     "todo_previous_requirement": "TODO: Navigate to previous requirement.",
     "todo_next_requirement": "TODO: Navigate to next requirement.",
@@ -210,6 +208,11 @@
     "total_requirements_audited_label": "Total requirements reviewed",
     "audit_sample_short": "Review",
     "audit_next_incomplete_requirement": "Review next",
-    "view_audited_sample": "View results"
+    "view_audited_sample": "View results",
+    "condition_not_met_criteria_auto_passed": "Since the condition doesn't apply, these points are automatically passed.",
+    "check_complies": "Complies",
+    "check_does_not_comply": "Does not comply",
+    "cannot_change_criteria_if_check_not_compliant": "Criteria cannot be changed when the control point is marked 'Does not comply'.",
+    "check_marked_as_not_compliant_criteria_passed": "The control point is marked as 'Does not comply'; underlying criteria have been automatically marked as passed and are not shown."
   }
   

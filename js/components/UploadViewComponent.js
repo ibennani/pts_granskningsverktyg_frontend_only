@@ -38,18 +38,18 @@ export const UploadViewComponent = (function () {
             const reader = new FileReader();
             reader.onload = function (e) {
                 try {
-                    console.log("[UploadViewComponent] Raw file content from FileReader:", e.target.result);
+                    // console.log("[UploadViewComponent] Raw file content from FileReader:", e.target.result);
                     const json_content = JSON.parse(e.target.result);
                     const validation_result = ValidationLogic.validate_rule_file_json(json_content);
 
                     if (validation_result.isValid) {
-                        NotificationComponent.show_global_message(validation_result.message, 'success'); // Meddelande från ValidationLogic är redan översatt
+                        NotificationComponent.show_global_message(validation_result.message, 'success');
                         const current_audit = State.getCurrentAudit() || State.initNewAudit();
                         current_audit.ruleFileContent = json_content;
                         State.setCurrentAudit(current_audit);
                         router_ref('metadata');
                     } else {
-                        NotificationComponent.show_global_message(validation_result.message, 'error'); // Meddelande från ValidationLogic är redan översatt
+                        NotificationComponent.show_global_message(validation_result.message, 'error');
                         if (rule_file_input_element) rule_file_input_element.value = '';
                     }
                 } catch (error) {
@@ -64,7 +64,7 @@ export const UploadViewComponent = (function () {
             };
             reader.readAsText(file);
         }
-        if(rule_file_input_element) rule_file_input_element.value = ''; // Rensa alltid
+        if(rule_file_input_element) rule_file_input_element.value = '';
     }
 
     function handle_saved_audit_file_select(event) {
@@ -84,15 +84,13 @@ export const UploadViewComponent = (function () {
 
                     if (validation_result.isValid) {
                         if (State.loadAuditFromFileData(file_content_object)) {
-                            NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success'); // ANVÄNDER i18n-nyckel
+                            NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
                             router_ref('audit_overview');
                         } else {
-                            // State.loadAuditFromFileData kan returnera false om filen inte är giltig nog internt,
-                            // men ValidationLogic bör ha fångat de flesta formatfelen.
                             NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
                         }
                     } else {
-                        NotificationComponent.show_global_message(validation_result.message, 'error'); // Meddelande från ValidationLogic
+                        NotificationComponent.show_global_message(validation_result.message, 'error');
                     }
                 } catch (error) {
                     console.error("Fel vid parsning av JSON från sparad granskningsfil:", error);
@@ -104,11 +102,11 @@ export const UploadViewComponent = (function () {
             };
             reader.readAsText(file);
         }
-        if(saved_audit_input_element) saved_audit_input_element.value = ''; // Rensa alltid
+        if(saved_audit_input_element) saved_audit_input_element.value = '';
     }
 
     async function init(_app_container, _router) {
-        console.log("[UploadViewComponent] Init START");
+        // console.log("[UploadViewComponent] Init START");
         app_container_ref = _app_container;
         router_ref = _router;
         if (window.NotificationComponent && typeof window.NotificationComponent.get_global_message_element_reference === 'function') {
@@ -125,11 +123,11 @@ export const UploadViewComponent = (function () {
         } catch (error) {
             console.warn(`Failed to load CSS for UploadViewComponent: ${CSS_PATH}`, error);
         }
-        console.log("[UploadViewComponent] Init END");
+        // console.log("[UploadViewComponent] Init END");
     }
 
     function render() {
-        console.log("[UploadViewComponent] Render START");
+        // console.log("[UploadViewComponent] Render START");
         if (!app_container_ref) {
             console.error("[UploadViewComponent] app_container_ref is MISSING in render!");
             return;
@@ -142,25 +140,23 @@ export const UploadViewComponent = (function () {
         }
 
         const title = Helpers.create_element('h1', { text_content: t('app_title') });
-        const intro_text = Helpers.create_element('p', { text_content: t('upload_view_intro') }); // ANVÄNDER i18n-nyckel
+        const intro_text = Helpers.create_element('p', { text_content: t('upload_view_intro') });
 
         load_ongoing_audit_btn = Helpers.create_element('button', {
             id: 'load-ongoing-audit-btn',
             class_name: ['button', 'button-secondary'],
-            html_content: Helpers.get_icon_svg('load_existing', ['currentColor'], 18) + `<span>${t('upload_ongoing_audit')}</span>`
+            // Byt 'load_existing' till 'upload_file' om du vill ha en uppladdningspil
+            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '') // ELLER 'load_existing'
         });
 
         start_new_audit_btn = Helpers.create_element('button', {
             id: 'start-new-audit-btn',
             class_name: ['button', 'button-primary'],
-            html_content: Helpers.get_icon_svg('start_new', ['currentColor'], 18) + `<span>${t('start_new_audit')}</span>`
+            // Byt 'start_new' till 'upload_file' för tydlig uppladdningsindikation
+            html_content: `<span>${t('start_new_audit')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '') // Tidigare 'start_new'
         });
 
         const button_group = Helpers.create_element('div', { class_name: 'button-group' });
-        // CSS klassen .button-group bör hantera styling istället för inline styles här
-        // button_group.style.display = 'flex';
-        // button_group.style.gap = '1rem';
-        // button_group.style.marginTop = '1.5rem';
         button_group.appendChild(load_ongoing_audit_btn);
         button_group.appendChild(start_new_audit_btn);
 
@@ -185,15 +181,13 @@ export const UploadViewComponent = (function () {
         load_ongoing_audit_btn.addEventListener('click', () => { if(saved_audit_input_element) saved_audit_input_element.click(); });
         if(saved_audit_input_element) saved_audit_input_element.addEventListener('change', handle_saved_audit_file_select);
 
-        console.log("[UploadViewComponent] Render END, app_container_ref.childElementCount:", app_container_ref.childElementCount);
+        // console.log("[UploadViewComponent] Render END, app_container_ref.childElementCount:", app_container_ref.childElementCount);
     }
 
     function destroy() {
         // console.log("[UploadViewComponent] Destroyed");
-        // Rensa eventuella event listeners om de inte tas bort automatiskt med innerHTML rensning
         if (rule_file_input_element) rule_file_input_element.removeEventListener('change', handle_rule_file_select);
         if (saved_audit_input_element) saved_audit_input_element.removeEventListener('change', handle_saved_audit_file_select);
-        // Nollställ referenser
         rule_file_input_element = null;
         saved_audit_input_element = null;
         load_ongoing_audit_btn = null;

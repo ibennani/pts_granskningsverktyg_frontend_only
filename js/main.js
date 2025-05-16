@@ -15,7 +15,7 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
     const app_container = document.getElementById('app-container');
     if (!app_container) {
         console.error("[Main.js] CRITICAL: app_container element not found in DOM!");
-        document.body.innerHTML = "<p style='color:red; font-weight:bold;'>Application Error: App container not found. Check HTML and script load order.</p>"; // Hårdkodad, men visas bara vid kritiskt fel innan i18n laddats.
+        document.body.innerHTML = "<p style='color:red; font-weight:bold;'>Application Error: App container not found. Check HTML and script load order.</p>";
         return;
     }
 
@@ -44,12 +44,11 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
 
     function update_app_chrome_texts() {
-        const t = get_t_fallback(); // Använd fallback här då Translation kanske inte är fullt redo
+        const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
         }
-        // const { t } = Translation; // Kan användas om man är säker på att Translation är redo
         document.title = t('app_title');
         if (theme_toggle_button_element && theme_toggle_button_element.themeFunctions &&
             typeof theme_toggle_button_element.themeFunctions.updateContent === 'function') {
@@ -64,7 +63,7 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
                 }
             });
             language_selector_element.value = Translation.get_current_language_code();
-            if(language_label_element) language_label_element.textContent = t('language_switcher_label'); // Uppdatera labeltexten också
+            if(language_label_element) language_label_element.textContent = t('language_switcher_label');
         }
     }
 
@@ -74,13 +73,12 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
             console.error("[Main.js] init_ui_controls: Core dependencies (Translation or Helpers) not available!");
             return;
         }
-        // const { t } = Translation; // Eller hämta specifikt här
         const controls_wrapper = Helpers.create_element('div', { class_name: 'global-controls'});
 
         const language_selector_container = Helpers.create_element('div', { class_name: 'language-selector-container' });
         language_label_element = Helpers.create_element('label', {
             attributes: {for: 'language-selector'},
-            text_content: t('language_switcher_label'), // Använder t()
+            text_content: t('language_switcher_label'),
             class_name: 'visually-hidden'
         });
         language_selector_container.appendChild(language_label_element);
@@ -99,8 +97,6 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
                 if (window.NotificationComponent && typeof window.NotificationComponent.clear_global_message === 'function') NotificationComponent.clear_global_message();
                 const selected_lang_code = event.target.value;
                 await Translation.set_language(selected_lang_code);
-                // update_app_chrome_texts(); // Redan hanterat av 'languageChanged' eventet
-                // render_view(current_view_name_rendered, JSON.parse(current_view_params_rendered_json)); // Hanteras av 'languageChanged'
             });
         } else { console.error("[Main.js] Translation module functions missing for language selector."); }
         language_selector_container.appendChild(language_selector_element);
@@ -109,15 +105,17 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
         theme_toggle_button_element = Helpers.create_element('button', { id: 'theme-toggle', class_name: ['button', 'button-default'] });
 
         function set_theme_button_content(theme) {
-            const t_local = get_t_fallback(); // Använd lokal t för denna funktion
+            const t_local = get_t_fallback();
             if (!theme_toggle_button_element || !window.Helpers || !window.Helpers.get_icon_svg) return;
-            theme_toggle_button_element.innerHTML = '';
+            
             let icon_svg_string;
             let button_label_text;
             let icon_color_val = getComputedStyle(document.documentElement).getPropertyValue('--button-default-text').trim();
+            
             if (!icon_color_val || icon_color_val === "initial" || icon_color_val === "inherit" || icon_color_val === "") {
                 icon_color_val = (theme === 'dark') ? 'var(--text-color)' : 'var(--text-color)';
             }
+
             if (theme === 'dark') {
                 icon_svg_string = Helpers.get_icon_svg('light_mode', [icon_color_val], 18);
                 button_label_text = t_local('light_mode');
@@ -125,9 +123,8 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
                 icon_svg_string = Helpers.get_icon_svg('dark_mode', [icon_color_val], 18);
                 button_label_text = t_local('dark_mode');
             }
-            theme_toggle_button_element.innerHTML = icon_svg_string || '';
-            const text_node = document.createTextNode(' ' + button_label_text);
-            theme_toggle_button_element.appendChild(text_node);
+            // ÄNDRAD ORDNING: Text först, sedan ikon
+            theme_toggle_button_element.innerHTML = `<span> ${button_label_text}</span>` + (icon_svg_string || '');
         }
 
         function set_theme(theme) {
@@ -155,14 +152,14 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
     }
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
-        console.log(`%c[Main.js] navigate_and_set_hash CALLED. Target: ${target_view_name}`, "color: green; font-weight: bold;", "Params:", target_params);
+        // console.log(`%c[Main.js] navigate_and_set_hash CALLED. Target: ${target_view_name}`, "color: green; font-weight: bold;", "Params:", target_params);
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
             `${target_view_name}?${new URLSearchParams(target_params).toString()}` :
             target_view_name;
         const new_hash = `#${target_hash_part}`;
 
         if (window.location.hash === new_hash) {
-            console.log(`[Main.js/navigate_and_set_hash] Hash already matches ${new_hash}. Forcing re-render.`);
+            // console.log(`[Main.js/navigate_and_set_hash] Hash already matches ${new_hash}. Forcing re-render.`);
             render_view(target_view_name, target_params);
         } else {
             window.location.hash = new_hash;
@@ -173,11 +170,10 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
         const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function' || !window.Helpers || !window.Helpers.escape_html) {
             console.error("[Main.js] render_view: Core dependencies missing!");
-            if(app_container) app_container.innerHTML = `<p>${t('critical_error_system_render_view_failed')}</p>`; // ANVÄNDER i18n
+            if(app_container) app_container.innerHTML = `<p>${t('critical_error_system_render_view_failed')}</p>`;
             return;
         }
-        // const { t } = Translation; // Kan användas om säker
-        console.log(`%c[Main.js] RENDER_VIEW for: ${view_name_to_render}`, "color: purple; font-weight: bold;", "Params:", params_to_render);
+        // console.log(`%c[Main.js] RENDER_VIEW for: ${view_name_to_render}`, "color: purple; font-weight: bold;", "Params:", params_to_render);
 
         current_view_name_rendered = view_name_to_render;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
@@ -223,7 +219,7 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
     }
 
     function handle_hash_change() {
-        console.log(`%c[Main.js] HASH_CHANGE_EVENT FIRED. New hash: ${window.location.hash}`, "color: red; font-weight: bold;");
+        // console.log(`%c[Main.js] HASH_CHANGE_EVENT FIRED. New hash: ${window.location.hash}`, "color: red; font-weight: bold;");
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
         const params = {};
@@ -246,74 +242,73 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
         const new_params_json = JSON.stringify(target_params);
         if (current_view_name_rendered !== target_view || current_view_params_rendered_json !== new_params_json) {
-            console.log(`[Main.js/handle_hash_change] Hash change requires rendering view: ${target_view}`);
+            // console.log(`[Main.js/handle_hash_change] Hash change requires rendering view: ${target_view}`);
             render_view(target_view, target_params);
         } else {
-            console.log(`[Main.js/handle_hash_change] Hash or params same as currently rendered view. No re-render from hash handler.`);
+            // console.log(`[Main.js/handle_hash_change] Hash or params same as currently rendered view. No re-render from hash handler.`);
         }
     }
 
     function on_language_changed_event() {
-        console.log("[Main.js] 'languageChanged' event handler triggered.");
+        // console.log("[Main.js] 'languageChanged' event handler triggered.");
         update_app_chrome_texts();
         if (current_view_name_rendered) {
-            console.log(`[Main.js/on_language_changed_event] Re-rendering current view: ${current_view_name_rendered}`);
+            // console.log(`[Main.js/on_language_changed_event] Re-rendering current view: ${current_view_name_rendered}`);
             render_view(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
         } else {
-            console.warn("[Main.js] current_view_name_rendered not set during language change, hash handler will manage.");
+            // console.warn("[Main.js] current_view_name_rendered not set during language change, hash handler will manage.");
         }
     }
 
     async function init_app() {
-        console.log("[Main.js] App Initializing... (inside init_app)");
-        const t_init = get_t_fallback(); // För initiala fel
+        // console.log("[Main.js] App Initializing... (inside init_app)");
+        const t_init = get_t_fallback();
 
         if (window.Translation && typeof window.Translation.ensure_initial_load === 'function') {
             await window.Translation.ensure_initial_load();
-            console.log("[Main.js] Initial translations loaded.");
+            // console.log("[Main.js] Initial translations loaded.");
         } else {
             console.error("[Main.js] CRITICAL: Translation module or ensure_initial_load not found!");
-            if(app_container) app_container.innerHTML = `<p>${t_init('critical_error_language_system_init_failed')}</p>`; // ANVÄNDER i18n
+            if(app_container) app_container.innerHTML = `<p>${t_init('critical_error_language_system_init_failed')}</p>`;
             return;
         }
 
-        // Nu bör Translation vara fullt laddad, så vi kan hämta en "riktig" t-funktion
         const { t } = Translation;
         document.title = t('app_title');
 
         if (window.NotificationComponent && typeof window.NotificationComponent.init === 'function') {
             await NotificationComponent.init();
-            console.log("[Main.js] NotificationComponent initialized.");
+            // console.log("[Main.js] NotificationComponent initialized.");
         } else {
             console.error("[Main.js] NotificationComponent is not available or not initialized correctly.");
         }
 
         init_ui_controls();
-        console.log("[Main.js] init_ui_controls completed.");
+        // console.log("[Main.js] init_ui_controls completed.");
 
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
-        console.log("[Main.js] Event listeners added.");
+        // console.log("[Main.js] Event listeners added.");
 
         if (window.NotificationComponent && typeof NotificationComponent.clear_global_message === 'function') {
             NotificationComponent.clear_global_message();
         }
 
-        console.log("[Main.js] Calling initial handle_hash_change to render first view.");
+        // console.log("[Main.js] Calling initial handle_hash_change to render first view.");
         handle_hash_change();
 
         update_app_chrome_texts();
-        console.log("[Main.js] App Initialized. (end of init_app)");
+        // console.log("[Main.js] App Initialized. (end of init_app)");
     }
 
     if (document.readyState === 'loading') {
-        console.log("[Main.js] DOM not ready, adding DOMContentLoaded listener.");
+        // console.log("[Main.js] DOM not ready, adding DOMContentLoaded listener.");
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("[Main.js] DOMContentLoaded event fired.");
+            // console.log("[Main.js] DOMContentLoaded event fired.");
             init_app().catch(err => console.error("Error during app initialization (from DOMContentLoaded):", err));
         });
     } else {
-        console.log("[Main.js] DOM already ready, calling init_app directly.");
+        // console.log("[Main.js] DOM already ready, calling init_app directly.");
         init_app().catch(err => console.error("Error during app initialization (direct call):", err));
     }
 

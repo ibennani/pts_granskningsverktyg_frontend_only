@@ -197,8 +197,6 @@
   "no_checks_for_this_requirement": "Inga kontrollpunkter definierade för detta krav.",
   "check_status": "Status för kontrollpunkt",
   "overall_requirement_status": "Övergripande status för kravet",
-  "pass_criterion_approved": "Godkänt",
-  "pass_criterion_failed": "Underkänt",
   "error_internal_data_structure_pc": "Internt fel: Felaktig datastruktur för att uppdatera godkännandekriterium.",
   "todo_previous_requirement": "TODO: Navigera till föregående krav.",
   "todo_next_requirement": "TODO: Navigera till nästa krav.",
@@ -210,6 +208,10 @@
   "total_requirements_audited_label": "Totalt antal granskade krav",
   "audit_sample_short": "Granska",
   "audit_next_incomplete_requirement": "Granska nästa",
-  "view_audited_sample": "Visa resultat"
-
+  "view_audited_sample": "Visa resultat",
+  "condition_not_met_criteria_auto_passed": "Eftersom villkoret inte gäller, är dessa punkter automatiskt godkända.",
+  "check_complies": "Stämmer",
+  "check_does_not_comply": "Stämmer inte",
+  "cannot_change_criteria_if_check_not_compliant": "Kriterier kan inte ändras när kontrollpunkten är markerad 'Stämmer inte'.",
+  "check_marked_as_not_compliant_criteria_passed": "Kontrollpunkten är markerad som 'Stämmer inte'; underliggande kriterier har automatiskt markerats som godkända och visas ej."
 }

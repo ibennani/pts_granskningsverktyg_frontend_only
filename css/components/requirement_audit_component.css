@@ -141,48 +141,66 @@
     margin-bottom: 0.75rem;
     font-style: italic;
 }
+
+/* --- STYLING FÖR AKTIONSKNAPPAR (BÅDE CONDITION OCH PASS-CRITERION) --- */
+
+/* Gemensam container-styling för .condition-actions (Stämmer/Stämmer inte) */
+/* och .pass-criterion-actions (Godkänt/Underkänt) */
+.condition-actions,
 .pass-criterion-actions {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
     margin-top: 0.5rem;
 }
-/* Aktivt läge för godkänt/underkänt knappar */
-.pass-criterion-actions .button.active {
-    box-shadow: inset 0 0 0 2px var(--primary-color); /* Inre ram för aktiv knapp */
-    /* Eller om du vill ändra bakgrundsfärgen mer drastiskt */
-}
-.pass-criterion-actions .button.button-success.active {
-    background-color: color-mix(in srgb, var(--success-color) 70%, black) !important;
-    color: white !important;
-}
-.pass-criterion-actions .button.button-danger.active {
-    background-color: color-mix(in srgb, var(--danger-color) 70%, black) !important;
-    color: white !important;
+
+/* Specifik marginaljustering för .condition-actions */
+.condition-actions {
+    margin-bottom: 1rem; 
 }
 
-/* Status textfärger (kan flyttas till globalt om det används på fler ställen) */
+/* Generell stil för knappar i BÅDA action-grupperna */
+.condition-actions .button.button-small,
+.pass-criterion-actions .button.button-small {
+    transition: outline-color 0.15s ease-in-out, outline-offset 0.15s ease-in-out;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+/* Stil för den AKTIVA/VALDA KNAPPEN i BÅDA action-grupperna */
+.condition-actions .button.button-small.active,
+.pass-criterion-actions .button.button-small.active {
+    outline-color: var(--primary-color);
+}
+
+/* Mörkt tema justering för den aktiva knappens ram (täcker båda) */
+[data-theme="dark"] .condition-actions .button.button-small.active,
+[data-theme="dark"] .pass-criterion-actions .button.button-small.active {
+    outline-color: var(--primary-color);
+}
+/* --- SLUT PÅ STYLING FÖR AKTIONSKNAPPAR --- */
+
+/* Status textfärger */
 .status-text.status-passed { color: var(--success-color); font-weight: bold; }
 .status-text.status-failed { color: var(--danger-color); font-weight: bold; }
 .status-text.status-partially_audited { color: var(--warning-color); font-weight: bold; }
 .status-text.status-not_audited { color: var(--text-color-muted); }
-
 
 /* Input Fields Section */
 .input-fields-container {
     margin-top: 2rem;
 }
 .input-fields-container .form-group {
-    margin-bottom: 1.25rem; /* Lite mer utrymme mellan textfälten */
+    margin-bottom: 1.25rem;
 }
 .input-fields-container textarea.form-control {
-    min-height: 100px; /* Lite högre textareas som standard här */
-    font-size: 0.95rem; /* Något mindre text i textareas */
+    min-height: 100px;
+    font-size: 0.95rem;
 }
 .input-fields-container textarea.form-control.readonly-textarea {
-    background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color)); /* Ljusgrå för att indikera readonly */
+    background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color));
     color: var(--text-color-muted);
-    cursor: default; /* Inte not-allowed om det bara är visning */
+    cursor: default;
     border-color: var(--secondary-color);
 }
 [data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
@@ -192,8 +210,8 @@
 
 /* Navigation Buttons */
 .audit-navigation-buttons {
-    margin-top: 2.5rem; /* Mer utrymme ovanför knappraderna */
-    padding-top: 1.5rem; /* Mer utrymme inuti knappraden */
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
@@ -204,13 +222,13 @@
     border-top: none;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 2rem;
-    padding-bottom: 1.5rem; /* Samma padding som bottom-nav */
-    margin-top: 1.5rem; /* Justera efter behov */
+    padding-bottom: 1.5rem;
+    margin-top: 1.5rem;
 }
 .audit-navigation-buttons .nav-group-left,
 .audit-navigation-buttons .nav-group-right {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
-    align-items: center; /* Linjera knappar om de har olika höjd (t.ex. om texten wrappar) */
+    align-items: center;
 }

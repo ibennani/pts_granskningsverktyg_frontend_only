@@ -1,6 +1,6 @@
 export const AddSampleFormComponent = (function () {
     'use-strict';
-    console.log("[AddSampleFormComponent.js] FILE PARSED AND IIFE EXECUTING");
+    // console.log("[AddSampleFormComponent.js] FILE PARSED AND IIFE EXECUTING");
 
     const CSS_PATH = 'css/components/add_sample_form_component.css';
     let form_container_ref;
@@ -17,8 +17,8 @@ export const AddSampleFormComponent = (function () {
     let content_types_group_element;
     let content_type_checkboxes = [];
     let current_editing_sample_id = null;
-    let save_button_text_span;
-    let save_button_icon_span;
+    let save_button_text_span_ref; // Byt namn för tydlighet
+    let save_button_icon_span_ref; // Byt namn för tydlighet
     let previous_page_type_value = "";
 
     // Helper function to safely get the translation function
@@ -118,7 +118,7 @@ export const AddSampleFormComponent = (function () {
         // console.log("[AddSampleFormComponent.js] populate_form_fields CALLED. Editing sample:", sample_data_to_populate_with ? sample_data_to_populate_with.id : "No (New Sample)");
         if (!State_getCurrentAudit || !t || !Helpers_create_element || !Helpers_generate_uuid_v4) {
             console.error("AddSampleForm: Core dependencies missing for populate_form_fields.");
-            if (form_container_ref) { // ANVÄNDER i18n
+            if (form_container_ref) {
                 form_container_ref.innerHTML = `<p>${t('error_render_add_sample_form_deps_missing')}</p>`;
             }
             return;
@@ -126,7 +126,6 @@ export const AddSampleFormComponent = (function () {
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent || !current_audit.ruleFileContent.metadata) {
             console.error("AddSampleForm: Audit data or metadata for populating form is missing.");
-            // Visuellt felmeddelande hanteras redan av render-funktionen
             return;
         }
 
@@ -176,23 +175,23 @@ export const AddSampleFormComponent = (function () {
             content_type_checkboxes.forEach(cb => {
                 cb.checked = (sample_data_to_populate_with.selectedContentTypes || []).includes(cb.value);
             });
-            if (save_button_text_span) save_button_text_span.textContent = t('save_changes_button');
-            if (save_button_icon_span && Helpers_get_icon_svg) save_button_icon_span.innerHTML = Helpers_get_icon_svg('save', ['currentColor'], 18);
+            if (save_button_text_span_ref) save_button_text_span_ref.textContent = t('save_changes_button');
+            if (save_button_icon_span_ref && Helpers_get_icon_svg) save_button_icon_span_ref.innerHTML = Helpers_get_icon_svg('save', ['currentColor'], 18);
         } else {
             if (page_type_select) page_type_select.value = "";
             previous_page_type_value = "";
             if (description_input) description_input.value = "";
             if (url_input) url_input.value = "";
             content_type_checkboxes.forEach(cb => cb.checked = false);
-            if (save_button_text_span) save_button_text_span.textContent = t('save_sample_button');
-            if (save_button_icon_span && Helpers_get_icon_svg) save_button_icon_span.innerHTML = Helpers_get_icon_svg('add', ['currentColor'], 18);
+            if (save_button_text_span_ref) save_button_text_span_ref.textContent = t('save_sample_button');
+            if (save_button_icon_span_ref && Helpers_get_icon_svg) save_button_icon_span_ref.innerHTML = Helpers_get_icon_svg('add', ['currentColor'], 18);
         }
     }
 
     function validate_and_save_sample(event) {
         event.preventDefault();
         const t = get_t_internally();
-        console.log("[AddSampleForm] validate_and_save_sample CALLED");
+        // console.log("[AddSampleForm] validate_and_save_sample CALLED");
 
         if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
 
@@ -201,7 +200,7 @@ export const AddSampleFormComponent = (function () {
         let url_val = url_input.value.trim();
         const selected_content_types = content_type_checkboxes.filter(cb => cb.checked).map(cb => cb.value);
 
-        console.log("[AddSampleForm] Form data:", { page_type, description, url_val, selected_content_types });
+        // console.log("[AddSampleForm] Form data:", { page_type, description, url_val, selected_content_types });
 
         let is_valid = true;
         if (!page_type) {
@@ -220,7 +219,7 @@ export const AddSampleFormComponent = (function () {
             is_valid = false;
         }
 
-        console.log("[AddSampleForm] Validation result, is_valid:", is_valid);
+        // console.log("[AddSampleForm] Validation result, is_valid:", is_valid);
 
         if (!is_valid) return;
 
@@ -247,7 +246,7 @@ export const AddSampleFormComponent = (function () {
             if (sample_index > -1) {
                 updated_sample_form_data.requirementResults = current_audit.samples[sample_index].requirementResults || {};
                 current_audit.samples[sample_index] = { ...current_audit.samples[sample_index], ...updated_sample_form_data };
-                console.log("[AddSampleForm] SAMPLE UPDATED:", current_audit.samples[sample_index]);
+                // console.log("[AddSampleForm] SAMPLE UPDATED:", current_audit.samples[sample_index]);
                 if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('sample_updated_successfully'), "success");
             } else {
                 console.error("[AddSampleForm] Failed to find sample to update with ID:", current_editing_sample_id);
@@ -261,13 +260,13 @@ export const AddSampleFormComponent = (function () {
                 current_audit.samples = [];
             }
             current_audit.samples.push(updated_sample_form_data);
-            console.log("[AddSampleForm] NEW SAMPLE PUSHED:", updated_sample_form_data);
+            // console.log("[AddSampleForm] NEW SAMPLE PUSHED:", updated_sample_form_data);
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('sample_added_successfully'), "success");
         }
 
         if(State_setCurrentAudit) {
              State_setCurrentAudit(current_audit);
-             console.log("[AddSampleForm] current_audit SAVED to State. Samples count:", current_audit.samples.length, "Samples:", JSON.parse(JSON.stringify(current_audit.samples)));
+             // console.log("[AddSampleForm] current_audit SAVED to State. Samples count:", current_audit.samples.length, "Samples:", JSON.parse(JSON.stringify(current_audit.samples)));
         }
         current_editing_sample_id = null;
         if (form_element) form_element.reset();
@@ -275,10 +274,10 @@ export const AddSampleFormComponent = (function () {
         populate_form_fields();
 
         if (on_sample_saved_callback) {
-            console.log("[AddSampleForm] Calling on_sample_saved_callback");
+            // console.log("[AddSampleForm] Calling on_sample_saved_callback");
             on_sample_saved_callback();
         }
-        console.log("[AddSampleForm] validate_and_save_sample COMPLETED");
+        // console.log("[AddSampleForm] validate_and_save_sample COMPLETED");
     }
 
     function render(sample_id_to_edit = null) {
@@ -286,7 +285,7 @@ export const AddSampleFormComponent = (function () {
         // console.log("[AddSampleFormComponent.js] RENDER CALLED. Editing sample ID:", sample_id_to_edit);
         if (!form_container_ref || !Helpers_create_element || !t || !State_getCurrentAudit) {
             console.error("AddSampleForm: Core dependencies missing for render. Has init completed?");
-            if(form_container_ref) { // ANVÄNDER i18n
+            if(form_container_ref) {
                  form_container_ref.innerHTML = `<p>${t('error_render_add_sample_form_deps_missing')}</p>`;
             }
             return;
@@ -296,7 +295,6 @@ export const AddSampleFormComponent = (function () {
 
         const current_audit = State_getCurrentAudit();
         if (!current_audit || !current_audit.ruleFileContent) {
-            // ANVÄNDER i18n (fallback om Translation_t inte är satt globalt)
             form_container_ref.textContent = t('error_no_rulefile_for_form', {defaultValue: "Rule file missing."});
             return;
         }
@@ -305,8 +303,6 @@ export const AddSampleFormComponent = (function () {
         if (current_editing_sample_id && current_audit.samples) {
             sample_data_for_edit = current_audit.samples.find(s => s.id === current_editing_sample_id);
         }
-        // console.log("[AddSampleFormComponent.js] sample_data_for_edit (in render before populate):", sample_data_for_edit);
-
 
         const form_wrapper = Helpers_create_element('div', { class_name: 'add-sample-form' });
         const form_title_text = current_editing_sample_id ? t('edit_sample') : t('add_new_sample');
@@ -335,25 +331,27 @@ export const AddSampleFormComponent = (function () {
         form_element.appendChild(url_group_div);
 
         content_types_group_element = Helpers_create_element('fieldset', { class_name: 'form-group content-types-group' });
-        // Legend läggs till i populate_form_fields
         form_element.appendChild(content_types_group_element);
 
         const actions_div = Helpers_create_element('div', { class_name: 'form-actions' });
-        save_button_text_span = Helpers_create_element('span');
-        save_button_icon_span = Helpers_create_element('span');
+        save_button_text_span_ref = Helpers_create_element('span'); // Bytte namn
+        save_button_icon_span_ref = Helpers_create_element('span'); // Bytte namn
+
         const save_button = Helpers_create_element('button', {
             id: 'save-sample-btn',
             class_name: ['button', 'button-primary'],
             attributes: { type: 'submit' }
         });
-        save_button.appendChild(save_button_icon_span);
-        save_button.appendChild(save_button_text_span);
+        // ÄNDRAD ORDNING: Text först, sedan ikon
+        save_button.appendChild(save_button_text_span_ref);
+        save_button.appendChild(save_button_icon_span_ref);
         actions_div.appendChild(save_button);
 
         const show_list_button = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
             attributes: { type: 'button' },
-            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 18) : '') + `<span>${t('show_existing_samples')}</span>`
+            // ÄNDRAD ORDNING: Text först, sedan ikon
+            html_content: `<span>${t('show_existing_samples')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 18) : '')
         });
         show_list_button.addEventListener('click', () => {
             current_editing_sample_id = null;
@@ -372,9 +370,7 @@ export const AddSampleFormComponent = (function () {
     function destroy() {
         form_element = null; page_type_select = null; description_input = null; url_input = null;
         content_types_group_element = null; content_type_checkboxes = [];
-        save_button_text_span = null; save_button_icon_span = null; previous_page_type_value = ""; current_editing_sample_id = null;
-        // Om submit-lyssnaren behöver tas bort manuellt (men brukar inte behövas om form_element sätts till null och DOM-elementet tas bort)
-        // if (form_element) form_element.removeEventListener('submit', validate_and_save_sample);
+        save_button_text_span_ref = null; save_button_icon_span_ref = null; previous_page_type_value = ""; current_editing_sample_id = null;
     }
 
     return { init, render, destroy };

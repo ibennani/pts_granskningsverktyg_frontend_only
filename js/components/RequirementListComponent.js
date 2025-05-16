@@ -13,11 +13,10 @@ export const RequirementListComponent = (function () {
     let State_getCurrentAudit, State_setCurrentAudit;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let AuditLogic_get_relevant_requirements_for_sample, AuditLogic_calculate_requirement_status;
-    // let RequirementCardComponent_create; // Kommenterar ut då vi inte använder den aktivt i denna vy längre
 
     let global_message_element_ref;
     let current_sample_object = null;
-    let relevant_requirements = []; // Håller de faktiska kravobjekten
+    let relevant_requirements = [];
     let requirements_by_category = {};
 
     function get_t_internally() {
@@ -76,10 +75,6 @@ export const RequirementListComponent = (function () {
             }
         } else { console.error("ReqList: AuditLogic module is missing!"); all_assigned = false; }
 
-        // RequirementCardComponent är inte aktivt använd i denna komponent just nu för att rendera listan.
-        // if (window.RequirementCardComponent && typeof window.RequirementCardComponent.create === 'function') {
-        //     RequirementCardComponent_create = window.RequirementCardComponent.create;
-        // }
         return all_assigned;
     }
 
@@ -166,7 +161,8 @@ export const RequirementListComponent = (function () {
         }
         const back_button = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: (Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) || '') + `<span>${t(back_button_text_key)}</span>`
+            // ÄNDRAD ORDNING: Text först, sedan ikon
+            html_content: `<span>${t(back_button_text_key)}</span>` + (Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) || '')
         });
         back_button.addEventListener('click', () => router_ref(target_view));
         nav_bar.appendChild(back_button);
@@ -221,17 +217,16 @@ export const RequirementListComponent = (function () {
         const header_div = Helpers_create_element('div', { class_name: 'requirement-list-header' });
         header_div.appendChild(Helpers_create_element('h1', { text_content: current_sample_object.description || t('undefined_description', {defaultValue: "Undefined Sample"}) }));
         
-        // "Typ av sida"
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
         sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(current_sample_object.pageType)}`;
         header_div.appendChild(sample_type_p);
 
-        // "Granskade krav"
         let audited_requirements_count = 0;
-        const total_relevant_requirements = relevant_requirements.length; // Använd den redan filtrerade listan
+        const total_relevant_requirements = relevant_requirements.length;
         relevant_requirements.forEach(req_obj => {
             const result = current_sample_object.requirementResults ? current_sample_object.requirementResults[req_obj.id] : null;
-            if (result && (result.status === 'passed' || result.status === 'failed')) {
+            const status = AuditLogic_calculate_requirement_status(req_obj, result); // req_obj är redan hela objektet här
+            if (status === 'passed' || status === 'failed') {
                 audited_requirements_count++;
             }
         });
@@ -239,11 +234,8 @@ export const RequirementListComponent = (function () {
         sample_audit_status_p.innerHTML = `<strong>${t('requirements_audited_for_sample', {defaultValue: 'Reviewed requirements'})}:</strong> ${audited_requirements_count}/${total_relevant_requirements}`;
         header_div.appendChild(sample_audit_status_p);
 
-        // Lägg till ProgressBarComponent här
         if (window.ProgressBarComponent && typeof window.ProgressBarComponent.create === 'function') {
-            const progress_bar = window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {
-                // label: t('overall_sample_progress_label') // Valfri, mer specifik etikett
-            });
+            const progress_bar = window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {});
             header_div.appendChild(progress_bar);
         }
         
@@ -263,7 +255,7 @@ export const RequirementListComponent = (function () {
                     const sub_cat = main_cat.subCategories[sub_cat_key];
                     main_cat_group.appendChild(Helpers_create_element('h3', {class_name: 'sub-category-title', text_content: sub_cat.text}));
                     const req_ul = Helpers_create_element('ul', {class_name: 'requirement-items-ul'});
-                    sub_cat.requirements.forEach(req => { // Dessa är redan sorterade på titel inuti prepare_requirement_data
+                    sub_cat.requirements.forEach(req => {
                         const req_result_object = current_sample_object.requirementResults ? current_sample_object.requirementResults[req.id] : null;
                         const status = AuditLogic_calculate_requirement_status(req, req_result_object);
                         
@@ -272,7 +264,7 @@ export const RequirementListComponent = (function () {
                         const title_h_container = Helpers_create_element('h4', {class_name: 'requirement-title-container'});
                         const title_button = Helpers_create_element('button', {
                             class_name: 'list-title-button',
-                            text_content: req.title
+                            text_content: req.title // Titelknappen har ingen ikon
                         });
                         title_button.addEventListener('click', () => {
                             router_ref('requirement_audit', { sampleId: current_sample_object.id, requirementId: req.key });
@@ -294,9 +286,24 @@ export const RequirementListComponent = (function () {
                         const total_checks_count = req.checks ? req.checks.length : 0;
                         let audited_checks_count = 0;
                         if (req_result_object && req_result_object.checkResults) {
-                            audited_checks_count = Object.values(req_result_object.checkResults).filter(
-                                check_res => check_res.status === 'passed' || check_res.status === 'failed'
-                            ).length;
+                            Object.values(req_result_object.checkResults).forEach(check_res => {
+                                // Använd calculate_check_status för att korrekt bedöma checkens status
+                                const check_definition = req.checks.find(c => c.id === Object.keys(req_result_object.checkResults).find(key => req_result_object.checkResults[key] === check_res));
+                                if (check_definition && AuditLogic && typeof AuditLogic.calculate_check_status === 'function') { // Kontrollera att AuditLogic och funktionen finns
+                                    const single_check_status = AuditLogic.calculate_check_status( // Använd AuditLogic.
+                                        check_definition,
+                                        check_res.passCriteria,
+                                        check_res.conditionMet
+                                    );
+                                    if (single_check_status === 'passed' || single_check_status === 'failed') {
+                                        audited_checks_count++;
+                                    }
+                                } else if (!check_definition) {
+                                    console.warn(`ReqList: check_definition not found for a check in sample ${current_sample_object.id}`);
+                                } else {
+                                    console.error("ReqList: AuditLogic.calculate_check_status is not available!");
+                                }
+                            });
                         }
                         const checks_info_span = Helpers_create_element('span', {
                             class_name: 'requirement-checks-info',
@@ -313,7 +320,7 @@ export const RequirementListComponent = (function () {
                                 }
                                 reference_element = Helpers_create_element('a', {
                                     class_name: 'list-reference-link',
-                                    text_content: req.standardReference.text,
+                                    text_content: req.standardReference.text, // Ingen ikon för referenslänkar i listan
                                     attributes: {
                                         href: url_to_use,
                                         target: '_blank',
