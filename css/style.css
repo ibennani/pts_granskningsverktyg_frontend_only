@@ -283,14 +283,7 @@ a:hover, a:focus {
     background-color: var(--button-info-hover-bg);
 }
 
-.button-disabled,
-.button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: var(--secondary-color) !important; /* Använd !important försiktigt */
-    color: var(--text-color-muted) !important;
-    border-color: var(--secondary-color) !important;
-}
+/* BORTTAGEN: .button-disabled, .button:disabled regel eftersom knappar inte längre använder 'disabled' */
 
 
 /* Formulärstilar */

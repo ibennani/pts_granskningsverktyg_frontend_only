@@ -24,8 +24,6 @@ export const RequirementAuditComponent = (function () {
     let checks_ui_container_element = null;
     let requirement_status_display_element = null;
 
-    let prev_req_button_top, next_req_button_top, next_unhandled_button_top;
-    let prev_req_button_bottom, next_req_button_bottom, next_unhandled_button_bottom;
     let ordered_requirement_keys_for_sample = [];
 
 
@@ -293,8 +291,6 @@ export const RequirementAuditComponent = (function () {
         }
         if (check_result_obj.overallStatus === 'not_audited') {
              console.warn("[ReqAudit] Attempted to change pass criterion while overall check status is not_audited. This should ideally not happen if UI prevents it.");
-            // Du kan välja att visa ett meddelande här också, eller bara returnera.
-            // NotificationComponent_show_global_message(t('must_select_complies_first'), 'info');
             return;
         }
 
@@ -407,7 +403,7 @@ export const RequirementAuditComponent = (function () {
                 html_content: `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status_for_display}">${check_status_text}</span>`
             }));
 
-            if (overall_manual_status_for_check === 'passed') { // Visa endast om "Stämmer" är aktivt
+            if (overall_manual_status_for_check === 'passed') {
                 if (check.passCriteria && check.passCriteria.length > 0) {
                     const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                     check.passCriteria.forEach(pc => {
@@ -535,34 +531,32 @@ export const RequirementAuditComponent = (function () {
         const current_index = get_current_requirement_index_in_ordered_list();
 
         if (current_audit_state && current_audit_state.auditStatus !== 'locked') {
-            const temp_prev_req_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) : '') + `<span>${t('previous_requirement')}</span>`});
-            temp_prev_req_btn.addEventListener('click', go_to_previous_requirement);
-            if (current_index <= 0) {
-                temp_prev_req_btn.disabled = true;
-                // Ta bort: temp_prev_req_btn.classList.add('button-disabled');
+            if (current_index > 0) {
+                const temp_prev_req_btn = Helpers_create_element('button', {
+                    class_name: ['button', 'button-secondary'],
+                    html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) : '') + `<span>${t('previous_requirement')}</span>`
+                });
+                temp_prev_req_btn.addEventListener('click', go_to_previous_requirement);
+                nav_group_right.appendChild(temp_prev_req_btn);
             }
-            nav_group_right.appendChild(temp_prev_req_btn);
-            if (is_top_or_bottom === 'top') prev_req_button_top = temp_prev_req_btn; else prev_req_button_bottom = temp_prev_req_btn;
 
-
-            const temp_next_req_btn = Helpers_create_element('button', { class_name: ['button', 'button-secondary'], html_content: `<span>${t('next_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward', ['currentColor'], 18) : '') });
-            temp_next_req_btn.addEventListener('click', go_to_next_requirement);
-            if (current_index >= ordered_requirement_keys_for_sample.length - 1) {
-                temp_next_req_btn.disabled = true;
-                // Ta bort: temp_next_req_btn.classList.add('button-disabled');
+            if (current_index < ordered_requirement_keys_for_sample.length - 1) {
+                const temp_next_req_btn = Helpers_create_element('button', {
+                    class_name: ['button', 'button-secondary'],
+                    html_content: `<span>${t('next_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward', ['currentColor'], 18) : '')
+                });
+                temp_next_req_btn.addEventListener('click', go_to_next_requirement);
+                nav_group_right.appendChild(temp_next_req_btn);
             }
-            nav_group_right.appendChild(temp_next_req_btn);
-            if (is_top_or_bottom === 'top') next_req_button_top = temp_next_req_btn; else next_req_button_bottom = temp_next_req_btn;
 
-
-            const temp_next_unhandled_btn = Helpers_create_element('button', { class_name: ['button', 'button-primary'], html_content: `<span>${t('next_unhandled_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward_alt', ['currentColor'], 18) : '') });
-            temp_next_unhandled_btn.addEventListener('click', go_to_next_unhandled_requirement);
-            if (find_next_unhandled_requirement_key() === null) {
-                temp_next_unhandled_btn.disabled = true;
-                // Ta bort: temp_next_unhandled_btn.classList.add('button-disabled');
+            if (find_next_unhandled_requirement_key() !== null) {
+                const temp_next_unhandled_btn = Helpers_create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    html_content: `<span>${t('next_unhandled_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_forward_alt', ['currentColor'], 18) : '')
+                });
+                temp_next_unhandled_btn.addEventListener('click', go_to_next_unhandled_requirement);
+                nav_group_right.appendChild(temp_next_unhandled_btn);
             }
-            nav_group_right.appendChild(temp_next_unhandled_btn);
-            if (is_top_or_bottom === 'top') next_unhandled_button_top = temp_next_unhandled_btn; else next_unhandled_button_bottom = temp_next_unhandled_btn;
         }
 
         nav_buttons_div.appendChild(nav_group_left);
@@ -711,8 +705,6 @@ export const RequirementAuditComponent = (function () {
         app_container_ref = null; router_ref = null; params_ref = null;
         global_message_element_ref = null; checks_ui_container_element = null; requirement_status_display_element = null;
         ordered_requirement_keys_for_sample = [];
-        prev_req_button_top = null; next_req_button_top = null; next_unhandled_button_top = null;
-        prev_req_button_bottom = null; next_req_button_bottom = null; next_unhandled_button_bottom = null;
     }
 
     return {
