@@ -9,11 +9,15 @@ const AuditOverviewComponent_internal = (function () {
     let app_container_ref;
     let router_ref;
 
+    // Store-funktioner och ActionTypes
+    let local_getState;
+    let local_dispatch;
+    let local_StoreActionTypes; // Ska sättas från init
+
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_format_iso_to_local_datetime, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_add_protocol_if_missing, Helpers_load_css;
-    let State_getCurrentAudit, State_setCurrentAudit;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
-    let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
+    let ExportLogic_export_to_csv, ExportLogic_export_to_excel, ExportLogic_save_audit_to_json_file;
     let AuditLogic_calculate_overall_audit_progress;
 
     let global_message_element_ref;
@@ -28,7 +32,7 @@ const AuditOverviewComponent_internal = (function () {
     let previously_focused_element = null;
 
 
-    function get_t_internally() {
+    function get_t_internally() { /* ... som tidigare ... */ 
         if (Translation_t) return Translation_t;
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
@@ -43,7 +47,9 @@ const AuditOverviewComponent_internal = (function () {
             };
     }
 
-    function assign_globals() {
+    function assign_globals_once() { /* ... som tidigare, men kontrollera ExportLogic_save_audit_to_json_file ... */ 
+        if (Translation_t && Helpers_create_element && AuditLogic_calculate_overall_audit_progress && ExportLogic_export_to_csv && ExportLogic_save_audit_to_json_file) return true;
+
         let all_assigned = true;
         if (window.Translation && window.Translation.t) Translation_t = window.Translation.t;
         else { console.error("AuditOverview: Translation module not found on window."); all_assigned = false; }
@@ -61,13 +67,6 @@ const AuditOverviewComponent_internal = (function () {
             }
         } else { console.error("AuditOverview: Helpers module not found on window."); all_assigned = false; }
 
-        if (window.State) {
-            State_getCurrentAudit = window.State.getCurrentAudit;
-            State_setCurrentAudit = window.State.setCurrentAudit;
-            if (!State_getCurrentAudit || !State_setCurrentAudit) {
-                 console.error("AuditOverview: One or more State functions are missing!"); all_assigned = false;
-            }
-        } else { console.error("AuditOverview: State module not found on window."); all_assigned = false; }
 
         if (window.NotificationComponent) {
             NotificationComponent_show_global_message = window.NotificationComponent.show_global_message;
@@ -81,6 +80,11 @@ const AuditOverviewComponent_internal = (function () {
         if (window.ExportLogic) {
             ExportLogic_export_to_csv = window.ExportLogic.export_to_csv;
             ExportLogic_export_to_excel = window.ExportLogic.export_to_excel;
+            ExportLogic_save_audit_to_json_file = window.ExportLogic.save_audit_to_json_file; 
+            if (!ExportLogic_export_to_csv || !ExportLogic_export_to_excel || !ExportLogic_save_audit_to_json_file) {
+                 console.warn("AuditOverview: One or more ExportLogic functions are missing. Export functionality may be impaired.");
+                 // all_assigned = false; // Kan vara för strikt om bara en saknas, men viktigt att logga
+            }
         } else { console.warn("AuditOverview: ExportLogic module not found on window. Export functionality will be missing."); }
 
 
@@ -92,88 +96,58 @@ const AuditOverviewComponent_internal = (function () {
         return all_assigned;
     }
 
-    function toggle_add_sample_form(show, sample_id_to_edit = null) {
+    function handle_sample_saved_or_updated_in_form() { /* ... som tidigare ... */ 
+        // console.log("[AuditOverview] handle_sample_saved_or_updated_in_form called.");
+        toggle_add_sample_form(false);
+    }
+
+    function handle_edit_sample_request_from_list(sample_id) { /* ... som tidigare ... */ 
         const t = get_t_internally();
-        is_add_sample_form_visible = !!show;
-        console.log("[AuditOverview] toggle_add_sample_form called. Show:", is_add_sample_form_visible, "Edit ID:", sample_id_to_edit);
-
-
-        if (add_sample_form_container_element && sample_list_container_element && add_sample_button_ref) {
-            if (is_add_sample_form_visible) {
-                previously_focused_element = document.activeElement; 
-                add_sample_form_container_element.removeAttribute('hidden');
-                sample_list_container_element.setAttribute('hidden', 'true'); 
-                add_sample_button_ref.innerHTML = `<span>${t('show_existing_samples')}</span>` + (Helpers_get_icon_svg('list', ['currentColor'], 18) || '');
-                if (add_sample_form_component_instance && typeof add_sample_form_component_instance.render === 'function') {
-                    add_sample_form_component_instance.render(sample_id_to_edit);
-                } else {
-                    console.error("AuditOverview: AddSampleFormComponent instance or render method is missing in toggle_add_sample_form (show).");
-                }
-                const first_input = add_sample_form_container_element.querySelector('input, select, textarea');
-                if (first_input) first_input.focus();
-
-            } else {
-                add_sample_form_container_element.setAttribute('hidden', 'true');
-                sample_list_container_element.removeAttribute('hidden'); 
-                add_sample_button_ref.innerHTML = `<span>${t('add_new_sample')}</span>` + (Helpers_get_icon_svg('add', ['currentColor'], 18) || '');
-                if (previously_focused_element) {
-                    previously_focused_element.focus(); 
-                    previously_focused_element = null;
-                }
-                 // Också rendera om listan ifall den var dold och nu visas
-                if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
-                    console.log("[AuditOverview] toggle_add_sample_form: Rendering SampleListComponent because form is now hidden.");
-                    sample_list_component_instance.render();
-                }
-            }
-        } else {
-            console.warn("[AuditOverview] toggle_add_sample_form: One or more elements are null.", {
-                add_sample_form_container_element_exists: !!add_sample_form_container_element,
-                sample_list_container_element_exists: !!sample_list_container_element,
-                add_sample_button_ref_exists: !!add_sample_button_ref
-            });
+        // console.log("[AuditOverview] handle_edit_sample_request_from_list for ID:", sample_id);
+        const current_global_state = local_getState();
+        if (current_global_state.auditStatus !== 'in_progress') {
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('cannot_edit_sample_audit_not_in_progress', {defaultValue: "Cannot edit sample: Audit not in progress."}), "warning");
+            return;
         }
-    }
-
-    function handle_sample_saved_or_edited() {
-        console.log("[AuditOverview] handle_sample_saved_or_edited called.");
-        toggle_add_sample_form(false); 
-        render(); 
-    }
-
-    function handle_edit_sample_request_from_list(sample_id) {
-        console.log("[AuditOverview] handle_edit_sample_request_from_list called with ID:", sample_id);
         if (NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
         toggle_add_sample_form(true, sample_id);
     }
 
-    function handle_delete_sample_request_from_list(sample_id) {
+    function handle_delete_sample_request_from_list(sample_id) { /* ... som tidigare, men använd local_StoreActionTypes ... */ 
         const t = get_t_internally();
-        const current_audit = State_getCurrentAudit();
-        console.log("[AuditOverview] handle_delete_sample_request_from_list called with ID:", sample_id);
-        if (!current_audit || !current_audit.samples) {
-            console.warn("[AuditOverview] Delete requested but no current_audit or samples.");
+        // console.log("[AuditOverview] handle_delete_sample_request_from_list for ID:", sample_id);
+        const current_global_state = local_getState();
+
+        if (current_global_state.auditStatus !== 'in_progress') {
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('cannot_delete_sample_audit_not_in_progress', {defaultValue: "Cannot delete sample: Audit not in progress."}), "warning");
             return;
         }
-
-        if (current_audit.samples.length <= 1) {
+        if (current_global_state.samples.length <= 1) {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_cannot_delete_last_sample'), "warning");
             return;
         }
 
-        const sample_to_delete = current_audit.samples.find(s => s.id === sample_id);
+        const sample_to_delete = current_global_state.samples.find(s => s.id === sample_id);
         const sample_name_for_confirm = sample_to_delete ? Helpers_escape_html(sample_to_delete.description) : sample_id;
 
         previously_focused_element = document.activeElement; 
 
         if (confirm(t('confirm_delete_sample', { sampleName: sample_name_for_confirm }))) {
-            console.log("[AuditOverview] Deleting sample confirmed.");
-            current_audit.samples = current_audit.samples.filter(s => s.id !== sample_id);
-            State_setCurrentAudit(current_audit);
+            // console.log("[AuditOverview] Dispatching DELETE_SAMPLE for ID:", sample_id);
+            if (!local_StoreActionTypes || !local_StoreActionTypes.DELETE_SAMPLE) {
+                console.error("[AuditOverview] local_StoreActionTypes.DELETE_SAMPLE is undefined!");
+                if (NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for delete sample is missing.", "error");
+                return;
+            }
+            local_dispatch({
+                type: local_StoreActionTypes.DELETE_SAMPLE, // Använd korrekt referens
+                payload: { sampleId: sample_id }
+            });
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('sample_deleted_successfully', { sampleName: sample_name_for_confirm }), "success");
-            render(); 
+            if (is_add_sample_form_visible && add_sample_form_component_instance && add_sample_form_component_instance.current_editing_sample_id === sample_id) {
+                toggle_add_sample_form(false);
+            }
         } else {
-            console.log("[AuditOverview] Deleting sample cancelled.");
             if (previously_focused_element) {
                 previously_focused_element.focus(); 
                 previously_focused_element = null;
@@ -181,13 +155,124 @@ const AuditOverviewComponent_internal = (function () {
         }
     }
 
-    function handle_lock_audit() { /* ... (som tidigare) ... */ }
-    function handle_unlock_audit() { /* ... (som tidigare) ... */ }
-    function handle_save_audit_to_file() { /* ... (som tidigare) ... */ }
-    function handle_export_csv() { /* ... (som tidigare) ... */ }
-    function handle_export_excel() { /* ... (som tidigare) ... */ }
+    function toggle_add_sample_form(show, sample_id_to_edit = null) { /* ... som tidigare ... */ 
+        const t = get_t_internally();
+        is_add_sample_form_visible = !!show;
+        // console.log("[AuditOverview] toggle_add_sample_form. Show:", is_add_sample_form_visible, "Edit ID:", sample_id_to_edit);
+
+        if (add_sample_form_container_element && sample_list_container_element && add_sample_button_ref) {
+            if (is_add_sample_form_visible) {
+                previously_focused_element = document.activeElement; 
+                add_sample_form_container_element.removeAttribute('hidden');
+                sample_list_container_element.setAttribute('hidden', 'true'); 
+                add_sample_button_ref.innerHTML = `<span>${t('show_existing_samples')}</span>` + (Helpers_get_icon_svg('list', ['currentColor'], 18) || '');
+                
+                if (add_sample_form_component_instance && typeof add_sample_form_component_instance.render === 'function') {
+                    add_sample_form_component_instance.render(sample_id_to_edit); 
+                } else {
+                    console.error("AuditOverview: AddSampleFormComponent instance or render method is missing in toggle_add_sample_form (show).");
+                }
+                const first_input = add_sample_form_container_element.querySelector('input, select, textarea');
+                if (first_input) first_input.focus();
+
+            } else { 
+                add_sample_form_container_element.setAttribute('hidden', 'true');
+                sample_list_container_element.removeAttribute('hidden'); 
+                add_sample_button_ref.innerHTML = `<span>${t('add_new_sample')}</span>` + (Helpers_get_icon_svg('add', ['currentColor'], 18) || '');
+                
+                if (previously_focused_element) {
+                    previously_focused_element.focus(); 
+                    previously_focused_element = null;
+                } else if (add_sample_button_ref) {
+                    add_sample_button_ref.focus();
+                }
+                if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
+                    sample_list_component_instance.render(); 
+                }
+            }
+        } else {
+            // console.warn("[AuditOverview] toggle_add_sample_form: One or more elements are null.");
+        }
+    }
     
-    function create_info_item(label_key, value, is_html = false) {
+    function handle_lock_audit() { /* ... som tidigare, men använd local_StoreActionTypes ... */ 
+        const t = get_t_internally();
+        // console.log("[AuditOverview] Dispatching SET_AUDIT_STATUS to 'locked'.");
+        if (!local_StoreActionTypes || !local_StoreActionTypes.SET_AUDIT_STATUS) {
+            console.error("[AuditOverview] local_StoreActionTypes.SET_AUDIT_STATUS is undefined!");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for lock audit is missing.", "error");
+            return;
+        }
+        local_dispatch({
+            type: local_StoreActionTypes.SET_AUDIT_STATUS, // Använd korrekt referens
+            payload: { status: 'locked' }
+        });
+        if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('audit_locked_successfully'), 'success');
+    }
+
+    function handle_unlock_audit() { /* ... som tidigare, men använd local_StoreActionTypes ... */ 
+        const t = get_t_internally();
+        // console.log("[AuditOverview] Dispatching SET_AUDIT_STATUS to 'in_progress'.");
+        if (!local_StoreActionTypes || !local_StoreActionTypes.SET_AUDIT_STATUS) {
+            console.error("[AuditOverview] local_StoreActionTypes.SET_AUDIT_STATUS is undefined!");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for unlock audit is missing.", "error");
+            return;
+        }
+        local_dispatch({
+            type: local_StoreActionTypes.SET_AUDIT_STATUS, // Använd korrekt referens
+            payload: { status: 'in_progress' }
+        });
+        if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('audit_unlocked_successfully'), 'success');
+    }
+
+    function handle_save_audit_to_file() { /* ... som tidigare ... */ 
+        const t = get_t_internally();
+        // console.log("[AuditOverview] handle_save_audit_to_file called.");
+        const current_global_state = local_getState();
+        if (!current_global_state) {
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('no_audit_data_to_save'), 'error');
+            return;
+        }
+        if (ExportLogic_save_audit_to_json_file) {
+            ExportLogic_save_audit_to_json_file(current_global_state);
+        } else {
+            console.error("AuditOverview: ExportLogic_save_audit_to_json_file is not available.");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_export_function_missing', {defaultValue: "Export function is missing."}), 'error');
+        }
+    }
+
+    function handle_export_csv() { /* ... som tidigare ... */ 
+        const t = get_t_internally();
+        // console.log("[AuditOverview] handle_export_csv called.");
+        const current_global_state = local_getState();
+        if (current_global_state.auditStatus !== 'locked') {
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('audit_not_locked_for_export', {status: current_global_state.auditStatus}), 'warning');
+            return;
+        }
+        if (ExportLogic_export_to_csv) {
+            ExportLogic_export_to_csv(current_global_state);
+        } else {
+            console.error("AuditOverview: ExportLogic_export_to_csv is not available.");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_export_function_missing', {defaultValue: "Export function is missing."}), 'error');
+        }
+    }
+    function handle_export_excel() { /* ... som tidigare ... */ 
+        const t = get_t_internally();
+        // console.log("[AuditOverview] handle_export_excel called.");
+        const current_global_state = local_getState();
+         if (current_global_state.auditStatus !== 'locked') {
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('audit_not_locked_for_export', {status: current_global_state.auditStatus}), 'warning');
+            return;
+        }
+        if (ExportLogic_export_to_excel) {
+            ExportLogic_export_to_excel(current_global_state);
+        } else {
+            console.error("AuditOverview: ExportLogic_export_to_excel is not available.");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_export_function_missing', {defaultValue: "Export function is missing."}), 'error');
+        }
+    }
+    
+    function create_info_item(label_key, value, is_html = false) { /* ... som tidigare ... */ 
         const t = get_t_internally();
         const p = Helpers_create_element('p');
         const strong = Helpers_create_element('strong', { text_content: t(label_key) + ':' });
@@ -195,7 +280,7 @@ const AuditOverviewComponent_internal = (function () {
         if (value || typeof value === 'number' || typeof value === 'boolean') {
             if (is_html) {
                 const span = Helpers_create_element('span', { class_name: 'value' });
-                span.innerHTML = value;
+                span.innerHTML = value; 
                 p.appendChild(span);
             } else {
                 p.appendChild(Helpers_create_element('span', { class_name: 'value', text_content: String(value) }));
@@ -208,9 +293,8 @@ const AuditOverviewComponent_internal = (function () {
         return item_div;
     }
 
-
-    async function init_sub_components() {
-        console.log("[AuditOverview] init_sub_components START");
+    async function init_sub_components() { /* ... som tidigare, men skicka StoreActionTypes till AddSampleFormComponent ... */ 
+        // console.log("[AuditOverview] init_sub_components START");
         if (!Helpers_create_element) {
             console.error("AuditOverview: Helpers_create_element not available for init_sub_components.");
             return;
@@ -222,9 +306,10 @@ const AuditOverviewComponent_internal = (function () {
                 sample_list_container_element, 
                 handle_edit_sample_request_from_list, 
                 handle_delete_sample_request_from_list, 
-                router_ref
+                router_ref,
+                local_getState
             );
-            console.log("[AuditOverview] SampleListComponent initialized.");
+            // console.log("[AuditOverview] SampleListComponent initialized.");
         } else {
             console.error("AuditOverview: SampleListComponent is not correctly initialized or its init function is missing.");
         }
@@ -233,23 +318,40 @@ const AuditOverviewComponent_internal = (function () {
         add_sample_form_container_element.setAttribute('hidden', 'true'); 
         add_sample_form_component_instance = AddSampleFormComponent;
         if (add_sample_form_component_instance && typeof add_sample_form_component_instance.init === 'function') {
+            // **VIKTIGT HÄR:** Skicka vidare StoreActionTypes
             await add_sample_form_component_instance.init(
                 add_sample_form_container_element,
-                handle_sample_saved_or_edited, 
-                () => toggle_add_sample_form(false) 
+                handle_sample_saved_or_updated_in_form, 
+                () => toggle_add_sample_form(false),
+                local_getState,
+                local_dispatch,
+                local_StoreActionTypes // Skicka vidare korrekt referens
             );
-            console.log("[AuditOverview] AddSampleFormComponent initialized.");
+            // console.log("[AuditOverview] AddSampleFormComponent initialized.");
         } else {
              console.error("AuditOverview: AddSampleFormComponent is not correctly initialized or its init function is missing.");
         }
-        console.log("[AuditOverview] init_sub_components END");
+        // console.log("[AuditOverview] init_sub_components END");
     }
 
-    async function init(_app_container, _router) {
+    // **VIKTIG ÄNDRING HÄR:** Ta emot _StoreActionTypes
+    async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes) {
+        assign_globals_once();
         app_container_ref = _app_container;
         router_ref = _router;
-        if (!assign_globals()) {
-            console.error("AuditOverviewComponent: Failed to assign global dependencies in init. Component may not function correctly.");
+
+        local_getState = _getState;
+        local_dispatch = _dispatch;
+        local_StoreActionTypes = _StoreActionTypes; // Spara den medskickade referensen
+
+        if (!local_StoreActionTypes) {
+            console.error("[AuditOverviewComponent] CRITICAL: StoreActionTypes was not passed to init or is undefined. Using fallback.");
+            local_StoreActionTypes = { 
+                SET_AUDIT_STATUS: 'SET_AUDIT_STATUS_ERROR',
+                DELETE_SAMPLE: 'DELETE_SAMPLE_ERROR',
+                ADD_SAMPLE: 'ADD_SAMPLE_ERROR', // Behövs av AddSampleFormComponent
+                UPDATE_SAMPLE: 'UPDATE_SAMPLE_ERROR' // Behövs av AddSampleFormComponent
+            };
         }
 
         if (NotificationComponent_get_global_message_element_reference) {
@@ -266,22 +368,24 @@ const AuditOverviewComponent_internal = (function () {
             }
             catch (error) { console.warn("Failed to load CSS for AuditOverviewComponent:", error); }
         }
+        // console.log("[AuditOverviewComponent] Init complete.");
     }
 
-    function render() {
+    function render() { /* ... som tidigare ... */ 
+        assign_globals_once();
         const t = get_t_internally();
-        console.log("[AuditOverview] Render START. is_add_sample_form_visible:", is_add_sample_form_visible);
+        // console.log("[AuditOverview] Render START. is_add_sample_form_visible:", is_add_sample_form_visible);
 
-        if (!app_container_ref || !Helpers_create_element || !t || !State_getCurrentAudit) {
+        if (!app_container_ref || !Helpers_create_element || !t || !local_getState) { 
             console.error("AuditOverview: Core dependencies missing for render.");
             if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_overview', {defaultValue: "Could not render the overview."})}</p>`;
             return;
         }
-        app_container_ref.innerHTML = '';
+        app_container_ref.innerHTML = ''; 
 
-        const current_audit = State_getCurrentAudit();
-        if (!current_audit || !current_audit.ruleFileContent) {
-            console.log("[AuditOverview] Render STOP: No current_audit or ruleFileContent");
+        const current_global_state = local_getState(); 
+        if (!current_global_state || !current_global_state.ruleFileContent) {
+            // console.log("[AuditOverview] Render STOP: No current_global_state or ruleFileContent in store.");
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t("error_no_active_audit", {defaultValue: "Error: No active audit to display."}), "error");
             const go_to_upload_btn = Helpers_create_element('button', {
                 class_name: ['button', 'button-primary'],
@@ -299,16 +403,17 @@ const AuditOverviewComponent_internal = (function () {
             plate_element.appendChild(global_message_element_ref);
         }
         if (is_add_sample_form_visible && NotificationComponent_show_global_message &&
-            global_message_element_ref && (global_message_element_ref.hasAttribute('hidden') || !global_message_element_ref.textContent.trim())) {
+            global_message_element_ref && (global_message_element_ref.hasAttribute('hidden') || !global_message_element_ref.textContent.trim() || 
+            (!global_message_element_ref.classList.contains('message-error') && !global_message_element_ref.classList.contains('message-warning')))
+        ) {
             NotificationComponent_show_global_message(t('add_sample_form_intro'), "info");
         }
-        console.log("[AuditOverview] Render: Global message area added (if exists)");
+
 
         plate_element.appendChild(Helpers_create_element('h1', { text_content: t('audit_overview_title') }));
-        console.log("[AuditOverview] Render: Main title added");
 
         if (AuditLogic_calculate_overall_audit_progress && window.ProgressBarComponent) {
-            const progress_data = AuditLogic_calculate_overall_audit_progress(current_audit);
+            const progress_data = AuditLogic_calculate_overall_audit_progress(current_global_state);
             const overall_progress_section = Helpers_create_element('section', { class_name: 'audit-overview-section overall-progress-section' });
             overall_progress_section.appendChild(Helpers_create_element('h2', { text_content: t('overall_audit_progress_title', {defaultValue: "Overall Audit Progress"}) }));
             const progress_info_text_p = Helpers_create_element('p', { class_name: 'info-item' });
@@ -317,72 +422,56 @@ const AuditOverviewComponent_internal = (function () {
             const overall_progress_bar = window.ProgressBarComponent.create(progress_data.audited, progress_data.total, { id: 'overall-audit-progress-bar' });
             overall_progress_section.appendChild(overall_progress_bar);
             plate_element.appendChild(overall_progress_section);
-            console.log("[AuditOverview] Render: Progress bar section added");
         }
 
-        console.log("[AuditOverview] Render: Starting section1 (Audit Info)");
         const section1 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section1.appendChild(Helpers_create_element('h2', { text_content: t('audit_info_title') }));
         const info_grid = Helpers_create_element('div', { class_name: 'info-grid' });
-        const md = current_audit.auditMetadata || {};
-        const rf_meta = current_audit.ruleFileContent.metadata || {};
-        console.log("[AuditOverview] md:", JSON.parse(JSON.stringify(md))); 
-        console.log("[AuditOverview] rf_meta:", JSON.parse(JSON.stringify(rf_meta)));
+        const md = current_global_state.auditMetadata || {};
+        const rf_meta = current_global_state.ruleFileContent.metadata || {};
 
-        try {
-            info_grid.appendChild(create_info_item('case_number', md.caseNumber));
-            console.log("[AuditOverview] Added case_number");
-            info_grid.appendChild(create_info_item('actor_name', md.actorName));
-            console.log("[AuditOverview] Added actor_name");
-            if (md.actorLink && Helpers_add_protocol_if_missing && Helpers_escape_html) {
-                const safe_link = Helpers_add_protocol_if_missing(md.actorLink);
-                const link_html = `<a href="${Helpers_escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${Helpers_escape_html(md.actorLink)}</a>`;
-                info_grid.appendChild(create_info_item('actor_link', link_html, true));
-            } else {
-                info_grid.appendChild(create_info_item('actor_link', md.actorLink || null));
+        info_grid.appendChild(create_info_item('case_number', md.caseNumber));
+        info_grid.appendChild(create_info_item('actor_name', md.actorName));
+        if (md.actorLink && Helpers_add_protocol_if_missing && Helpers_escape_html) {
+            const safe_link = Helpers_add_protocol_if_missing(md.actorLink);
+            const escaped_actor_link_for_text = Helpers_escape_html(md.actorLink);
+            const escaped_safe_link_for_href = Helpers_escape_html(safe_link); 
+            const link_html = `<a href="${escaped_safe_link_for_href}" target="_blank" rel="noopener noreferrer">${escaped_actor_link_for_text}</a>`;
+            info_grid.appendChild(create_info_item('actor_link', link_html, true));
+        } else {
+            info_grid.appendChild(create_info_item('actor_link', md.actorLink || null));
+        }
+        info_grid.appendChild(create_info_item('auditor_name', md.auditorName));
+        info_grid.appendChild(create_info_item('rule_file_title', rf_meta.title));
+        info_grid.appendChild(create_info_item('Version (Regelfil)', rf_meta.version));
+        info_grid.appendChild(create_info_item('status', t(`audit_status_${current_global_state.auditStatus}`)));
+        if(Helpers_format_iso_to_local_datetime) {
+            info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime)));
+            if (current_global_state.endTime) {
+                info_grid.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_global_state.endTime)));
             }
-            console.log("[AuditOverview] Added actor_link");
-            info_grid.appendChild(create_info_item('auditor_name', md.auditorName));
-            console.log("[AuditOverview] Added auditor_name");
-            info_grid.appendChild(create_info_item('rule_file_title', rf_meta.title));
-            console.log("[AuditOverview] Added rule_file_title");
-            info_grid.appendChild(create_info_item('Version (Regelfil)', rf_meta.version));
-            console.log("[AuditOverview] Added Version (Regelfil)");
-            info_grid.appendChild(create_info_item('status', t(`audit_status_${current_audit.auditStatus}`)));
-            console.log("[AuditOverview] Added status");
-            if(Helpers_format_iso_to_local_datetime) {
-                info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_audit.startTime)));
-                console.log("[AuditOverview] Added start_time");
-                if (current_audit.endTime) {
-                    info_grid.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_audit.endTime)));
-                    console.log("[AuditOverview] Added end_time");
-                }
-            }
-        } catch (e) {
-            console.error("[AuditOverview] Error creating info item in section1:", e);
         }
         
         section1.appendChild(info_grid);
         if (md.internalComment) { 
             const comment_header = Helpers_create_element('h3', { text_content: t('internal_comment'), style: 'font-size: 1rem; margin-top: 1rem; font-weight: 500;' });
-            const comment_p = Helpers_create_element('p', { text_content: md.internalComment, style: 'white-space: pre-wrap; background-color: var(--input-background-color); padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color);'});
+            const comment_p = Helpers_create_element('p', { 
+                text_content: md.internalComment, 
+                style: 'white-space: pre-wrap; background-color: var(--input-background-color); padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color);'
+            });
             section1.appendChild(comment_header);
             section1.appendChild(comment_p);
-            console.log("[AuditOverview] Added internalComment");
         }
         plate_element.appendChild(section1);
-        console.log("[AuditOverview] Render: Finished section1 (Audit Info)");
 
-
-        console.log("[AuditOverview] Render: Starting section2 (Sample List)");
         const section2 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         const sample_management_header_div = Helpers_create_element('div', {style: "display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem;"});
-        const number_of_samples = current_audit.samples ? current_audit.samples.length : 0;
+        const number_of_samples = current_global_state.samples ? current_global_state.samples.length : 0;
         const sample_list_title_text = t('sample_list_title_with_count', { count: number_of_samples });
         sample_management_header_div.appendChild(Helpers_create_element('h2', { text_content: sample_list_title_text, style: "margin-bottom: 0.5rem;" }));
 
         add_sample_button_ref = null; 
-        if (current_audit.auditStatus === 'in_progress') {
+        if (current_global_state.auditStatus === 'in_progress') {
             add_sample_button_ref = Helpers_create_element('button', {
                 class_name: ['button', 'button-default', 'button-small'],
             });
@@ -390,22 +479,16 @@ const AuditOverviewComponent_internal = (function () {
                 toggle_add_sample_form(!is_add_sample_form_visible); 
             });
             sample_management_header_div.appendChild(add_sample_button_ref);
-            console.log("[AuditOverview] Added 'add_sample_button_ref'");
         }
         section2.appendChild(sample_management_header_div);
         
         if(add_sample_form_container_element) {
             section2.appendChild(add_sample_form_container_element);
-            console.log("[AuditOverview] Added 'add_sample_form_container_element' to DOM");
-        } else {
-            console.error("AuditOverview: add_sample_form_container_element är null vid render!");
-        }
+        } else { console.error("AuditOverview: add_sample_form_container_element är null vid render!"); }
         
         if (sample_list_container_element) {
             section2.appendChild(sample_list_container_element);
-            console.log("[AuditOverview] Added 'sample_list_container_element' to DOM");
             if (sample_list_component_instance && typeof sample_list_component_instance.render === 'function') {
-                console.log("[AuditOverview] Calling SampleListComponent.render()");
                 sample_list_component_instance.render(); 
             } else {
                  console.error("AuditOverview: SampleListComponent instans eller render-metod saknas!");
@@ -416,13 +499,10 @@ const AuditOverviewComponent_internal = (function () {
             section2.appendChild(Helpers_create_element('p', {text_content: t('error_loading_sample_list_for_overview')}));
         }
         plate_element.appendChild(section2);
-        console.log("[AuditOverview] Render: Finished section2 (Sample List)");
+        
+        toggle_add_sample_form(is_add_sample_form_visible, 
+            is_add_sample_form_visible && add_sample_form_component_instance ? add_sample_form_component_instance.current_editing_sample_id : null);
 
-        toggle_add_sample_form(is_add_sample_form_visible); 
-        console.log("[AuditOverview] Render: toggle_add_sample_form called after section2");
-
-
-        console.log("[AuditOverview] Render: Starting section3 (Actions)");
         const section3 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section3.appendChild(Helpers_create_element('h2', { text_content: t('audit_actions_title') }));
         const actions_div = Helpers_create_element('div', { class_name: 'audit-overview-actions' });
@@ -430,25 +510,23 @@ const AuditOverviewComponent_internal = (function () {
         const right_actions_group = Helpers_create_element('div', { class_name: 'action-group-right' });
 
         if (Helpers_create_element) {
-             const save_audit_button = Helpers_create_element('button', { // Ändrat namn för tydlighet
+             const save_audit_button = Helpers_create_element('button', {
                 class_name: ['button', 'button-default'],
                 html_content: `<span>${t('save_audit_to_file')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('save', ['currentColor'], 18) : '')
             });
             save_audit_button.addEventListener('click', handle_save_audit_to_file);
             left_actions_group.appendChild(save_audit_button);
-            console.log("[AuditOverview] Added save_audit_button");
         }
 
-        if (current_audit.auditStatus === 'in_progress') { 
+        if (current_global_state.auditStatus === 'in_progress') { 
             const lock_btn = Helpers_create_element('button', {
                 class_name: ['button', 'button-warning'],
                 html_content: `<span>${t('lock_audit')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('lock_audit', ['currentColor'], 18) : '')
             });
             lock_btn.addEventListener('click', handle_lock_audit);
             right_actions_group.appendChild(lock_btn);
-            console.log("[AuditOverview] Added lock_btn");
         }
-        if (current_audit.auditStatus === 'locked') { 
+        if (current_global_state.auditStatus === 'locked') { 
             const unlock_btn = Helpers_create_element('button', {
                 class_name: ['button', 'button-secondary'],
                 html_content: `<span>${t('unlock_audit')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('unlock_audit', ['currentColor'], 18) : '')
@@ -457,32 +535,31 @@ const AuditOverviewComponent_internal = (function () {
             left_actions_group.appendChild(unlock_btn);
 
             if(ExportLogic_export_to_csv) {
-                const csv_btn = Helpers_create_element('button', { /* ... */ });
+                const csv_btn = Helpers_create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_csv')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('export', ['currentColor'], 18) : '')
+                });
                 csv_btn.addEventListener('click', handle_export_csv);
                 left_actions_group.appendChild(csv_btn);
             }
             if(ExportLogic_export_to_excel) {
-                const excel_btn = Helpers_create_element('button', { /* ... */ });
+                const excel_btn = Helpers_create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_excel')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('export', ['currentColor'], 18) : '')
+                });
                 excel_btn.addEventListener('click', handle_export_excel);
                 left_actions_group.appendChild(excel_btn);
             }
-            console.log("[AuditOverview] Added unlock/export buttons");
         }
         
         if (left_actions_group.hasChildNodes()) actions_div.appendChild(left_actions_group);
         if (right_actions_group.hasChildNodes()) actions_div.appendChild(right_actions_group);
         if (actions_div.hasChildNodes()) section3.appendChild(actions_div);
         plate_element.appendChild(section3);
-        console.log("[AuditOverview] Render: Finished section3 (Actions)");
-        console.log("[AuditOverview] Render END");
+        // console.log("[AuditOverview] Render END");
     }
 
-    function destroy() {
-        if (add_sample_button_ref && typeof add_sample_button_ref.removeEventListener === 'function') { 
-            // Ta bort lyssnare om den specifikt lades till på add_sample_button_ref
-            // I detta fall skapas knappen på nytt varje render, så ingen specifik removeEventListener behövs här
-            // om inte lyssnaren lades till på ett sätt som överlever innerHTML-rensning.
-        }
+    function destroy() { /* ... som tidigare ... */ 
         if (sample_list_component_instance && typeof sample_list_component_instance.destroy === 'function') {
             sample_list_component_instance.destroy();
         }
@@ -497,6 +574,9 @@ const AuditOverviewComponent_internal = (function () {
         add_sample_button_ref = null;
         previously_focused_element = null;
         global_message_element_ref = null;
+        local_getState = null;
+        local_dispatch = null;
+        local_StoreActionTypes = null;
     }
 
     return { init, render, destroy };

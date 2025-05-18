@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verktyg för Digital Tillsyn</title>
+    <title>Verktyg för Digital Tillsyn</title> <!-- Kommer att uppdateras av main.js -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
     <!-- IIFE-MODULER FÖRST (vanliga script-taggar, körs i ordning) -->
+    <!-- Dessa är globala beroenden som dina komponenter och main.js kan använda -->
     <script src="js/utils/helpers.js"></script>
-    <script src="js/translation_logic.js"></script> <!-- Denna skapar window.Translation -->
-    <script src="js/state.js"></script>
+    <script src="js/translation_logic.js"></script> 
     <script src="js/components/NotificationComponent.js"></script> 
     <script src="js/components/ProgressBarComponent.js"></script>
     <script src="js/audit_logic.js"></script>
     <script src="js/export_logic.js"></script>
     <script src="js/validation_logic.js"></script>
     
-    <!-- ES6 MODUL SOM ANVÄNDER DE GLOBALA OBJEKTEN (körs efter ovanstående) -->
+    <!-- Ladda INTE state.js här som ett vanligt skript om main.js ska importera den som modul -->
+    <!-- <script src="js/state.js"></script> --> 
+    
+    <!-- Huvudapplikationslogiken, laddas som en ES6-modul -->
+    <!-- Denna kommer att importera state.js och komponenterna -->
     <script type="module" src="js/main.js"></script>
     
+    <!-- Externt bibliotek, kan laddas sist eller där det passar -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>

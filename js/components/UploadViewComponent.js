@@ -13,8 +13,12 @@ const UploadViewComponent_internal = (function () {
     let load_ongoing_audit_btn;
     let start_new_audit_btn;
 
-    // Helper function to safely get the translation function within this component
+    let local_getState;
+    let local_dispatch;
+    let local_StoreActionTypes; 
+
     function get_t_func() {
+        // ... (som tidigare) ...
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
@@ -30,6 +34,7 @@ const UploadViewComponent_internal = (function () {
 
     function handle_rule_file_select(event) {
         const t = get_t_func();
+        // console.log("[UploadViewComponent] handle_rule_file_select triggered.");
         const file = event.target.files[0];
         if (file) {
             if (file.type !== "application/json") {
@@ -45,9 +50,12 @@ const UploadViewComponent_internal = (function () {
 
                     if (validation_result.isValid) {
                         if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'success');
-                        const current_audit = window.State.getCurrentAudit() || window.State.initNewAudit();
-                        current_audit.ruleFileContent = json_content;
-                        window.State.setCurrentAudit(current_audit);
+                        
+                        console.log("[UploadViewComponent] Dispatching INITIALIZE_NEW_AUDIT with ruleFileContent.");
+                        local_dispatch({
+                            type: local_StoreActionTypes.INITIALIZE_NEW_AUDIT, // Använd den lokala referensen
+                            payload: { ruleFileContent: json_content }
+                        });
                         router_ref('metadata');
                     } else {
                         if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
@@ -65,11 +73,12 @@ const UploadViewComponent_internal = (function () {
             };
             reader.readAsText(file);
         }
-        if(rule_file_input_element) rule_file_input_element.value = ''; // Rensa alltid input efteråt
+        if(rule_file_input_element) rule_file_input_element.value = '';
     }
 
     function handle_saved_audit_file_select(event) {
         const t = get_t_func();
+        // console.log("[UploadViewComponent] handle_saved_audit_file_select triggered.");
         const file = event.target.files[0];
         if (file) {
             if (file.type !== "application/json") {
@@ -84,12 +93,26 @@ const UploadViewComponent_internal = (function () {
                     const validation_result = window.ValidationLogic.validate_saved_audit_file(file_content_object);
 
                     if (validation_result.isValid) {
-                        if (window.State.loadAuditFromFileData(file_content_object)) {
-                            if (window.NotificationComponent) NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
-                            router_ref('audit_overview');
-                        } else {
-                            if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
+                        const current_app_state_version = local_getState().saveFileVersion;
+                        if (file_content_object.saveFileVersion > current_app_state_version) {
+                            console.warn(`[UploadViewComponent] Sparfilens version (${file_content_object.saveFileVersion}) är nyare än applikationens state-version (${current_app_state_version}).`);
+                            if (window.NotificationComponent) {
+                                NotificationComponent.show_global_message(
+                                    t('warning_save_file_newer_version', {
+                                        fileVersionInFile: file_content_object.saveFileVersion,
+                                        appVersion: current_app_state_version
+                                    }),
+                                    'warning', 8000);
+                            }
                         }
+                        console.log("[UploadViewComponent] Dispatching LOAD_AUDIT_FROM_FILE.");
+                        local_dispatch({
+                            type: local_StoreActionTypes.LOAD_AUDIT_FROM_FILE, // Använd den lokala referensen
+                            payload: file_content_object
+                        });
+                        if (window.NotificationComponent) NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
+                        router_ref('audit_overview');
+
                     } else {
                         if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
                     }
@@ -103,12 +126,26 @@ const UploadViewComponent_internal = (function () {
             };
             reader.readAsText(file);
         }
-        if(saved_audit_input_element) saved_audit_input_element.value = ''; // Rensa alltid input efteråt
+        if(saved_audit_input_element) saved_audit_input_element.value = '';
     }
 
-    async function init(_app_container, _router) {
+    async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes) { // Lade till _StoreActionTypes
         app_container_ref = _app_container;
         router_ref = _router;
+        
+        local_getState = _getState;
+        local_dispatch = _dispatch;
+        local_StoreActionTypes = _StoreActionTypes; // Spara den medskickade referensen
+
+        if (!local_StoreActionTypes) {
+            console.error("[UploadViewComponent] CRITICAL: StoreActionTypes was not passed to init or is undefined.");
+            // Fallback för att undvika total krasch, men detta indikerar ett problem i main.js
+            local_StoreActionTypes = {
+                INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT_ERROR',
+                LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE_ERROR'
+            };
+        }
+
         if (window.NotificationComponent && typeof window.NotificationComponent.get_global_message_element_reference === 'function') {
             global_message_element_ref = NotificationComponent.get_global_message_element_reference();
         } else {
@@ -126,9 +163,12 @@ const UploadViewComponent_internal = (function () {
         } catch (error) {
             console.warn(`Failed to load CSS for UploadViewComponent: ${CSS_PATH}`, error);
         }
+        // console.log("[UploadViewComponent] Init complete. getState, dispatch, and StoreActionTypes should be set.");
     }
 
     function render() {
+        // console.log("[UploadViewComponent] Rendering. local_getState:", typeof local_getState, "local_dispatch:", typeof local_dispatch, "local_StoreActionTypes:", typeof local_StoreActionTypes);
+        
         if (!app_container_ref || !window.Helpers || !window.Helpers.create_element) {
             console.error("[UploadViewComponent] app_container_ref or Helpers.create_element is MISSING in render!");
             if (app_container_ref) app_container_ref.innerHTML = "<p>Error rendering Upload View.</p>";
@@ -144,31 +184,31 @@ const UploadViewComponent_internal = (function () {
         const title = window.Helpers.create_element('h1', { text_content: t('app_title') });
         const intro_text = window.Helpers.create_element('p', { text_content: t('upload_view_intro') });
 
-        load_ongoing_audit_btn = window.Helpers.create_element('button', {
-            id: 'load-ongoing-audit-btn',
-            class_name: ['button', 'button-secondary'],
-            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '')
-        });
+        load_ongoing_audit_btn = window.Helpers.create_element('button', { /* ... som tidigare ... */ });
+        load_ongoing_audit_btn.id = 'load-ongoing-audit-btn';
+        load_ongoing_audit_btn.className = 'button button-secondary';
+        load_ongoing_audit_btn.innerHTML = `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '');
 
-        start_new_audit_btn = window.Helpers.create_element('button', {
-            id: 'start-new-audit-btn',
-            class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('start_new_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '')
-        });
+
+        start_new_audit_btn = window.Helpers.create_element('button', { /* ... som tidigare ... */ });
+        start_new_audit_btn.id = 'start-new-audit-btn';
+        start_new_audit_btn.className = 'button button-primary';
+        start_new_audit_btn.innerHTML = `<span>${t('start_new_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file', ['currentColor'], 18) : '');
+
 
         const button_group = window.Helpers.create_element('div', { class_name: 'button-group' });
         button_group.appendChild(load_ongoing_audit_btn);
         button_group.appendChild(start_new_audit_btn);
 
-        rule_file_input_element = window.Helpers.create_element('input', {
-            id: 'rule-file-input',
-            attributes: { type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true' }
-        });
+        rule_file_input_element = window.Helpers.create_element('input', { /* ... som tidigare ... */ });
+        rule_file_input_element.id = 'rule-file-input';
+        Object.assign(rule_file_input_element, {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'});
 
-        saved_audit_input_element = window.Helpers.create_element('input', {
-            id: 'saved-audit-input',
-            attributes: { type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true' }
-        });
+
+        saved_audit_input_element = window.Helpers.create_element('input', { /* ... som tidigare ... */ });
+        saved_audit_input_element.id = 'saved-audit-input';
+        Object.assign(saved_audit_input_element, {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'});
+
 
         app_container_ref.appendChild(title);
         app_container_ref.appendChild(intro_text);
@@ -183,13 +223,16 @@ const UploadViewComponent_internal = (function () {
     }
 
     function destroy() {
+        // ... (som tidigare) ...
         if (rule_file_input_element) rule_file_input_element.removeEventListener('change', handle_rule_file_select);
         if (saved_audit_input_element) saved_audit_input_element.removeEventListener('change', handle_saved_audit_file_select);
         rule_file_input_element = null;
         saved_audit_input_element = null;
         load_ongoing_audit_btn = null;
         start_new_audit_btn = null;
-        // app_container_ref och router_ref nollställs inte här då de sätts av main.js
+        local_getState = null; 
+        local_dispatch = null;
+        local_StoreActionTypes = null;
     }
 
     return {

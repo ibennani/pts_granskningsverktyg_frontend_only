@@ -1,15 +1,17 @@
+// js/main.js
+
 // Importer för vyer som hanteras direkt av main.js router
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { MetadataViewComponent } from './components/MetadataViewComponent.js';
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
-import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
-import { RequirementListComponent } from './components/RequirementListComponent.js';
-import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
+import { AuditOverviewComponent } from './components/AuditOverviewComponent.js'; // Relevant nu
+import { RequirementListComponent } from './components/RequirementListComponent.js'; // Relevant nu
+import { RequirementAuditComponent } from './components/RequirementAuditComponent.js'; // Relevant nu
 
-// console.log("[Main.js] FILE PARSING STARTED (top level)");
+// Importera från den nya storen
+import { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState } from './state.js'; 
 
 (function () {
-    // console.log("[Main.js] SCRIPT EXECUTING - TOP OF IIFE");
     'use-strict';
 
     const app_container = document.getElementById('app-container');
@@ -21,13 +23,14 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
     let current_view_component_instance = null;
     let current_view_name_rendered = null;
-    let current_view_params_rendered_json = "{}";
+    let current_view_params_rendered_json = "{}"; 
 
     let theme_toggle_button_element = null;
     let language_selector_element = null;
     let language_label_element = null;
+    let store_unsubscribe_function = null;
 
-    // Helper function to safely get the translation function, primärt för init-fasen
+
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
@@ -43,8 +46,8 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
     }
 
 
-    function update_app_chrome_texts() {
-        const t = get_t_fallback();
+    function update_app_chrome_texts() { /* ... som tidigare ... */ 
+        const t = get_t_fallback(); 
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
@@ -67,7 +70,7 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
         }
     }
 
-    function init_ui_controls() {
+    function init_ui_controls() { /* ... som tidigare ... */ 
         const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function' || !window.Helpers || typeof window.Helpers.create_element !== 'function') {
             console.error("[Main.js] init_ui_controls: Core dependencies (Translation or Helpers) not available!");
@@ -123,7 +126,6 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
                 icon_svg_string = Helpers.get_icon_svg('dark_mode', [icon_color_val], 18);
                 button_label_text = t_local('dark_mode');
             }
-            // ÄNDRAD ORDNING: Text först, sedan ikon
             theme_toggle_button_element.innerHTML = `<span> ${button_label_text}</span>` + (icon_svg_string || '');
         }
 
@@ -180,10 +182,12 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
         if (!app_container) { console.error("[Main.js] App container not found in render_view!"); return; }
         app_container.innerHTML = '';
+        
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
             current_view_component_instance.destroy();
         }
         current_view_component_instance = null;
+
         let ComponentClass;
         switch (view_name_to_render) {
             case 'upload': ComponentClass = UploadViewComponent; break;
@@ -197,17 +201,29 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
                 app_container.innerHTML = `<p>${t("error_view_not_found", {viewName: Helpers.escape_html(view_name_to_render)})}</p>`;
                 return;
         }
+
         try {
-            current_view_component_instance = ComponentClass;
+            current_view_component_instance = ComponentClass; 
+            
             if (!current_view_component_instance || typeof current_view_component_instance.init !== 'function' || typeof current_view_component_instance.render !== 'function') {
-                console.error(`[Main.js] ComponentClass for view ${view_name_to_render} is UNDEFINED or not a valid component object.`);
+                console.error(`[Main.js] Component for view ${view_name_to_render} is UNDEFINED or not a valid component object.`);
                 app_container.innerHTML = `<p>${t("error_component_load", {viewName: Helpers.escape_html(view_name_to_render)})}</p>`;
                 return;
             }
-            await current_view_component_instance.init(app_container, navigate_and_set_hash, params_to_render);
+
+            // Se till att StoreActionTypes skickas med till ALLA komponenters init
+            await current_view_component_instance.init(
+                app_container, 
+                navigate_and_set_hash, 
+                params_to_render,
+                getState, 
+                dispatch,
+                StoreActionTypes 
+            );
             current_view_component_instance.render();
+
             if (app_container && app_container.innerHTML.trim() === '') {
-                console.warn(`[Main.js] WARNING: app_container is EMPTY after rendering ${view_name_to_render}.`);
+                // console.warn(`[Main.js] WARNING: app_container is EMPTY after rendering ${view_name_to_render}.`);
             }
         } catch (error) {
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
@@ -218,7 +234,7 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
         }
     }
 
-    function handle_hash_change() {
+    function handle_hash_change() { /* ... som tidigare ... */ 
         // console.log(`%c[Main.js] HASH_CHANGE_EVENT FIRED. New hash: ${window.location.hash}`, "color: red; font-weight: bold;");
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
@@ -231,36 +247,56 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
         let target_view = 'upload';
         let target_params = params;
-        const current_audit = window.State ? State.getCurrentAudit() : null;
+        
+        const current_global_state = getState();
 
         if (view_name_from_hash) {
             target_view = view_name_from_hash;
-        } else if (current_audit && current_audit.ruleFileContent) {
+        } else if (current_global_state && current_global_state.ruleFileContent) {
             target_view = 'audit_overview';
             target_params = {};
         }
 
         const new_params_json = JSON.stringify(target_params);
         if (current_view_name_rendered !== target_view || current_view_params_rendered_json !== new_params_json) {
-            // console.log(`[Main.js/handle_hash_change] Hash change requires rendering view: ${target_view}`);
+            // console.log(`[Main.js/handle_hash_change] Hash change requires rendering new view: ${target_view}`);
             render_view(target_view, target_params);
         } else {
-            // console.log(`[Main.js/handle_hash_change] Hash or params same as currently rendered view. No re-render from hash handler.`);
+            // console.log(`[Main.js/handle_hash_change] Hash or params same as currently rendered view. No re-render from hash handler, but might be triggered by store subscription if state changed.`);
         }
     }
 
-    function on_language_changed_event() {
+    function on_language_changed_event() { /* ... som tidigare ... */ 
         // console.log("[Main.js] 'languageChanged' event handler triggered.");
         update_app_chrome_texts();
         if (current_view_name_rendered) {
-            // console.log(`[Main.js/on_language_changed_event] Re-rendering current view: ${current_view_name_rendered}`);
+            // console.log(`[Main.js/on_language_changed_event] Re-rendering current view: ${current_view_name_rendered} due to language change.`);
             render_view(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
         } else {
             // console.warn("[Main.js] current_view_name_rendered not set during language change, hash handler will manage.");
         }
     }
+    
+    function on_store_change_event(new_state) { /* ... som tidigare ... */ 
+        // console.log('[Main.js] Store subscription: State has changed. New state version (example):', new_state.saveFileVersion);
+        if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
+            // console.log(`[Main.js] Store changed, re-rendering view: ${current_view_name_rendered}`);
+            try {
+                current_view_component_instance.render();
+            } catch (e) {
+                console.error(`[Main.js] Error re-rendering ${current_view_name_rendered} on state change:`, e);
+                if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
+                    const t = get_t_fallback();
+                    NotificationComponent.show_global_message(t('critical_error_system_render_view_failed'), 'error');
+                }
+            }
+        } else {
+            // console.log('[Main.js] Store changed, but no current view instance or render method to call.');
+        }
+    }
 
-    async function init_app() {
+
+    async function init_app() { /* ... som tidigare ... */ 
         // console.log("[Main.js] App Initializing... (inside init_app)");
         const t_init = get_t_fallback();
 
@@ -285,6 +321,10 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
         init_ui_controls();
         // console.log("[Main.js] init_ui_controls completed.");
+
+        if (store_unsubscribe_function) store_unsubscribe_function();
+        store_unsubscribe_function = subscribe(on_store_change_event);
+        // console.log("[Main.js] Subscribed to store state changes.");
 
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
