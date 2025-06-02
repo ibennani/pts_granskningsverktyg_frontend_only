@@ -204,6 +204,7 @@ function root_reducer(current_state, action) {
             if (current_state.auditCalculations && current_state.auditCalculations.currentVardetal === action.payload.vardetal) {
                 return current_state;
             }
+            console.log('[Store] Uppdaterar currentVardetal till:', action.payload.vardetal);
             return {
                 ...current_state,
                 auditCalculations: {

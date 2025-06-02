@@ -462,6 +462,10 @@ const AuditOverviewComponent_internal = (function () {
                 vardetal_progress_bar_container_element.innerHTML = '';
                 vardetal_section.appendChild(vardetal_progress_bar_container_element);
                 const vardetal_value_from_state = current_global_state.auditCalculations?.currentVardetal;
+
+                console.log("Värdetal från state i render:", vardetal_value_from_state);
+
+
                 vardetal_progress_bar_component_instance.render(
                     (vardetal_value_from_state !== null && vardetal_value_from_state !== undefined) ? vardetal_value_from_state : 0,
                     500,
@@ -646,17 +650,23 @@ const AuditOverviewComponent_internal = (function () {
             return;
         }
         handle_store_update_for_vardetal_ui(new_state);
+        console.log("==> handle_store_update_for_vardetal_ui, aktuellt vardetal i staten:", new_state_from_store.auditCalculations?.currentVardetal);
+        console.log("dispatch av UPDATE_CALCULATED_VARDETAL med", calculated_vardetal);
+    
         if (document.body.contains(app_container_ref)) {
             render();
         }
     }
 
     function handle_store_update_for_vardetal_ui(new_state_from_store) {
+        console.log("===> handle_store_update_for_vardetal_ui KÖRS", new_state_from_store);
+        console.log("NYTT STATE", new_state_from_store.auditCalculations);
         if (typeof VardetalCalculator_calculate_current_vardetal_func !== 'function' ||
             typeof VardetalCalculator_get_precalculated_data_store_func !== 'function') {
             if (vardetal_progress_bar_component_instance && typeof vardetal_progress_bar_component_instance.render === 'function') {
                 vardetal_progress_bar_component_instance.render(null);
             }
+            console.log("[VardetalCalculator] Slutresultat:", rounded_vardetal);
             return;
         }
 

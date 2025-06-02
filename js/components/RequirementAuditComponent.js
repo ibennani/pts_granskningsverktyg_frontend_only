@@ -281,22 +281,22 @@ export const RequirementAuditComponent = (function () {
     function handle_check_overall_status_change(check_id, new_overall_status_for_check) { 
         console.log("===> handle_check_overall_status_change", check_id, new_overall_status_for_check);
         const t = get_t_internally();
-
+    
         if (!current_requirement_result_for_view || !current_requirement_result_for_view.checkResults || !current_requirement_result_for_view.checkResults[check_id] || !current_requirement_object_from_store) {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_internal_data_structure_pc'), 'error');
             return;
         }
-
+    
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
         const check_definition = current_requirement_object_from_store.checks.find(c => c.id === check_id);
-
+    
         if (check_result_to_modify.overallStatus === new_overall_status_for_check) {
             check_result_to_modify.overallStatus = 'not_audited';
         } else {
             check_result_to_modify.overallStatus = new_overall_status_for_check;
         }
-
+    
         if (check_result_to_modify.overallStatus === 'failed' && check_definition && check_definition.passCriteria) {
             check_definition.passCriteria.forEach(pc_def => {
                 check_result_to_modify.passCriteria[pc_def.id] = 'passed';
@@ -314,10 +314,10 @@ export const RequirementAuditComponent = (function () {
             modified_result_for_dispatch.status = AuditLogic_calculate_requirement_status(current_requirement_object_from_store, modified_result_for_dispatch);
         }
         if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
-
+    
         if (!local_StoreActionTypes || !local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT) {
             console.error("[RequirementAuditComponent] local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT is undefined in handle_check_overall_status_change!");
-             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for update result is missing.", "error");
+            if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for update result is missing.", "error");
             return;
         }
         console.log("Dispatchar:", {
@@ -338,11 +338,44 @@ export const RequirementAuditComponent = (function () {
         });
         console.log("Dispatch skickad!");
         
+        // --- NYTT: Uppdatera värdetal när kraven ändras ---
+        setTimeout(() => {
+            try {
+                const state = local_getState ? local_getState() : (window.Store && window.Store.getState ? window.Store.getState() : null);
+                const precalc = window.VardetalCalculator && window.VardetalCalculator.get_precalculated_data_store
+                    ? window.VardetalCalculator.get_precalculated_data_store()
+                    : null;
+                const vardetal = (window.VardetalCalculator && window.VardetalCalculator.calculate_current_vardetal && state && precalc)
+                    ? window.VardetalCalculator.calculate_current_vardetal(state, precalc)
+                    : null;
+                if (vardetal !== null && vardetal !== undefined) {
+                    if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL) {
+                        local_dispatch({
+                            type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
+                            payload: { vardetal }
+                        });
+                        console.log('[ReqAudit] Värdetal dispatchad till store:', vardetal);
+                    } else if (window.Store && window.Store.dispatch) {
+                        window.Store.dispatch({
+                            type: 'UPDATE_CALCULATED_VARDETAL',
+                            payload: { vardetal }
+                        });
+                        console.log('[ReqAudit] Värdetal dispatchad (fallback):', vardetal);
+                    }
+                } else {
+                    console.warn('[ReqAudit] Kunde inte räkna ut nytt värdetal (vardetal)!', vardetal);
+                }
+            } catch (err) {
+                console.error('[ReqAudit] Fel vid värdetals-dispatch:', err);
+            }
+        }, 10); // Liten fördröjning så store hinner uppdateras först
+        // ---------------------------------------------------
     }
+    
 
     function handle_pass_criterion_status_change(check_id, pc_id, new_pc_status) { 
         const t = get_t_internally();
-
+    
         if (!current_requirement_result_for_view || !current_requirement_result_for_view.checkResults || 
             !current_requirement_result_for_view.checkResults[check_id] || 
             !current_requirement_result_for_view.checkResults[check_id].passCriteria ||
@@ -350,10 +383,10 @@ export const RequirementAuditComponent = (function () {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_internal_data_structure_pc'), 'error');
             return;
         }
-
+    
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
-
+    
         if (check_result_to_modify.overallStatus === 'failed') {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('cannot_change_criteria_if_check_not_compliant'), 'warning');
             return;
@@ -362,7 +395,7 @@ export const RequirementAuditComponent = (function () {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_set_check_status_first', {defaultValue: "Please set the main check status first."}), 'warning');
             return;
         }
-
+    
         if (check_result_to_modify.passCriteria[pc_id] === new_pc_status) {
             check_result_to_modify.passCriteria[pc_id] = 'not_audited';
         } else {
@@ -371,7 +404,7 @@ export const RequirementAuditComponent = (function () {
         
         const check_definition = current_requirement_object_from_store.checks.find(c => c.id === check_id);
         if (check_definition && AuditLogic_calculate_check_status) {
-             check_result_to_modify.status = AuditLogic_calculate_check_status(
+            check_result_to_modify.status = AuditLogic_calculate_check_status(
                 check_definition, 
                 check_result_to_modify.passCriteria, 
                 check_result_to_modify.overallStatus
@@ -381,7 +414,7 @@ export const RequirementAuditComponent = (function () {
             modified_result_for_dispatch.status = AuditLogic_calculate_requirement_status(current_requirement_object_from_store, modified_result_for_dispatch);
         }
         if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
-
+    
         if (!local_StoreActionTypes || !local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT) {
             console.error("[RequirementAuditComponent] local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT is undefined in handle_pass_criterion_status_change!");
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for update result is missing.", "error");
@@ -395,7 +428,41 @@ export const RequirementAuditComponent = (function () {
                 newRequirementResult: modified_result_for_dispatch
             }
         });
+    
+        // --- NYTT: Uppdatera värdetal när pass-criterium ändras ---
+        setTimeout(() => {
+            try {
+                const state = local_getState ? local_getState() : (window.Store && window.Store.getState ? window.Store.getState() : null);
+                const precalc = window.VardetalCalculator && window.VardetalCalculator.get_precalculated_data_store
+                    ? window.VardetalCalculator.get_precalculated_data_store()
+                    : null;
+                const vardetal = (window.VardetalCalculator && window.VardetalCalculator.calculate_current_vardetal && state && precalc)
+                    ? window.VardetalCalculator.calculate_current_vardetal(state, precalc)
+                    : null;
+                if (vardetal !== null && vardetal !== undefined) {
+                    if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL) {
+                        local_dispatch({
+                            type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
+                            payload: { vardetal }
+                        });
+                        console.log('[ReqAudit] Värdetal dispatchad till store:', vardetal);
+                    } else if (window.Store && window.Store.dispatch) {
+                        window.Store.dispatch({
+                            type: 'UPDATE_CALCULATED_VARDETAL',
+                            payload: { vardetal }
+                        });
+                        console.log('[ReqAudit] Värdetal dispatchad (fallback):', vardetal);
+                    }
+                } else {
+                    console.warn('[ReqAudit] Kunde inte räkna ut nytt värdetal (vardetal)!', vardetal);
+                }
+            } catch (err) {
+                console.error('[ReqAudit] Fel vid värdetals-dispatch:', err);
+            }
+        }, 10); // Liten fördröjning så store hinner uppdateras först
+        // ---------------------------------------------------------
     }
+    
 
     function render_audit_section_internal(title_key, content_data, parent_element) { /* ... som tidigare ... */ 
         const t = get_t_internally();

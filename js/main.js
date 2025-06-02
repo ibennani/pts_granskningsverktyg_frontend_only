@@ -10,6 +10,11 @@ import { RequirementAuditComponent } from './components/RequirementAuditComponen
 
 // Importera från den nya storen
 import { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState } from './state.js'; 
+window.getState = getState;
+window.dispatch = dispatch;
+window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
+window.StoreActionTypes = StoreActionTypes;
+
 
 (function () {
     'use-strict';
@@ -354,3 +359,4 @@ import { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState } fr
     }
 
 })();
+
