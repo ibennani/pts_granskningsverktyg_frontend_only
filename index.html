@@ -16,14 +16,15 @@
     <script src="js/components/NotificationComponent.js"></script> 
     <script src="js/components/ProgressBarComponent.js"></script>
     <script src="js/audit_logic.js"></script>
-    <!-- Uppdaterad export_logic.js (utan save-funktionen) -->
     <script src="js/export_logic.js"></script> 
-    <!-- NY LOGIKFIL FÖR ATT SPARA -->
     <script src="js/logic/save_audit_logic.js"></script> 
     <script src="js/validation_logic.js"></script>
     
+    <!-- NY LOGIKFIL FÖR VÄRDETAL - Laddas INNAN komponenter som kan använda den -->
+    <script src="js/logic/VardetalCalculator.js"></script> 
+
     <!-- Huvudapplikationslogiken, laddas som en ES6-modul -->
-    <!-- Denna kommer att importera state.js och komponenterna -->
+    <!-- Denna kommer att importera state.js och komponenterna som ES6 moduler -->
     <script type="module" src="js/main.js"></script>
     
     <!-- Externt bibliotek, kan laddas sist eller där det passar -->

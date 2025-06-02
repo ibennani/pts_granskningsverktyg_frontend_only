@@ -1,0 +1,115 @@
+/* css/components/vardetal_progress_bar_component.css */
+
+.vardetal-progress-bar-container {
+    margin-top: 1.5rem; /* Lite mer utrymme ovanför */
+    margin-bottom: 1rem; /* Utrymme under */
+}
+
+.vardetal-progress-bar-label {
+    display: block; /* Se till att den tar full bredd */
+    font-size: 1rem; /* Lite större text för värdetalet */
+    color: var(--text-color);
+    margin-bottom: 0.5rem; /* Mer utrymme till själva stapeln */
+    font-weight: 500;
+}
+
+.vardetal-progress-bar-label strong {
+    color: var(--primary-color); /* Eller var(--text-color) om det ser bättre ut */
+}
+
+[data-theme="dark"] .vardetal-progress-bar-label strong {
+    color: var(--primary-color);
+}
+
+
+.vardetal-progress-bar-wrapper {
+    width: 100%;
+    height: 20px; /* Lite högre för bättre visuell effekt */
+    background-color: var(--input-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    position: relative; /* För markörer och de fyllda segmenten */
+    overflow: hidden; /* Viktigt för att hålla segmenten inom ramen */
+    display: flex; /* Använd flex för att lägga segmenten bredvid varandra */
+    align-items: stretch; /* Se till att segmenten fyller höjden */
+}
+
+/* Gemensam stil för alla fyllda segment */
+.vardetal-progress-segment {
+    height: 100%;
+    transition: width 0.3s ease-in-out; /* Mjuk övergång för breddändring */
+    /* Ingen border-radius här om wrappern har overflow:hidden och border-radius */
+}
+
+/* --- Färger för LJUDT LÄGE --- */
+:root {
+    /* Ljusare/mer pastellartade nyanser för ljust läge */
+    --vardetal-green-light-start: #a8e6cf; /* Ljus mintgrön */
+    --vardetal-green-light-end: #66bb6a;   /* Medium grön */
+
+    --vardetal-yellow-light-start: #fff59d; /* Ljus citrongul */
+    --vardetal-yellow-light-end: #ffee58;  /* Solgul */
+
+    --vardetal-red-light-start: #ffccbc;   /* Ljus persika/korall */
+    --vardetal-red-light-end: #ef5350;   /* Medium röd */
+    
+    --vardetal-marker-color: var(--text-color-muted);
+}
+
+.vardetal-progress-segment.green {
+    background: linear-gradient(to right, var(--vardetal-green-light-start), var(--vardetal-green-light-end));
+}
+
+.vardetal-progress-segment.yellow {
+    background: linear-gradient(to right, var(--vardetal-yellow-light-start), var(--vardetal-yellow-light-end));
+}
+
+.vardetal-progress-segment.red {
+    background: linear-gradient(to right, var(--vardetal-red-light-start), var(--vardetal-red-light-end));
+}
+
+/* --- Färger för MÖRKT LÄGE (som specificerat) --- */
+[data-theme="dark"] {
+    --vardetal-green-dark-start: #49f785;
+    --vardetal-green-dark-end: #28c85e;
+
+    --vardetal-yellow-dark-start: #ffe966;
+    --vardetal-yellow-dark-end: #ffd600;
+
+    --vardetal-red-dark-start: #fa7067;
+    --vardetal-red-dark-end: #b70026;
+
+    --vardetal-marker-color: var(--border-color); /* Ljusare markör i mörkt läge */
+}
+
+[data-theme="dark"] .vardetal-progress-segment.green {
+    background: linear-gradient(to right, var(--vardetal-green-dark-start), var(--vardetal-green-dark-end));
+}
+
+[data-theme="dark"] .vardetal-progress-segment.yellow {
+    background: linear-gradient(to right, var(--vardetal-yellow-dark-start), var(--vardetal-yellow-dark-end));
+}
+
+[data-theme="dark"] .vardetal-progress-segment.red {
+    background: linear-gradient(to right, var(--vardetal-red-dark-start), var(--vardetal-red-dark-end));
+}
+
+
+/* Tröskelmarkörer */
+.vardetal-progress-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--vardetal-marker-color);
+    z-index: 1; /* Se till att de syns över segmenten om det behövs */
+}
+
+/* Specifika positioner för markörer (beräknas relativt maxvärdet 500) */
+.vardetal-progress-marker.marker-9 {
+    left: calc((9.5 / 500) * 100%); /* Positionerad mellan 9 och 10 */
+}
+
+.vardetal-progress-marker.marker-79 {
+    left: calc((79.5 / 500) * 100%); /* Positionerad mellan 79 och 80 */
+}
