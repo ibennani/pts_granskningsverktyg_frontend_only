@@ -336,6 +336,13 @@ import { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState } fr
         }
         handle_hash_change(); 
         update_app_chrome_texts(); 
+
+        subscribe(() => {
+            if (current_view_name_rendered) {
+                const params = JSON.parse(current_view_params_rendered_json || "{}");
+                render_view(current_view_name_rendered, params);
+            }
+        });
     }
 
     if (document.readyState === 'loading') {

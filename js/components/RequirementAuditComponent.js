@@ -85,10 +85,16 @@ export const RequirementAuditComponent = (function () {
     }
 
     function handle_checks_container_click(event) { /* ... som tidigare ... */ 
+        console.log("===> CLICK event fired!", event.target);
+
         const target_button = event.target.closest('button[data-action]');
+        console.log("target_button:", target_button);
+
         if (!target_button) return;
 
         const action = target_button.dataset.action;
+        console.log("action:", action);
+
         const check_item_element = target_button.closest('.check-item[data-check-id]');
         const pc_item_element = target_button.closest('.pass-criterion-item[data-pc-id]');
 
@@ -270,6 +276,7 @@ export const RequirementAuditComponent = (function () {
     }
     
     function handle_check_overall_status_change(check_id, new_overall_status_for_check) { 
+        console.log("===> handle_check_overall_status_change", check_id, new_overall_status_for_check);
         const t = get_t_internally();
 
         if (!current_requirement_result_for_view || !current_requirement_result_for_view.checkResults || !current_requirement_result_for_view.checkResults[check_id] || !current_requirement_object_from_store) {
@@ -310,14 +317,24 @@ export const RequirementAuditComponent = (function () {
              if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for update result is missing.", "error");
             return;
         }
+        console.log("Dispatchar:", {
+            type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+            payload: {
+                sampleId: params_ref.sampleId,
+                requirementId: params_ref.requirementId,
+                newRequirementResult: modified_result_for_dispatch
+            }
+        });
         local_dispatch({
             type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: {
                 sampleId: params_ref.sampleId,
-                requirementId: params_ref.requirementId, // Använd ID från params (UUID)
+                requirementId: params_ref.requirementId,
                 newRequirementResult: modified_result_for_dispatch
             }
         });
+        console.log("Dispatch skickad!");
+        
     }
 
     function handle_pass_criterion_status_change(check_id, pc_id, new_pc_status) { 
@@ -693,10 +710,13 @@ export const RequirementAuditComponent = (function () {
 
         if (!checks_ui_container_element) {
             checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
-            checks_ui_container_element.addEventListener('click', handle_checks_container_click);
         } else {
             checks_ui_container_element.innerHTML = '';
         }
+        // Lägg alltid på eventlyssnaren (både första gången och vid återanvändning)
+        checks_ui_container_element.removeEventListener('click', handle_checks_container_click);
+        checks_ui_container_element.addEventListener('click', handle_checks_container_click);
+        
         checks_ui_container_element.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
         render_checks_section(checks_ui_container_element); 
         plate_element.appendChild(checks_ui_container_element);
