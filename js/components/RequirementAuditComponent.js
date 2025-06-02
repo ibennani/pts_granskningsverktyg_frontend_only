@@ -28,6 +28,9 @@ export const RequirementAuditComponent = (function () {
 
     let ordered_requirement_keys_for_sample = [];
 
+    let activeButtonInfo = null;
+
+
 
     function get_t_internally() { /* ... som tidigare ... */ 
         if (Translation_t) return Translation_t;
@@ -633,17 +636,55 @@ export const RequirementAuditComponent = (function () {
         return nav_buttons_div;
     }
 
-    function render() { /* ... som tidigare ... */  
+    function checksButtonMouseDownHandler(event) {
+        const btn = event.target.closest('button[data-action]');
+        if (btn) {
+            activeButtonInfo = {
+                action: btn.dataset.action,
+                checkId: btn.closest('.check-item[data-check-id]')?.dataset.checkId,
+                pcId: btn.closest('.pass-criterion-item[data-pc-id]')?.dataset.pcId
+            };
+        }
+    }
+    
+    function checksButtonKeyDownHandler(event) {
+        // Spara om Enter eller Space används på knapp
+        if ((event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar')) {
+            const btn = event.target.closest('button[data-action]');
+            if (btn) {
+                activeButtonInfo = {
+                    action: btn.dataset.action,
+                    checkId: btn.closest('.check-item[data-check-id]')?.dataset.checkId,
+                    pcId: btn.closest('.pass-criterion-item[data-pc-id]')?.dataset.pcId
+                };
+            }
+        }
+    }
+    
+    function checksButtonTouchStartHandler(event) {
+        // Pekskärm/touch
+        const btn = event.target.closest('button[data-action]');
+        if (btn) {
+            activeButtonInfo = {
+                action: btn.dataset.action,
+                checkId: btn.closest('.check-item[data-check-id]')?.dataset.checkId,
+                pcId: btn.closest('.pass-criterion-item[data-pc-id]')?.dataset.pcId
+            };
+        }
+    }
+    
+
+    function render() {  
         assign_globals_once();
         const t = get_t_internally();
-
+    
         if (!app_container_ref || !Helpers_create_element || !t || !local_getState) {
             console.error("[ReqAudit] Core dependencies for render are missing.");
             if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_requirement_audit_view')}</p>`;
             return;
         }
         app_container_ref.innerHTML = '';
-
+    
         if (!load_and_prepare_view_data()) { 
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_loading_sample_or_requirement_data'), "error");
             const back_button = Helpers_create_element('button', {class_name: ['button', 'button-default'], text_content: t('back_to_requirement_list')});
@@ -655,10 +696,10 @@ export const RequirementAuditComponent = (function () {
         
         const req_for_render = current_requirement_object_from_store;
         const result_for_render = current_requirement_result_for_view;
-
+    
         const plate_element = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
         app_container_ref.appendChild(plate_element);
-
+    
         if (global_message_element_ref) {
             plate_element.appendChild(global_message_element_ref);
             if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
@@ -685,13 +726,13 @@ export const RequirementAuditComponent = (function () {
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
         header_div.appendChild(requirement_status_display_element);
         plate_element.appendChild(header_div);
-
+    
         render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, plate_element);
         render_audit_section_internal('requirement_instructions', req_for_render.instructions, plate_element);
         render_audit_section_internal('requirement_tips', req_for_render.tips, plate_element);
         render_audit_section_internal('requirement_exceptions', req_for_render.exceptions, plate_element);
         render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, plate_element);
-
+    
         if (req_for_render.metadata) {
             const meta_section = Helpers_create_element('div', { class_name: 'audit-section' });
             meta_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
@@ -705,9 +746,9 @@ export const RequirementAuditComponent = (function () {
             meta_section.appendChild(grid);
             plate_element.appendChild(meta_section);
         }
-
+    
         plate_element.appendChild(render_navigation_buttons('top'));
-
+    
         if (!checks_ui_container_element) {
             checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
         } else {
@@ -716,17 +757,48 @@ export const RequirementAuditComponent = (function () {
         // Lägg alltid på eventlyssnaren (både första gången och vid återanvändning)
         checks_ui_container_element.removeEventListener('click', handle_checks_container_click);
         checks_ui_container_element.addEventListener('click', handle_checks_container_click);
+
+        // Spara info om vilken knapp som användes – MUS
+        checks_ui_container_element.removeEventListener('mousedown', checksButtonMouseDownHandler);
+        checks_ui_container_element.addEventListener('mousedown', checksButtonMouseDownHandler);
+
+        // TANGENTBORD
+        checks_ui_container_element.removeEventListener('keydown', checksButtonKeyDownHandler);
+        checks_ui_container_element.addEventListener('keydown', checksButtonKeyDownHandler);
+
+        // PEKSKÄRM
+        checks_ui_container_element.removeEventListener('touchstart', checksButtonTouchStartHandler);
+        checks_ui_container_element.addEventListener('touchstart', checksButtonTouchStartHandler);
+
         
         checks_ui_container_element.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
         render_checks_section(checks_ui_container_element); 
         plate_element.appendChild(checks_ui_container_element);
 
+        // ======== FOKUSFIX: Återställ fokus på knappen om det finns sparad info ========
+        if (activeButtonInfo) {
+            // Bygg selector
+            let selector = `button[data-action="${activeButtonInfo.action}"]`;
+            if (activeButtonInfo.checkId) {
+                selector = `.check-item[data-check-id="${activeButtonInfo.checkId}"] ` + selector;
+            }
+            if (activeButtonInfo.pcId) {
+                selector = `.pass-criterion-item[data-pc-id="${activeButtonInfo.pcId}"] ` + selector;
+            }
+            const newButton = checks_ui_container_element.querySelector(selector);
+            if (newButton) newButton.focus();
+            // Rensa info så den bara används en gång
+            activeButtonInfo = null;
+        }
+        // =================================================================================
+
+    
         const input_fields_container = Helpers_create_element('div', { class_name: 'input-fields-container audit-section' });
         input_fields_container.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title')}));
         let fg, label;
         const current_global_state_for_render = local_getState(); 
         const is_audit_locked_for_render = current_global_state_for_render && current_global_state_for_render.auditStatus === 'locked';
-
+    
         fg = Helpers_create_element('div', {class_name: 'form-group'});
         label = Helpers_create_element('label', {attributes: {for: 'actualObservation'}, text_content: t('actual_observation')});
         actual_observation_input = Helpers_create_element('textarea', {id: 'actualObservation', class_name: 'form-control', attributes: {rows: '4'}});
@@ -739,7 +811,7 @@ export const RequirementAuditComponent = (function () {
         }
         fg.appendChild(label); fg.appendChild(actual_observation_input);
         input_fields_container.appendChild(fg);
-
+    
         fg = Helpers_create_element('div', {class_name: 'form-group'});
         label = Helpers_create_element('label', {attributes: {for: 'commentToAuditor'}, text_content: t('comment_to_auditor')});
         comment_to_auditor_input = Helpers_create_element('textarea', {id: 'commentToAuditor', class_name: 'form-control', attributes: {rows: '3'}});
@@ -752,7 +824,7 @@ export const RequirementAuditComponent = (function () {
         }
         fg.appendChild(label); fg.appendChild(comment_to_auditor_input);
         input_fields_container.appendChild(fg);
-
+    
         fg = Helpers_create_element('div', {class_name: 'form-group'});
         label = Helpers_create_element('label', {attributes: {for: 'commentToActor'}, text_content: t('comment_to_actor')});
         comment_to_actor_input = Helpers_create_element('textarea', {id: 'commentToActor', class_name: 'form-control', attributes: {rows: '3'}});
@@ -766,9 +838,27 @@ export const RequirementAuditComponent = (function () {
         fg.appendChild(label); fg.appendChild(comment_to_actor_input);
         input_fields_container.appendChild(fg);
         plate_element.appendChild(input_fields_container);
-
+    
         plate_element.appendChild(render_navigation_buttons('bottom'));
+    
+        // ======== FOKUSFIX: Återställ fokus på motsvarande knapp om det fanns en ========
+        if (activeButtonInfo) {
+            setTimeout(() => {
+                let selector = `button[data-action="${activeButtonInfo.action}"]`;
+                if (activeButtonInfo.checkId) {
+                    selector = `.check-item[data-check-id="${activeButtonInfo.checkId}"] ` + selector;
+                }
+                if (activeButtonInfo.pcId) {
+                    selector = `.pass-criterion-item[data-pc-id="${activeButtonInfo.pcId}"] ` + selector;
+                }
+                const newButton = checks_ui_container_element.querySelector(selector);
+                if (newButton) newButton.focus();
+                activeButtonInfo = null; // Viktigt! Annars försöker den igen nästa render.
+            }, 0);
+        }
     }
+    
+    
 
     function destroy() { 
         if (actual_observation_input) actual_observation_input.removeEventListener('input', auto_save_text_data);
