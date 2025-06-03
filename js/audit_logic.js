@@ -131,14 +131,25 @@
 
     // Hämtar relevanta krav för ett givet stickprov
     function get_relevant_requirements_for_sample(rule_file_content, sample) {
-        if (!rule_file_content || !rule_file_content.requirements || !sample || !sample.selectedContentTypes) { 
+        if (!rule_file_content || !rule_file_content.requirements || !sample) { // Tog bort selectedContentTypes från denna guard clause
             return []; 
         }
         const all_requirements_array = Object.values(rule_file_content.requirements);
+
+        // Om stickprovet INTE har några specificerade innehållstyper, visa ALLA krav.
+        // Detta är ett antagande om att användaren då vill se en bredare uppsättning.
+        // Om detta INTE är önskat, och man alltid vill filtrera strikt, kan denna if-sats tas bort.
+        if (!sample.selectedContentTypes || sample.selectedContentTypes.length === 0) {
+            return all_requirements_array; 
+        }
+
+        // Om stickprovet HAR specificerade innehållstyper, filtrera strikt:
         return all_requirements_array.filter(req => {
+            // Kravet MÅSTE ha contentTypes definierade för att kunna matchas mot ett stickprov som har specifika typer.
             if (!req.contentType || !Array.isArray(req.contentType) || req.contentType.length === 0) {
-                return true; // Om contentType är tomt, är kravet alltid relevant
+                return false; // Krav utan specifik typ visas INTE om stickprovet har specifika typer.
             }
+            // Annars, kolla om någon av kravets contentTypes matchar någon av stickprovets valda contentTypes.
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
     }
