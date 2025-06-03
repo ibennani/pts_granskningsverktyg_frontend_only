@@ -339,7 +339,7 @@ export const RequirementAuditComponent = (function () {
         console.log("Dispatch skickad!");
         
         // --- NYTT: Uppdatera värdetal när kraven ändras ---
-        setTimeout(() => {
+/*         setTimeout(() => {
             try {
                 const state = local_getState ? local_getState() : (window.Store && window.Store.getState ? window.Store.getState() : null);
                 const precalc = window.VardetalCalculator && window.VardetalCalculator.get_precalculated_data_store
@@ -368,7 +368,7 @@ export const RequirementAuditComponent = (function () {
             } catch (err) {
                 console.error('[ReqAudit] Fel vid värdetals-dispatch:', err);
             }
-        }, 10); // Liten fördröjning så store hinner uppdateras först
+        }, 10); // Liten fördröjning så store hinner uppdateras först */
         // ---------------------------------------------------
     }
     

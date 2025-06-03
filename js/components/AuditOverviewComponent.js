@@ -462,9 +462,7 @@ const AuditOverviewComponent_internal = (function () {
                 vardetal_progress_bar_container_element.innerHTML = '';
                 vardetal_section.appendChild(vardetal_progress_bar_container_element);
                 const vardetal_value_from_state = current_global_state.auditCalculations?.currentVardetal;
-
-                console.log("Värdetal från state i render:", vardetal_value_from_state);
-
+                console.log("[AuditOverview RENDER] Vardetal från state för progressbar:", vardetal_value_from_state);
 
                 vardetal_progress_bar_component_instance.render(
                     (vardetal_value_from_state !== null && vardetal_value_from_state !== undefined) ? vardetal_value_from_state : 0,
@@ -659,53 +657,64 @@ const AuditOverviewComponent_internal = (function () {
     }
 
     function handle_store_update_for_vardetal_ui(new_state_from_store) {
-        console.log("===> handle_store_update_for_vardetal_ui KÖRS", new_state_from_store);
-        console.log("NYTT STATE", new_state_from_store.auditCalculations);
+        console.log("===> AuditOverview: handle_store_update_for_vardetal_ui KÖRS", new_state_from_store.auditCalculations);
+    
         if (typeof VardetalCalculator_calculate_current_vardetal_func !== 'function' ||
             typeof VardetalCalculator_get_precalculated_data_store_func !== 'function') {
-            if (vardetal_progress_bar_component_instance && typeof vardetal_progress_bar_component_instance.render === 'function') {
-                vardetal_progress_bar_component_instance.render(null);
+            console.warn("[AuditOverview] VardetalCalculator functions not available. Cannot update vardetal.");
+            // Om funktionerna saknas, kanske vi ska dispatcha null för att rensa ett gammalt värde?
+            if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
+                new_state_from_store.auditCalculations?.currentVardetal !== null) {
+                 local_dispatch({
+                    type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
+                    payload: { vardetal: null }
+                });
             }
-            console.log("[VardetalCalculator] Slutresultat:", rounded_vardetal);
-            return;
+            return; // Avbryt om kalkylatorfunktioner saknas
         }
-
+    
         let precalculated_rule_data_for_calc = new_state_from_store.auditCalculations?.ruleData;
-
-        if ((!precalculated_rule_data_for_calc || !precalculated_rule_data_for_calc.weights_map)) {
+    
+        if (!precalculated_rule_data_for_calc || !precalculated_rule_data_for_calc.weights_map) {
             precalculated_rule_data_for_calc = VardetalCalculator_get_precalculated_data_store_func();
-
+    
             if (precalculated_rule_data_for_calc && precalculated_rule_data_for_calc.weights_map &&
                 local_dispatch && local_StoreActionTypes && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA &&
-                (!new_state_from_store.auditCalculations?.ruleData?.weights_map)
-            ) {
+                (!new_state_from_store.auditCalculations?.ruleData?.weights_map)) { // Bara om det inte redan finns i state
                 local_dispatch({
                     type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
                     payload: precalculated_rule_data_for_calc
                 });
-                return;
+                // Eftersom detta är en dispatch, kommer handle_store_update att köras igen.
+                // Denna instans av funktionen bör då avbrytas för att undvika dubbelberäkning
+                // innan storen har hunnit uppdateras med precalculated_rule_data.
+                return; 
             }
         }
-
+    
         if (precalculated_rule_data_for_calc && precalculated_rule_data_for_calc.weights_map) {
             const calculated_vardetal = VardetalCalculator_calculate_current_vardetal_func(new_state_from_store, precalculated_rule_data_for_calc);
             const current_vardetal_in_state = new_state_from_store.auditCalculations?.currentVardetal;
-
+    
+            console.log(`[AuditOverview] Vardetal CALC: ${calculated_vardetal}, Vardetal IN STATE: ${current_vardetal_in_state}`);
+    
             if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
                 current_vardetal_in_state !== calculated_vardetal) {
+                console.log(`[AuditOverview] Dispatching UPDATE_CALCULATED_VARDETAL with: ${calculated_vardetal}`);
                 local_dispatch({
                     type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
                     payload: { vardetal: calculated_vardetal }
                 });
-            } else if (vardetal_progress_bar_component_instance && typeof vardetal_progress_bar_component_instance.render === 'function') {
-                const value_to_render_direct = (calculated_vardetal !== null && calculated_vardetal !== undefined)
-                    ? calculated_vardetal
-                    : (current_vardetal_in_state !== null && current_vardetal_in_state !== undefined ? current_vardetal_in_state : 0);
-                vardetal_progress_bar_component_instance.render(value_to_render_direct);
             }
         } else {
-            if (vardetal_progress_bar_component_instance && typeof vardetal_progress_bar_component_instance.render === 'function') {
-                vardetal_progress_bar_component_instance.render(null);
+            // Om precalculated_rule_data fortfarande saknas, kan vi inte beräkna.
+            // Dispatcha null om nuvarande värdetal i state inte redan är null.
+            if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
+                new_state_from_store.auditCalculations?.currentVardetal !== null) {
+                 local_dispatch({
+                    type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
+                    payload: { vardetal: null }
+                });
             }
         }
     }

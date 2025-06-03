@@ -216,5 +216,6 @@
   "check_marked_as_not_compliant_criteria_passed": "Kontrollpunkten är markerad som 'Stämmer inte' underliggande kriterier har automatiskt markerats som godkända och visas ej",
   "overall_vardetal_label": "Värdetal",
   "no_actions_available": "Inga åtger är möjliga för tillfället",
-  "no_audit_metadata_available": "Ingen granskningsinformation finns att visa just nu"
+  "no_audit_metadata_available": "Ingen granskningsinformation finns att visa just nu",
+  "version_rulefile": "Regelfilens version"
 }
