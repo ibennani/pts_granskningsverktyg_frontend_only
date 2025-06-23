@@ -338,38 +338,6 @@ export const RequirementAuditComponent = (function () {
         });
         console.log("Dispatch skickad!");
         
-        // --- NYTT: Uppdatera värdetal när kraven ändras ---
-/*         setTimeout(() => {
-            try {
-                const state = local_getState ? local_getState() : (window.Store && window.Store.getState ? window.Store.getState() : null);
-                const precalc = window.VardetalCalculator && window.VardetalCalculator.get_precalculated_data_store
-                    ? window.VardetalCalculator.get_precalculated_data_store()
-                    : null;
-                const vardetal = (window.VardetalCalculator && window.VardetalCalculator.calculate_current_vardetal && state && precalc)
-                    ? window.VardetalCalculator.calculate_current_vardetal(state, precalc)
-                    : null;
-                if (vardetal !== null && vardetal !== undefined) {
-                    if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL) {
-                        local_dispatch({
-                            type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
-                            payload: { vardetal }
-                        });
-                        console.log('[ReqAudit] Värdetal dispatchad till store:', vardetal);
-                    } else if (window.Store && window.Store.dispatch) {
-                        window.Store.dispatch({
-                            type: 'UPDATE_CALCULATED_VARDETAL',
-                            payload: { vardetal }
-                        });
-                        console.log('[ReqAudit] Värdetal dispatchad (fallback):', vardetal);
-                    }
-                } else {
-                    console.warn('[ReqAudit] Kunde inte räkna ut nytt värdetal (vardetal)!', vardetal);
-                }
-            } catch (err) {
-                console.error('[ReqAudit] Fel vid värdetals-dispatch:', err);
-            }
-        }, 10); // Liten fördröjning så store hinner uppdateras först */
-        // ---------------------------------------------------
     }
     
 
@@ -794,8 +762,11 @@ export const RequirementAuditComponent = (function () {
         header_div.appendChild(requirement_status_display_element);
         plate_element.appendChild(header_div);
     
-        render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, plate_element);
+        // ÄNDRAD ORDNING HÄR:
         render_audit_section_internal('requirement_instructions', req_for_render.instructions, plate_element);
+        render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, plate_element);
+        // Slut på ändrad ordning
+        
         render_audit_section_internal('requirement_tips', req_for_render.tips, plate_element);
         render_audit_section_internal('requirement_exceptions', req_for_render.exceptions, plate_element);
         render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, plate_element);
