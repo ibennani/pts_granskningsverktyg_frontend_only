@@ -498,15 +498,15 @@ export const RequirementAuditComponent = (function () {
         }, 10);
     }
     
-    function render_audit_section_internal(title_key, content_data, section_ref, parent_element) {
+    function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') {
         const t = get_t_internally();
         const has_content = content_data && ((typeof content_data === 'string' && content_data.trim() !== '') || (Array.isArray(content_data) && content_data.length > 0));
     
-        if (!section_ref && has_content) { // Om sektionen inte finns i DOM alls, men ska finnas
-            section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
-            // Skapa H2 och content_element direkt här
+        if (!section_ref && has_content) { 
+            section_ref = Helpers_create_element('div', { class_name: ['audit-section', custom_class_name].filter(Boolean).join(' ') });
             section_ref.appendChild(Helpers_create_element('h2', { text_content: t(title_key) }));
-            const content_element = Array.isArray(content_data) ? Helpers_create_element('ul') : Helpers_create_element('p');
+            const content_element_tag = Array.isArray(content_data) ? 'ul' : 'p';
+            const content_element = Helpers_create_element(content_element_tag);
             
             if (Array.isArray(content_data)) {
                 content_data.forEach(item_obj => {
@@ -517,36 +517,47 @@ export const RequirementAuditComponent = (function () {
                 content_element.innerHTML = Helpers_escape_html(String(content_data)).replace(/\n/g, '<br>');
             }
             section_ref.appendChild(content_element);
-            // Försök hitta en logisk plats att infoga den på, t.ex. före input_fields_container_ref
-            // Detta är en förenkling; i en mer komplex layout kan du behöva mer specifik logik för ordningen.
-            if (parent_element && input_fields_container_ref && parent_element.contains(input_fields_container_ref)) {
-                 parent_element.insertBefore(section_ref, input_fields_container_ref);
+
+            // Simplified positioning logic: try to insert before specific major blocks, or append.
+            let insert_before_node_for_section = null;
+            if (input_fields_container_ref && parent_element.contains(input_fields_container_ref)) {
+                insert_before_node_for_section = input_fields_container_ref;
+            } else if (top_nav_buttons_container_ref && parent_element.contains(top_nav_buttons_container_ref)) {
+                 insert_before_node_for_section = top_nav_buttons_container_ref; 
+            } else if (checks_ui_container_element && parent_element.contains(checks_ui_container_element)) {
+                 insert_before_node_for_section = checks_ui_container_element; 
+            }
+
+
+            if (insert_before_node_for_section && parent_element.contains(insert_before_node_for_section)) {
+                 parent_element.insertBefore(section_ref, insert_before_node_for_section);
             } else if (parent_element) {
                 parent_element.appendChild(section_ref); // Fallback
             }
-        } else if (section_ref && !has_content) { // Om sektionen finns i DOM men inte längre ska ha innehåll
-            section_ref.remove(); // Ta bort den helt från DOM
-            section_ref = null; // Nollställ referensen
-        } else if (section_ref && has_content) { // Om sektionen redan finns i DOM och ska uppdateras
-            // Se till att H2 finns och uppdatera den
+        } else if (section_ref && !has_content) { 
+            section_ref.remove(); 
+            section_ref = null; 
+        } else if (section_ref && has_content) { 
+            if (custom_class_name && !section_ref.classList.contains(custom_class_name)) {
+                section_ref.classList.add(custom_class_name);
+            }
             let h2_element = section_ref.querySelector('h2');
             if (!h2_element) {
                 h2_element = Helpers_create_element('h2');
-                section_ref.insertBefore(h2_element, section_ref.firstChild); // Lägg till först om den saknas
+                section_ref.insertBefore(h2_element, section_ref.firstChild);
             }
             h2_element.textContent = t(title_key);
     
-            // Hantera content_element
             let content_element = section_ref.querySelector('ul') || section_ref.querySelector('p');
-            const expected_content_tag = Array.isArray(content_data) ? 'UL' : 'P';
+            const expected_content_tag_render = Array.isArray(content_data) ? 'UL' : 'P';
     
-            if (!content_element || content_element.tagName !== expected_content_tag) {
-                if (content_element) content_element.remove(); // Ta bort fel typ
-                content_element = Helpers_create_element(expected_content_tag.toLowerCase());
+            if (!content_element || content_element.tagName !== expected_content_tag_render) {
+                if (content_element) content_element.remove();
+                content_element = Helpers_create_element(expected_content_tag_render.toLowerCase());
                 section_ref.appendChild(content_element);
             }
             
-            content_element.innerHTML = ''; // Rensa gammalt innehåll
+            content_element.innerHTML = ''; 
             if (Array.isArray(content_data)) {
                 content_data.forEach(item_obj => {
                     const text_content = (typeof item_obj === 'object' && item_obj.text) ? item_obj.text : String(item_obj);
@@ -556,7 +567,7 @@ export const RequirementAuditComponent = (function () {
                 content_element.innerHTML = Helpers_escape_html(String(content_data)).replace(/\n/g, '<br>');
             }
         }
-        return section_ref; // Returnera den (potentiellt nya eller nullifierade) referensen
+        return section_ref;
     }
 
     function render_checks_section(container_element) {
@@ -584,8 +595,6 @@ export const RequirementAuditComponent = (function () {
         let checks_title_element = container_element.querySelector('h2');
         if (!checks_title_element) {
             checks_title_element = Helpers_create_element('h2', { text_content: t('checks_title') });
-            // Om container_element är tomt (förutom ev. titel), lägg till titeln.
-            // Annars, om det finns .check-item, lägg till före första .check-item.
             const first_check_item = container_element.querySelector('.check-item');
             if (first_check_item) {
                 container_element.insertBefore(checks_title_element, first_check_item);
@@ -593,7 +602,7 @@ export const RequirementAuditComponent = (function () {
                 container_element.appendChild(checks_title_element);
             }
         } else {
-            checks_title_element.textContent = t('checks_title'); // Uppdatera text om den redan finns
+            checks_title_element.textContent = t('checks_title'); 
         }
 
 
@@ -840,24 +849,26 @@ export const RequirementAuditComponent = (function () {
         header_div_ref.appendChild(requirement_status_display_element); 
         plate_element_ref.appendChild(header_div_ref);
 
-        instructions_section_ref = Helpers_create_element('div'); // Skapa tom container
+        instructions_section_ref = Helpers_create_element('div'); 
         plate_element_ref.appendChild(instructions_section_ref);
-        expected_observation_section_ref = Helpers_create_element('div'); // Skapa tom container
+        
+        expected_observation_section_ref = Helpers_create_element('div'); 
         plate_element_ref.appendChild(expected_observation_section_ref);
+        
         tips_section_ref = Helpers_create_element('div');
         plate_element_ref.appendChild(tips_section_ref);
         exceptions_section_ref = Helpers_create_element('div');
         plate_element_ref.appendChild(exceptions_section_ref);
         common_errors_section_ref = Helpers_create_element('div');
-        plate_element_ref.appendChild(common_errors_section_ref);
-        metadata_section_ref = Helpers_create_element('div'); 
-        // metadata_section_ref läggs till i _updateDOM om det finns metadata
+        plate_element_ref.appendChild(common_errors_section_ref); 
+        
+        metadata_section_ref = Helpers_create_element('div'); // Skapa container för metadata
+        // Den läggs till på rätt plats i _updateDOM
 
         top_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         plate_element_ref.appendChild(top_nav_buttons_container_ref);
 
         checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
-        // H2 för checks_title läggs till i render_checks_section
         checks_ui_container_element.addEventListener('click', handle_checks_container_click);
         checks_ui_container_element.addEventListener('mousedown', (e) => { if (e.target.closest('button')) save_focus_state(); });
         checks_ui_container_element.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('button')) save_focus_state(); });
@@ -904,7 +915,6 @@ export const RequirementAuditComponent = (function () {
         const is_audit_locked_for_render = current_global_state_for_render && current_global_state_for_render.auditStatus === 'locked';
 
         if (!plate_element_ref || !requirement_title_element_ref || !standard_reference_element_ref || !requirement_status_display_element ||
-            // Ta bort kontroll för att section_ref inte är null, då render_audit_section_internal kan hantera det
             !top_nav_buttons_container_ref || !checks_ui_container_element || !input_fields_container_ref ||
             !actual_observation_input || !comment_to_auditor_input || !comment_to_actor_input ||
             !bottom_nav_buttons_container_ref) {
@@ -937,36 +947,81 @@ export const RequirementAuditComponent = (function () {
         const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
 
-        // *** Använd de sparade referenserna ***
         instructions_section_ref = render_audit_section_internal('requirement_instructions', req_for_render.instructions, instructions_section_ref, plate_element_ref);
-        expected_observation_section_ref = render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, expected_observation_section_ref, plate_element_ref);
+        expected_observation_section_ref = render_audit_section_internal(
+            'requirement_expected_observation', 
+            req_for_render.expectedObservation, 
+            expected_observation_section_ref, 
+            plate_element_ref,
+            'expected-observation-section' 
+        );
         tips_section_ref = render_audit_section_internal('requirement_tips', req_for_render.tips, tips_section_ref, plate_element_ref);
         exceptions_section_ref = render_audit_section_internal('requirement_exceptions', req_for_render.exceptions, exceptions_section_ref, plate_element_ref);
         common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref);
         
+        // *** BLOCK FÖR METADATA ***
         if (req_for_render.metadata) {
-            // Om metadata_section_ref är null och ska skapas, eller om den finns och ska uppdateras.
-            // render_audit_section_internal hanterar detta inte, så vi gör det manuellt.
             if (!metadata_section_ref || !plate_element_ref.contains(metadata_section_ref)) {
                 metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
-                 const insert_before_element = top_nav_buttons_container_ref || checks_ui_container_element;
-                 if(insert_before_element) plate_element_ref.insertBefore(metadata_section_ref, insert_before_element);
-                 else plate_element_ref.appendChild(metadata_section_ref);
+                
+                let insert_after_node = common_errors_section_ref;
+                if (!insert_after_node || !plate_element_ref.contains(insert_after_node)) {
+                    // Fallback if common_errors_section_ref doesn't exist or isn't in plate
+                    // Try to find the last info section to insert after
+                    const info_sections = [exceptions_section_ref, tips_section_ref, expected_observation_section_ref, instructions_section_ref];
+                    for (let i = 0; i < info_sections.length; i++) {
+                        if (info_sections[i] && plate_element_ref.contains(info_sections[i])) {
+                            insert_after_node = info_sections[i];
+                            break;
+                        }
+                    }
+                }
+
+                if (insert_after_node && plate_element_ref.contains(insert_after_node)) {
+                    if (insert_after_node.nextSibling) {
+                        plate_element_ref.insertBefore(metadata_section_ref, insert_after_node.nextSibling);
+                    } else {
+                        plate_element_ref.appendChild(metadata_section_ref);
+                    }
+                } else {
+                    // Fallback: insert before top_nav_buttons_container_ref or checks_ui_container_element
+                    const insert_before_main_content = top_nav_buttons_container_ref || checks_ui_container_element;
+                    if (insert_before_main_content && plate_element_ref.contains(insert_before_main_content)) {
+                        plate_element_ref.insertBefore(metadata_section_ref, insert_before_main_content);
+                    } else {
+                         plate_element_ref.appendChild(metadata_section_ref); // Ultimate fallback
+                    }
+                }
             }
-            metadata_section_ref.innerHTML = ''; // Rensa alltid för att bygga om metadata-delen
+            
+            metadata_section_ref.innerHTML = ''; 
             metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
-            const grid = Helpers_create_element('div', { class_name: 'requirement-metadata-grid' });
-            if(req_for_render.metadata.mainCategory?.text) grid.appendChild(Helpers_create_element('p', { html_content: `<strong>${t('main_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.mainCategory.text)}`}));
-            if(req_for_render.metadata.subCategory?.text) grid.appendChild(Helpers_create_element('p', { html_content: `<strong>${t('sub_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.subCategory.text)}`}));
+            
+            const metadata_list_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
+            
+            if(req_for_render.metadata.mainCategory?.text) {
+                const li = Helpers_create_element('li');
+                li.innerHTML = `<strong>${t('main_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.mainCategory.text)}`;
+                metadata_list_ul.appendChild(li);
+            }
+            if(req_for_render.metadata.subCategory?.text) {
+                const li = Helpers_create_element('li');
+                li.innerHTML = `<strong>${t('sub_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.subCategory.text)}`;
+                metadata_list_ul.appendChild(li);
+            }
             if (req_for_render.metadata.impact) {
                  const impact_text = req_for_render.metadata.impact.isCritical ? t('critical') : t('impact_normal');
-                 grid.appendChild(Helpers_create_element('p', { html_content: `<strong>${t('impact')}:</strong> ${impact_text}`}));
+                 const li = Helpers_create_element('li');
+                 li.innerHTML = `<strong>${t('impact')}:</strong> ${impact_text}`;
+                 metadata_list_ul.appendChild(li);
             }
-            metadata_section_ref.appendChild(grid);
+            metadata_section_ref.appendChild(metadata_list_ul);
+
         } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) {
             metadata_section_ref.remove();
             metadata_section_ref = null; 
         }
+        // *** SLUT PÅ BLOCK FÖR METADATA ***
 
         render_navigation_buttons(top_nav_buttons_container_ref);
         render_navigation_buttons(bottom_nav_buttons_container_ref);
@@ -1034,7 +1089,6 @@ export const RequirementAuditComponent = (function () {
             checks_ui_container_element.removeEventListener('touchstart', (e) => { if (e.target.closest('button')) save_focus_state(); });
         }
         
-        // Återställ alla modul-scope DOM-referenser vid destroy
         plate_element_ref = null;
         header_div_ref = null;
         requirement_title_element_ref = null;
@@ -1052,7 +1106,7 @@ export const RequirementAuditComponent = (function () {
         tips_section_ref = null;
         exceptions_section_ref = null;
         common_errors_section_ref = null;
-        metadata_section_ref = null;
+        metadata_section_ref = null; // Nollställ även denna
         
         current_sample_object_from_store = null; 
         current_requirement_object_from_store = null; 

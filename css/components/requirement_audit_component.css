@@ -57,6 +57,12 @@
     text-transform: none; /* Ta bort uppercase om det är för mycket */
     letter-spacing: normal; /* Normalt letter-spacing */
 }
+
+/* Specific style for Expected Observation heading */
+.expected-observation-section h2 { /* Denna klass läggs till av JS nu */
+    margin-top: 2.5rem; /* Ökad marginal för just denna rubrik */
+}
+
 .audit-section p,
 .audit-section ul,
 .audit-section ol {
@@ -69,10 +75,25 @@
     padding-left: 1.75rem; /* Lite mer indrag för listor */
 }
 
-/* Requirement Metadata (om det finns specifika behov utöver globalt) */
-.requirement-metadata-grid {
-    /* Ärver från globalt eller tidigare komponent-CSS, kan justeras här */
+/* Requirement Metadata */
+.requirement-metadata-list {
+    list-style: disc; /* Standard punktlista */
+    padding-left: 1.25rem; /* Standardindrag för punktlista */
+    margin-top: 0.5rem; /* Lite utrymme från H2-rubriken */
+    margin-bottom: 1rem; /* Utrymme efter listan */
+    line-height: 1.5; /* Standard radavstånd för läsbarhet */
 }
+
+.requirement-metadata-list li {
+    margin-bottom: 0.25rem; /* Minimalt med luft mellan punkterna */
+    color: var(--text-color);
+}
+
+.requirement-metadata-list li strong {
+    color: var(--text-color); 
+    font-weight: 500; /* Normal fetstil för etiketten */
+}
+
 
 /* Styles for Checks Section */
 .checks-container {
@@ -221,15 +242,3 @@
     flex-wrap: wrap;
     align-items: center;
 }
-
-/* --- BORTTAGEN CSS FÖR INAKTIVERADE NAVIGERINGSKNAPPAR --- */
-/* Ingen specifik :disabled-stil behövs längre eftersom knapparna inte renderas om de inte är funktionella. */
-/* Hela blocket nedan kan tas bort: */
-/*
-.audit-navigation-buttons .nav-group-right .button.button-secondary:disabled { ... }
-.audit-navigation-buttons .nav-group-right .button.button-primary:disabled { ... }
-.audit-navigation-buttons .nav-group-right .button:disabled svg { ... }
-[data-theme="dark"] .audit-navigation-buttons .nav-group-right .button.button-secondary:disabled { ... }
-[data-theme="dark"] .audit-navigation-buttons .nav-group-right .button.button-primary:disabled { ... }
-*/
-/* --- SLUT PÅ BORTTAGEN CSS --- */
