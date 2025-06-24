@@ -253,10 +253,11 @@ export const RequirementAuditComponent = (function () {
                 if (current_requirement_result_for_view.checkResults[check_definition.id].overallStatus === undefined) {
                     current_requirement_result_for_view.checkResults[check_definition.id].overallStatus = 'not_audited';
                 }
+                // Beräkna check.status om den saknas, baserat på sparad pc.status och overallStatus
                 if (current_requirement_result_for_view.checkResults[check_definition.id].status === undefined && AuditLogic_calculate_check_status) {
                      current_requirement_result_for_view.checkResults[check_definition.id].status = AuditLogic_calculate_check_status(
                         check_definition,
-                        current_requirement_result_for_view.checkResults[check_definition.id].passCriteria || {},
+                        current_requirement_result_for_view.checkResults[check_definition.id].passCriteria || {}, // Skicka nuvarande pc data
                         current_requirement_result_for_view.checkResults[check_definition.id].overallStatus
                     );
                 }
@@ -278,6 +279,16 @@ export const RequirementAuditComponent = (function () {
             });
         });
         
+        // **NYTT:** Beräkna den övergripande kravstatusen här, baserat på de (potentiellt) nyligen beräknade check-statusarna
+        if (AuditLogic_calculate_requirement_status) {
+            current_requirement_result_for_view.status = AuditLogic_calculate_requirement_status(
+                current_requirement_object_from_store, 
+                current_requirement_result_for_view // Skicka hela resultatobjektet som innehåller checkResults
+            );
+            console.log(`[ReqAudit LoadData] Initial overall requirement status calculated as: ${current_requirement_result_for_view.status}`);
+        }
+
+
         if (AuditLogic_get_ordered_relevant_requirement_keys) {
             ordered_requirement_keys_for_sample = AuditLogic_get_ordered_relevant_requirement_keys(current_global_state.ruleFileContent, current_sample_object_from_store);
         } else {
@@ -397,11 +408,15 @@ export const RequirementAuditComponent = (function () {
             );
         }
         if (AuditLogic_calculate_requirement_status) {
+            // *** LOGGING LADES TILL HÄR ***
+            const old_overall_req_status = modified_result_for_dispatch.status;
             modified_result_for_dispatch.status = AuditLogic_calculate_requirement_status(current_requirement_object_from_store, modified_result_for_dispatch);
+            console.log(`[ReqAudit HandleCheckOverall] Old req status: ${old_overall_req_status}, New CALC req status: ${modified_result_for_dispatch.status}`);
         }
         if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
         
-        if (!local_StoreActionTypes?.UPDATE_REQUIREMENT_RESULT) { /* ... felhantering ... */ return; }
+        if (!local_StoreActionTypes?.UPDATE_REQUIREMENT_RESULT) { if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for update result is missing.", "error"); return; }
+        console.log("[ReqAudit HandleCheckOverall] Dispatching with requirement status:", modified_result_for_dispatch.status); // Logga innan dispatch
         local_dispatch({
             type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: { sampleId: params_ref.sampleId, requirementId: params_ref.requirementId, newRequirementResult: modified_result_for_dispatch }
@@ -443,11 +458,15 @@ export const RequirementAuditComponent = (function () {
             );
         }
         if (AuditLogic_calculate_requirement_status) {
+            // *** LOGGING LADES TILL HÄR ***
+            const old_overall_req_status = modified_result_for_dispatch.status;
             modified_result_for_dispatch.status = AuditLogic_calculate_requirement_status(current_requirement_object_from_store, modified_result_for_dispatch);
+            console.log(`[ReqAudit HandlePCStatusChange] Old req status: ${old_overall_req_status}, New CALC req status: ${modified_result_for_dispatch.status}`);
         }
         if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
         
         if (!local_StoreActionTypes?.UPDATE_REQUIREMENT_RESULT) { /* ... felhantering ... */ return; }
+        console.log("[ReqAudit HandlePCStatusChange] Dispatching with requirement status:", modified_result_for_dispatch.status); // Logga innan dispatch
         local_dispatch({
             type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: { sampleId: params_ref.sampleId, requirementId: params_ref.requirementId, newRequirementResult: modified_result_for_dispatch }
@@ -468,7 +487,7 @@ export const RequirementAuditComponent = (function () {
         }, 10);
     }
     
-    function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') { 
+    function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') { /* ... som tidigare ... */
         const t = get_t_internally();
         const has_content = content_data && ((typeof content_data === 'string' && content_data.trim() !== '') || (Array.isArray(content_data) && content_data.length > 0));
         if (!section_ref && has_content) { 
@@ -639,8 +658,8 @@ export const RequirementAuditComponent = (function () {
                     
                     const pc_data_for_view = check_result_data_for_view?.passCriteria[pc_def.id] || {status: 'not_audited', observationDetail: ''};
                     const current_pc_status = pc_data_for_view.status;
-
-                    console.log(`[ReqAudit RenderChecks] PC ID: ${pc_def.id}, Status: ${current_pc_status}, Expect to show textarea: ${current_pc_status === 'failed'}, ObservationDetail: "${pc_data_for_view.observationDetail}"`);
+                    
+                    console.log(`[ReqAudit RenderChecks DBG] PC ID: ${pc_def.id}, Status: ${current_pc_status}, Expect to show textarea: ${current_pc_status === 'failed'}`);
                     
                     const pc_status_text = t(`audit_status_${current_pc_status}`, {defaultValue: current_pc_status});
                     pc_item_li.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-status', html_content: `<strong>${t('status')}:</strong> <span class="status-text status-${current_pc_status}">${pc_status_text}</span>`}));
@@ -685,7 +704,7 @@ export const RequirementAuditComponent = (function () {
                     if (is_audit_locked) {
                         textarea_attributes.readonly = true; 
                     }
-                    // console.log(`[RenderChecks - PC ${pc_def.id}] is_audit_locked for textarea:`, is_audit_locked, "Final textarea_attributes:", textarea_attributes); // Behåll för felsökning
+                    // console.log(`[RenderChecks - PC ${pc_def.id}] is_audit_locked for textarea:`, is_audit_locked, "Final textarea_attributes:", textarea_attributes);
 
                     const observation_textarea = Helpers_create_element('textarea', {
                         id: `pc-observation-${check_definition.id}-${pc_def.id}`,
