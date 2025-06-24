@@ -217,5 +217,7 @@
   "overall_vardetal_label": "Värdetal",
   "no_actions_available": "Inga åtger är möjliga för tillfället",
   "no_audit_metadata_available": "Ingen granskningsinformation finns att visa just nu",
-  "version_rulefile": "Regelfilens version"
+  "version_rulefile": "Regelfilens version",
+  "pc_observation_detail_label": "Beskriv observationen lite mer detaljerat",
+  "pc_observation_detail_label_export": "Beskrivning av observerad brist"
 }
