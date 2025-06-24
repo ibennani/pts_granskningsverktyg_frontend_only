@@ -189,18 +189,36 @@ window.StoreActionTypes = StoreActionTypes;
         if (window.location.hash === new_hash) {
             if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 current_view_component_instance.render();
+                // Fokus sätts INTE här vid vanlig omrendering
             }
         } else {
             window.location.hash = new_hash; 
+            // Fokus kommer att sättas av handle_hash_change -> render_view när en ny vy laddas
         }
+    }
+
+    function set_focus_to_h1() {
+        setTimeout(() => {
+            if (app_container) {
+                const h1_element = app_container.querySelector('h1');
+                if (h1_element) {
+                    if (h1_element.getAttribute('tabindex') === null) {
+                        h1_element.setAttribute('tabindex', '-1');
+                    }
+                    h1_element.focus();
+                    // console.log("[Main.js] Focus set to H1:", h1_element.textContent);
+                } else {
+                    // console.warn("[Main.js] No H1 element found in app_container to set focus to.");
+                }
+            }
+        }, 100); 
     }
 
     async function render_view(view_name_to_render, params_to_render = {}) {
         const t = get_t_fallback();
-        // **FIX for Helpers_escape_html:** Använd window.Helpers direkt eller se till att den är i scopet.
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html
-            : (s) => s; // Enkel fallback om den saknas
+            : (s) => s; 
 
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             console.error("[Main.js] render_view: Translation.t dependency missing!");
@@ -208,16 +226,19 @@ window.StoreActionTypes = StoreActionTypes;
             return;
         }
         
+        // Kontrollera om det är samma vy och samma parametrar.
+        // Om ja, anropa bara komponentens render() och returnera (ingen H1-fokus).
         if (current_view_name_rendered === view_name_to_render && 
             current_view_params_rendered_json === JSON.stringify(params_to_render) &&
             current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             
-            console.log(`[Main.js] Updating existing view: ${view_name_to_render}`);
+            // console.log(`[Main.js] Updating existing view (no H1 focus): ${view_name_to_render}`);
             current_view_component_instance.render(); 
-            return;
+            return; // Avsluta här för att undvika att sätta H1-fokus
         }
 
-        console.log(`[Main.js] Rendering NEW view: ${view_name_to_render} with params:`, params_to_render);
+        // Om det är en ny vy eller nya parametrar, fortsätt med full rendering.
+        // console.log(`[Main.js] Rendering NEW view (will set H1 focus): ${view_name_to_render} with params:`, params_to_render);
         current_view_name_rendered = view_name_to_render;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
 
@@ -240,6 +261,7 @@ window.StoreActionTypes = StoreActionTypes;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 app_container.innerHTML = `<p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
+                 set_focus_to_h1(); // Försök sätta fokus på felmeddelandets H1
                 return;
         }
 
@@ -249,6 +271,7 @@ window.StoreActionTypes = StoreActionTypes;
             if (!current_view_component_instance || typeof current_view_component_instance.init !== 'function' || typeof current_view_component_instance.render !== 'function') {
                 console.error(`[Main.js] Component for view ${view_name_to_render} is UNDEFINED or not a valid component object.`);
                 app_container.innerHTML = `<p>${t("error_component_load", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
+                set_focus_to_h1(); // Försök sätta fokus på felmeddelandets H1
                 return;
             }
 
@@ -267,16 +290,17 @@ window.StoreActionTypes = StoreActionTypes;
                 subscribe
             );
             current_view_component_instance.render();
+            set_focus_to_h1(); // Sätt fokus på H1 efter att en NY vy har renderats
 
         } catch (error) {
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
-            // **FIX:** Använd local_helpers_escape_html här också
             const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
             if(app_container) app_container.innerHTML = `<p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
             
             if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
                 NotificationComponent.show_global_message(t("error_loading_view_details", {viewName: view_name_escaped_for_error}), 'error');
             }
+            set_focus_to_h1(); // Försök sätta fokus på felmeddelandets H1
         }
     }
 
@@ -303,13 +327,15 @@ window.StoreActionTypes = StoreActionTypes;
         }
         
         render_view(target_view, target_params);
+        // set_focus_to_h1() anropas nu inuti render_view när det är en ny vy
     }
 
     function on_language_changed_event() { 
         update_app_chrome_texts();
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-            console.log(`[Main.js] Language changed, re-rendering current view: ${current_view_name_rendered}`);
+            // console.log(`[Main.js] Language changed, re-rendering current view (no H1 focus): ${current_view_name_rendered}`);
             current_view_component_instance.render();
+            // Fokus sätts INTE här längre
         }
     }
     
@@ -340,7 +366,7 @@ window.StoreActionTypes = StoreActionTypes;
         if (window.NotificationComponent && typeof NotificationComponent.clear_global_message === 'function') {
             NotificationComponent.clear_global_message();
         }
-        handle_hash_change(); 
+        handle_hash_change(); // Detta kommer att anropa render_view och set_focus_to_h1 för den initiala vyn
         update_app_chrome_texts(); 
 
         subscribe((new_state, old_state) => { 
@@ -352,10 +378,11 @@ window.StoreActionTypes = StoreActionTypes;
                 current_view_params_rendered_json === params_from_hash_json &&
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 
-                console.log(`[Main.js - subscribe] State changed, same view (${current_view_name_rendered}), calling component's render.`);
+                // console.log(`[Main.js - subscribe] State changed, same view (${current_view_name_rendered}), calling component's render (no H1 focus).`);
                 current_view_component_instance.render();
+                // Fokus sätts INTE här längre
             } else {
-                 console.log(`[Main.js - subscribe] State changed, but view/params might differ or instance not ready. View in hash: ${view_name_from_hash}, Current rendered: ${current_view_name_rendered}. Letting hashchange handle if needed.`);
+                // console.log(`[Main.js - subscribe] State changed, but view/params might differ or instance not ready. View in hash: ${view_name_from_hash}, Current rendered: ${current_view_name_rendered}. Letting hashchange handle if needed.`);
             }
         });
     }
