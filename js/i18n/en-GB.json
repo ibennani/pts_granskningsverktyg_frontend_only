@@ -39,7 +39,7 @@
   "checks_title": "Checkpoints",
   "close": "Close",
   "comment_to_actor": "Comment to subject",
-  "comment_to_auditor": "Comment to auditor",
+  "comment_to_auditor": "Internal note (not visible in the final report)",
   "confirm_approve_all_message": "Are you sure you want to mark all remaining unreviewed requirements for this sample as 'Passed'",
   "confirm_approve_all_title": "Approve all remaining",
   "confirm_delete_sample": "Are you sure you want to delete the sample \"{sampleName}\"",

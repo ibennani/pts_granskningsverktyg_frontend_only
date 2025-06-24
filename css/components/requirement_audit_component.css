@@ -242,3 +242,8 @@
     flex-wrap: wrap;
     align-items: center;
 }
+
+.pc-observation-detail-wrapper label[for^="pc-observation-"] {
+    margin-top: 0.75rem; /* Eller t.ex. 1rem */
+    display: block; /* Säkerställ att den är block för att marginalen ska få effekt */
+}

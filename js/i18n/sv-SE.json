@@ -39,7 +39,7 @@
   "checks_title": "Kontrollpunkter",
   "close": "Stäng",
   "comment_to_actor": "Kommentar till aktör",
-  "comment_to_auditor": "Kommentar till granskare",
+  "comment_to_auditor": "Intern notering (syns ej i slutrapporten)",
   "confirm_approve_all_message": "Är du säker på att du vill markera alla återstående, icke-granskade krav för detta stickprov som 'Godkända'",
   "confirm_approve_all_title": "Godkänn alla återstående",
   "confirm_delete_sample": "Är du säker på att du vill radera stickprovet \"{sampleName}\"",
