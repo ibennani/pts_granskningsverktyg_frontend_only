@@ -265,7 +265,6 @@ export const RequirementAuditComponent = (function () {
                     );
 
                     if (check_res_obj.status !== newly_calculated_check_status) {
-                        // console.log(`[ReqAudit LoadData CORRECTION] Check ID ${check_definition.id} status was ${check_res_obj.status}, corrected to: ${newly_calculated_check_status} (overall: ${check_res_obj.overallStatus})`);
                         check_res_obj.status = newly_calculated_check_status;
                     }
                 }
@@ -293,7 +292,6 @@ export const RequirementAuditComponent = (function () {
                 current_requirement_object_from_store, 
                 current_requirement_result_for_view
             );
-            // console.log(`[ReqAudit LoadData] Initial overall requirement status calculated as: ${current_requirement_result_for_view.status}`);
         }
 
         if (AuditLogic_get_ordered_relevant_requirement_keys) {
@@ -396,15 +394,11 @@ export const RequirementAuditComponent = (function () {
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
         const check_definition = current_requirement_object_from_store.checks.find(c => c.id === check_id);
 
-        // KORRIGERAD TOGGLE-LOGIK
         if (check_result_to_modify.overallStatus === new_overall_status_for_check_button_click) {
-            // Användaren klickade på samma knapp igen för att avmarkera
             check_result_to_modify.overallStatus = 'not_audited';
         } else {
-            // Användaren klickade på en ny status eller den andra knappen
             check_result_to_modify.overallStatus = new_overall_status_for_check_button_click;
         }
-        // SLUT KORRIGERAD TOGGLE-LOGIK
 
         if (check_result_to_modify.overallStatus === 'failed' && check_definition?.passCriteria) {
             check_definition.passCriteria.forEach(pc_def => {
@@ -662,9 +656,7 @@ export const RequirementAuditComponent = (function () {
                     
                     const pc_data_for_view = check_result_data_for_view?.passCriteria[pc_def.id] || {status: 'not_audited', observationDetail: ''};
                     const current_pc_status = pc_data_for_view.status;
-                    
-                    // console.log(`[ReqAudit RenderChecks DBG] PC ID: ${pc_def.id}, Status: ${current_pc_status}, Expect to show textarea: ${current_pc_status === 'failed'}`);
-                    
+                                        
                     const pc_status_text = t(`audit_status_${current_pc_status}`, {defaultValue: current_pc_status});
                     pc_item_li.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-status', html_content: `<strong>${t('status')}:</strong> <span class="status-text status-${current_pc_status}">${pc_status_text}</span>`}));
 
@@ -788,10 +780,14 @@ export const RequirementAuditComponent = (function () {
         header_div_ref.appendChild(standard_reference_element_ref);
         header_div_ref.appendChild(requirement_status_display_element); 
         plate_element_ref.appendChild(header_div_ref);
-        instructions_section_ref = Helpers_create_element('div'); 
-        plate_element_ref.appendChild(instructions_section_ref);
+
+        // ** ÄNDRING AV ORDNING **
         expected_observation_section_ref = Helpers_create_element('div'); 
         plate_element_ref.appendChild(expected_observation_section_ref);
+        instructions_section_ref = Helpers_create_element('div'); 
+        plate_element_ref.appendChild(instructions_section_ref);
+        // ** SLUT ÄNDRING **
+        
         tips_section_ref = Helpers_create_element('div'); plate_element_ref.appendChild(tips_section_ref);
         exceptions_section_ref = Helpers_create_element('div'); plate_element_ref.appendChild(exceptions_section_ref);
         common_errors_section_ref = Helpers_create_element('div'); plate_element_ref.appendChild(common_errors_section_ref); 
@@ -849,8 +845,12 @@ export const RequirementAuditComponent = (function () {
         const overall_status_key = result_for_render?.status || 'not_audited';
         const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
-        instructions_section_ref = render_audit_section_internal('requirement_instructions', req_for_render.instructions, instructions_section_ref, plate_element_ref);
+        
+        // ** ÄNDRING AV ORDNING **
         expected_observation_section_ref = render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, expected_observation_section_ref, plate_element_ref, 'expected-observation-section');
+        instructions_section_ref = render_audit_section_internal('requirement_instructions', req_for_render.instructions, instructions_section_ref, plate_element_ref);
+        // ** SLUT ÄNDRING **
+
         tips_section_ref = render_audit_section_internal('requirement_tips', req_for_render.tips, tips_section_ref, plate_element_ref);
         exceptions_section_ref = render_audit_section_internal('requirement_exceptions', req_for_render.exceptions, exceptions_section_ref, plate_element_ref);
         common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref);
@@ -859,7 +859,7 @@ export const RequirementAuditComponent = (function () {
                 metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
                 let insert_after_node = common_errors_section_ref;
                 if (!insert_after_node || !plate_element_ref.contains(insert_after_node)) {
-                    const info_sections = [exceptions_section_ref, tips_section_ref, expected_observation_section_ref, instructions_section_ref];
+                    const info_sections = [exceptions_section_ref, tips_section_ref, instructions_section_ref, expected_observation_section_ref];
                     for (let i = 0; i < info_sections.length; i++) { if (info_sections[i] && plate_element_ref.contains(info_sections[i])) { insert_after_node = info_sections[i]; break; } }
                 }
                 if (insert_after_node && plate_element_ref.contains(insert_after_node)) { if (insert_after_node.nextSibling) plate_element_ref.insertBefore(metadata_section_ref, insert_after_node.nextSibling); else plate_element_ref.appendChild(metadata_section_ref); } 
@@ -916,7 +916,7 @@ export const RequirementAuditComponent = (function () {
             checks_ui_container_element.removeEventListener('click', handle_checks_container_click);
             checks_ui_container_element.removeEventListener('mousedown', (e) => { if (e.target.closest('button')) save_focus_state(); });
             checks_ui_container_element.removeEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('button')) save_focus_state(); });
-            checks_ui_container_element.removeEventListener('touchstart', (e) => { if (e.target.closest('button')) save_focus_state(); });
+            checks_ui_container_element.removeEventListener('touchstart', (e) => { if (e.target.closest('button')) save_focus_state(); }, { passive: true });
         }
         plate_element_ref = null; header_div_ref = null; requirement_title_element_ref = null;
         standard_reference_element_ref = null; requirement_status_display_element = null;

@@ -36,15 +36,17 @@
     border-color: var(--secondary-color);
 }
 
-.audit-section { /* Generell sektionsstyling, kan ärvas eller specialiseras */
-    margin-bottom: 2rem; /* Mer luft mellan sektioner */
-    padding-bottom: 1.5rem; /* Mer padding under */
-    border-bottom: 1px solid var(--secondary-color); /* Tydligare avdelare */
+/* KORRIGERAD SEKTIONSSTYLING FÖR JÄMN LUFT */
+.audit-section {
+    margin-bottom: 2rem; /* Konsekvent avstånd mellan alla sektioner */
+    /* padding-bottom borttaget för att förlita sig på margin */
 }
-.audit-section:last-of-type { /* Ta bort kantlinje på sista sektionen */
-    border-bottom: none;
+.audit-section:last-of-type {
     margin-bottom: 0;
-    padding-bottom: 0.5rem; /* Mindre padding om det är sista */
+}
+/* Ta bort marginal på sista elementet i varje sektion för att undvika dubbel luft */
+.audit-section > :last-child {
+    margin-bottom: 0;
 }
 
 .audit-section h2 { /* Rubriker för "Förväntad observation", "Instruktioner", "Kontrollpunkter" etc. */
@@ -58,10 +60,8 @@
     letter-spacing: normal; /* Normalt letter-spacing */
 }
 
-/* Specific style for Expected Observation heading */
-.expected-observation-section h2 { /* Denna klass läggs till av JS nu */
-    margin-top: 2.5rem; /* Ökad marginal för just denna rubrik */
-}
+/* BORTTAGEN SPECIFIK MARGINAL FÖR "FÖRVÄNTAD OBSERVATION" */
+/* .expected-observation-section h2 { ... } borttaget */
 
 .audit-section p,
 .audit-section ul,
