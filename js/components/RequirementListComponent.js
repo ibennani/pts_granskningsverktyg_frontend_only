@@ -1,5 +1,3 @@
-// file: js/components/RequirementListComponent.js
-
 const RequirementListComponent_internal = (function () {
     'use-strict';
 
@@ -222,7 +220,15 @@ const RequirementListComponent_internal = (function () {
         if (top_nav_bar) plate_element.appendChild(top_nav_bar);
 
         const header_div = Helpers_create_element('div', { class_name: 'requirement-list-header' });
-        header_div.appendChild(Helpers_create_element('h1', { text_content: current_sample_object.description || t('undefined_description', {defaultValue: "Undefined Sample"}) }));
+        
+        const actor_name = current_global_state.auditMetadata?.actorName || '';
+        const sample_description = current_sample_object.description || t('undefined_description', {defaultValue: "Undefined Sample"});
+        let title_text = sample_description;
+
+        if (actor_name.trim() !== '') {
+            title_text = `${actor_name.trim()}: ${sample_description}`;
+        }
+        header_div.appendChild(Helpers_create_element('h1', { text_content: title_text }));
         
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
         sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(current_sample_object.pageType)}`;
