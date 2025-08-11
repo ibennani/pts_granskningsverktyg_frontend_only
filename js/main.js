@@ -62,7 +62,6 @@ window.StoreActionTypes = StoreActionTypes;
         }
         document.title = t('app_title');
         
-        // Uppdatera funktionsraderna när språket ändras
         if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') {
             top_action_bar_instance.render();
         }
@@ -77,7 +76,6 @@ window.StoreActionTypes = StoreActionTypes;
             return;
         }
 
-        // Initiera båda instanserna med deras respektive containers
         await top_action_bar_instance.init(
             top_action_bar_container,
             getState, dispatch, StoreActionTypes,
@@ -89,6 +87,19 @@ window.StoreActionTypes = StoreActionTypes;
             window.Translation, window.Helpers, window.NotificationComponent
         );
     }
+    
+    // NY FUNKTION för att sätta initialt tema
+    function set_initial_theme() {
+        const saved_theme = localStorage.getItem('theme_preference');
+        if (saved_theme) {
+            document.documentElement.setAttribute('data-theme', saved_theme);
+        } else {
+            const prefers_dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const initial_theme = prefers_dark ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', initial_theme);
+        }
+    }
+
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
@@ -125,7 +136,6 @@ window.StoreActionTypes = StoreActionTypes;
             ? window.Helpers.escape_html
             : (s) => s; 
 
-        // Rendra alltid funktionsraderna med deras respektive instanser
         top_action_bar_instance.render();
         if (view_name_to_render !== 'upload') {
             bottom_action_bar_container.style.display = '';
@@ -226,6 +236,8 @@ window.StoreActionTypes = StoreActionTypes;
     }
     
     async function init_app() { 
+        set_initial_theme(); // Sätt temat FÖRE något annat renderas
+        
         const t_init = get_t_fallback();
 
         if (window.Translation && typeof window.Translation.ensure_initial_load === 'function') {
@@ -256,13 +268,11 @@ window.StoreActionTypes = StoreActionTypes;
         update_app_chrome_texts(); 
 
         subscribe((new_state, old_state) => { 
-            // Uppdatera alltid funktionsraderna vid state-ändring
             top_action_bar_instance.render();
             if (current_view_name_rendered !== 'upload') {
                 bottom_action_bar_instance.render();
             }
 
-            // Om-rendera endast huvudvyn om den fortfarande är densamma
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
             if (current_view_name_rendered === view_name_from_hash && 
