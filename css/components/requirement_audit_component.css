@@ -161,20 +161,57 @@
     margin-top: 2rem; /* Mer luft ovanför kontrollpunktssektionen */
 }
 
+/* --- NY STYLING FÖR .check-item (KONTROLLPUNKTS-PLATTAN) --- */
 .check-item {
-    background-color: var(--plate-background-color);
-    padding: 1.25rem; /* Mer padding inuti varje check-item */
+    padding: 1.25rem;
     margin-bottom: 1.5rem;
     border: 1px solid var(--border-color);
-    border-left: 5px solid var(--accent-color); /* Tydligare accentkant */
+    border-left-width: 5px; /* Behåll tjockare vänsterkant */
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.06);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
 }
 
-[data-theme="dark"] .check-item {
-    background-color: color-mix(in srgb, var(--plate-background-color) 92%, black);
-    border-left-color: color-mix(in srgb, var(--accent-color) 80%, white);
+/* Default/Not Audited State */
+.check-item.status-not_audited {
+    border-left-color: var(--border-color); /* Standard accentfärg (orange) */
+    background-color: var(--plate-background-color);
 }
+
+/* Passed State */
+.check-item.status-passed {
+    border-left-color: var(--success-color);
+    background-color: var(--success-color-light);
+}
+
+/* Failed State */
+.check-item.status-failed {
+    border-left-color: var(--danger-color);
+    background-color: var(--danger-color-light);
+}
+
+/* Partially Audited State */
+.check-item.status-partially_audited {
+    border-left-color: var(--warning-color);
+    background-color: var(--warning-color-light);
+}
+
+/* Mörkt tema anpassningar */
+[data-theme="dark"] .check-item.status-not_audited {
+    border-left-color: color-mix(in srgb, var(--border-color) 80%, white);
+    background-color: color-mix(in srgb, var(--plate-background-color) 92%, black);
+}
+[data-theme="dark"] .check-item.status-passed {
+    background-color: var(--success-color-light); /* success-color-light är redan anpassad för mörkt läge */
+}
+[data-theme="dark"] .check-item.status-failed {
+    background-color: var(--danger-color-light);
+}
+[data-theme="dark"] .check-item.status-partially_audited {
+    background-color: var(--warning-color-light);
+}
+/* --- SLUT PÅ NY STYLING FÖR .check-item --- */
+
 
 .check-condition-title { /* H3 för check.condition */
     font-size: 1.15rem; /* Något mindre än H2, men större än vanlig text */
@@ -232,7 +269,7 @@
     font-style: italic;
 }
 
-/* --- STYLING FÖR AKTIONSKNAPPAR (BÅDE CONDITION OCH PASS-CRITERION) --- */
+/* --- STYLING FÖR AKTIONSKNAPPAR (GHOST BUTTONS) --- */
 .condition-actions,
 .pass-criterion-actions {
     display: flex;
@@ -245,23 +282,60 @@
     margin-bottom: 1rem;
 }
 
+/* Gemensam transition för alla knappar här */
 .condition-actions .button.button-small,
 .pass-criterion-actions .button.button-small {
-    transition: outline-color 0.15s ease-in-out, outline-offset 0.15s ease-in-out;
-    outline: 2px solid transparent;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid; /* Sätt en border som standard */
+}
+
+/* STATE 1: Inaktivt (ej valt) - "Ghost button" stil */
+.condition-actions .button-success:not(.active),
+.pass-criterion-actions .button-success:not(.active) {
+    background-color: transparent;
+    border-color: var(--success-color);
+    color: var(--success-color);
+}
+
+.condition-actions .button-danger:not(.active),
+.pass-criterion-actions .button-danger:not(.active) {
+    background-color: transparent;
+    border-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+/* Hover-effekt för inaktiva knappar (blir solida) */
+.condition-actions .button-success:not(.active):hover,
+.pass-criterion-actions .button-success:not(.active):hover {
+    background-color: var(--success-color);
+    color: var(--button-success-text, #fff); /* Fallback till vit */
+}
+
+.condition-actions .button-danger:not(.active):hover,
+.pass-criterion-actions .button-danger:not(.active):hover {
+    background-color: var(--danger-color);
+    color: var(--button-danger-text, #fff); /* Fallback till vit */
+}
+
+/* STATE 2: Aktivt (valt) - Solid stil + den befintliga ramen */
+.condition-actions .button-small.active,
+.pass-criterion-actions .button-small.active {
+    outline: 2px solid var(--primary-color);
     outline-offset: 2px;
+    /* Säkerställ solid stil ifall hover-stilen skulle störa */
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--button-success-text, #fff);
 }
 
-.condition-actions .button.button-small.active,
-.pass-criterion-actions .button.button-small.active {
-    outline-color: var(--primary-color);
+.condition-actions .button-danger.active,
+.pass-criterion-actions .button-danger.active {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: var(--button-danger-text, #fff);
 }
+/* --- SLUT PÅ KNAPP-STYLING --- */
 
-[data-theme="dark"] .condition-actions .button.button-small.active,
-[data-theme="dark"] .pass-criterion-actions .button.button-small.active {
-    outline-color: var(--primary-color);
-}
-/* --- SLUT PÅ STYLING FÖR AKTIONSKNAPPAR --- */
 
 /* Status textfärger */
 .status-text.status-passed { color: var(--success-color); font-weight: bold; }

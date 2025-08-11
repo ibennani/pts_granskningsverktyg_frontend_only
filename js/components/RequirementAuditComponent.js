@@ -623,10 +623,27 @@ function render_checks_section(container_element) {
 
     current_requirement_object_from_store.checks.forEach(check_definition => {
         let check_wrapper = container_element.querySelector(`.check-item[data-check-id="${check_definition.id}"]`);
-        if (!check_wrapper) { check_wrapper = Helpers_create_element('div', { class_name: 'check-item', attributes: {'data-check-id': check_definition.id }}); container_element.appendChild(check_wrapper); }
+        
+        // **START ÄNDRING**
+        const check_result_data_for_view = current_requirement_result_for_view.checkResults[check_definition.id];
+        const calculated_check_status_for_display = check_result_data_for_view?.status || 'not_audited';
+
+        if (!check_wrapper) { 
+            check_wrapper = Helpers_create_element('div', { 
+                class_name: ['check-item', `status-${calculated_check_status_for_display}`], // Sätt initial statusklass
+                attributes: {'data-check-id': check_definition.id }
+            });
+            container_element.appendChild(check_wrapper); 
+        } else {
+            // Uppdatera statusklassen på befintligt element
+            check_wrapper.className = 'check-item'; // Nollställ klasser förutom bas-klassen
+            check_wrapper.classList.add(`status-${calculated_check_status_for_display}`);
+        }
+        // **SLUT ÄNDRING**
+
         check_wrapper.innerHTML = ''; 
         check_wrapper.appendChild(Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check_definition.condition }));
-        const check_result_data_for_view = current_requirement_result_for_view.checkResults[check_definition.id];
+        
         const overall_manual_status_for_check = check_result_data_for_view?.overallStatus || 'not_audited';
 
         if (!is_audit_locked) { 
@@ -645,7 +662,7 @@ function render_checks_section(container_element) {
             condition_actions_div.appendChild(not_complies_button);
             check_wrapper.appendChild(condition_actions_div);
         }
-        const calculated_check_status_for_display = check_result_data_for_view?.status || 'not_audited';
+        
         const check_status_text = t(`audit_status_${calculated_check_status_for_display}`, {defaultValue: calculated_check_status_for_display});
         check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'check-status-display', html_content: `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status_for_display}">${check_status_text}</span>`}));
 
