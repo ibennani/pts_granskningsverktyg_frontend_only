@@ -1,7 +1,7 @@
 // file: js/components/AuditOverviewComponent.js
 import { SampleListComponent } from './SampleListComponent.js';
 import { AddSampleFormComponent } from './AddSampleFormComponent.js';
-import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
+// SaveAuditButtonComponent-importen tas bort
 import { VardetalProgressBarComponent } from './VardetalProgressBarComponent.js';
 
 const AuditOverviewComponent_internal = (function () {
@@ -35,9 +35,6 @@ const AuditOverviewComponent_internal = (function () {
     let add_sample_form_container_element = null;
     let is_add_sample_form_visible = false;
     let add_sample_button_ref = null;
-
-    let save_audit_button_component_instance = null;
-    let save_audit_button_container_element = null;
 
     let previously_focused_element = null;
     let unsubscribe_from_store_function = null;
@@ -326,27 +323,6 @@ const AuditOverviewComponent_internal = (function () {
             console.error("AuditOverview: AddSampleFormComponent or its init function is missing.");
         }
 
-        save_audit_button_container_element = Helpers_create_element('div', { id: 'save-audit-button-area-overview-container' });
-        if (typeof SaveAuditButtonComponent?.init === 'function') {
-            save_audit_button_component_instance = SaveAuditButtonComponent;
-            if (window.SaveAuditLogic?.save_audit_to_json_file) {
-                await save_audit_button_component_instance.init(
-                    save_audit_button_container_element,
-                    local_getState,
-                    window.SaveAuditLogic.save_audit_to_json_file,
-                    Translation_t,
-                    NotificationComponent_show_global_message,
-                    Helpers_create_element,
-                    Helpers_get_icon_svg,
-                    Helpers_load_css
-                );
-            } else {
-                console.error("AuditOverview: SaveAuditLogic or its save_audit_to_json_file function is missing globally.");
-            }
-        } else {
-            console.error("AuditOverview: SaveAuditButtonComponent or its init function is missing.");
-        }
-
         vardetal_progress_bar_container_element = Helpers_create_element('div', { class_name: 'vardetal-progress-bar-container' });
         if (typeof VardetalProgressBarComponent?.init === 'function') {
             vardetal_progress_bar_component_instance = VardetalProgressBarComponent;
@@ -560,14 +536,6 @@ const AuditOverviewComponent_internal = (function () {
         const left_actions_group = Helpers_create_element('div', { class_name: 'action-group-left' });
         const right_actions_group = Helpers_create_element('div', { class_name: 'action-group-right' });
 
-        // Använd SaveAuditButtonComponent
-        if (save_audit_button_container_element && save_audit_button_component_instance && typeof save_audit_button_component_instance.render === 'function') {
-            left_actions_group.appendChild(save_audit_button_container_element);
-            save_audit_button_component_instance.render();
-        } else {
-            console.warn("[AuditOverview Render] Save audit button container or instance not ready to be rendered into actions.");
-        }
-
         if (current_global_state.auditStatus === 'in_progress') {
             const lock_btn = Helpers_create_element('button', {
                 class_name: ['button', 'button-warning'],
@@ -618,20 +586,16 @@ const AuditOverviewComponent_internal = (function () {
             unsubscribe_from_store_function = null;
         }
 
-        // Destroy för dina befintliga sub-komponenter
         if (sample_list_component_instance?.destroy) sample_list_component_instance.destroy();
         if (add_sample_form_component_instance?.destroy) add_sample_form_component_instance.destroy();
-        if (save_audit_button_component_instance?.destroy) save_audit_button_component_instance.destroy();
         if (vardetal_progress_bar_component_instance?.destroy) vardetal_progress_bar_component_instance.destroy();
 
         sample_list_container_element = null;
         add_sample_form_container_element = null;
-        save_audit_button_container_element = null;
         vardetal_progress_bar_container_element = null;
 
         sample_list_component_instance = null;
         add_sample_form_component_instance = null;
-        save_audit_button_component_instance = null;
         vardetal_progress_bar_component_instance = null;
 
         add_sample_button_ref = null;
@@ -648,8 +612,8 @@ const AuditOverviewComponent_internal = (function () {
             return;
         }
         handle_store_update_for_vardetal_ui(new_state);
-        console.log("==> handle_store_update_for_vardetal_ui, aktuellt vardetal i staten:", new_state_from_store.auditCalculations?.currentVardetal);
-        console.log("dispatch av UPDATE_CALCULATED_VARDETAL med", calculated_vardetal);
+        console.log("==> handle_store_update_for_vardetal_ui, aktuellt vardetal i staten:", new_state.auditCalculations?.currentVardetal);
+        console.log("dispatch av UPDATE_CALCULATED_VARDETAL med", new_state.auditCalculations?.currentVardetal); // Justerad log
     
         if (document.body.contains(app_container_ref)) {
             render();
@@ -662,7 +626,6 @@ const AuditOverviewComponent_internal = (function () {
         if (typeof VardetalCalculator_calculate_current_vardetal_func !== 'function' ||
             typeof VardetalCalculator_get_precalculated_data_store_func !== 'function') {
             console.warn("[AuditOverview] VardetalCalculator functions not available. Cannot update vardetal.");
-            // Om funktionerna saknas, kanske vi ska dispatcha null för att rensa ett gammalt värde?
             if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
                 new_state_from_store.auditCalculations?.currentVardetal !== null) {
                  local_dispatch({
@@ -670,7 +633,7 @@ const AuditOverviewComponent_internal = (function () {
                     payload: { vardetal: null }
                 });
             }
-            return; // Avbryt om kalkylatorfunktioner saknas
+            return; 
         }
     
         let precalculated_rule_data_for_calc = new_state_from_store.auditCalculations?.ruleData;
@@ -680,14 +643,11 @@ const AuditOverviewComponent_internal = (function () {
     
             if (precalculated_rule_data_for_calc && precalculated_rule_data_for_calc.weights_map &&
                 local_dispatch && local_StoreActionTypes && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA &&
-                (!new_state_from_store.auditCalculations?.ruleData?.weights_map)) { // Bara om det inte redan finns i state
+                (!new_state_from_store.auditCalculations?.ruleData?.weights_map)) {
                 local_dispatch({
                     type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
                     payload: precalculated_rule_data_for_calc
                 });
-                // Eftersom detta är en dispatch, kommer handle_store_update att köras igen.
-                // Denna instans av funktionen bör då avbrytas för att undvika dubbelberäkning
-                // innan storen har hunnit uppdateras med precalculated_rule_data.
                 return; 
             }
         }
@@ -707,8 +667,6 @@ const AuditOverviewComponent_internal = (function () {
                 });
             }
         } else {
-            // Om precalculated_rule_data fortfarande saknas, kan vi inte beräkna.
-            // Dispatcha null om nuvarande värdetal i state inte redan är null.
             if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
                 new_state_from_store.auditCalculations?.currentVardetal !== null) {
                  local_dispatch({

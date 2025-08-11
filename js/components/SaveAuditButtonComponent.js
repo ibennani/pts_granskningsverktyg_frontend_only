@@ -1,5 +1,5 @@
 // js/components/SaveAuditButtonComponent.js
-export const SaveAuditButtonComponent = (function () {
+export const SaveAuditButtonComponentFactory = function () { // Ändrad till en factory-funktion
     'use-strict';
 
     const CSS_PATH = 'css/components/save_audit_button_component.css'; // Valfri
@@ -8,7 +8,7 @@ export const SaveAuditButtonComponent = (function () {
 
     // Funktioner som skickas in vid init
     let getState_callback;
-    let save_audit_function_ref; // Referens till SaveAuditLogic.save_audit_to_json_file
+    let save_audit_function_ref;
     let t_function_ref;
     let show_notification_function_ref;
     let helpers_create_element_ref;
@@ -18,7 +18,7 @@ export const SaveAuditButtonComponent = (function () {
     async function init(
         _container,
         _getState_cb,
-        _save_audit_func, // Den faktiska save_audit_to_json_file funktionen
+        _save_audit_func,
         _t_func,
         _show_notification_func,
         _helpers_create_element,
@@ -70,7 +70,7 @@ export const SaveAuditButtonComponent = (function () {
 
         button_element = helpers_create_element_ref('button', {
             class_name: ['button', 'button-default'], // Anpassa klasser efter behov
-            html_content: `<span>${t_function_ref('save_audit_to_file')}</span>` +
+            html_content: `<span class="button-text">${t_function_ref('save_audit_to_file')}</span>` +
                           (helpers_get_icon_svg_ref ? helpers_get_icon_svg_ref('save', ['currentColor'], 18) : '')
         });
         button_element.addEventListener('click', handle_save_click);
@@ -93,9 +93,10 @@ export const SaveAuditButtonComponent = (function () {
         helpers_load_css_ref = null;
     }
 
+    // Returnera ett objekt med metoderna, unikt för denna instans
     return {
         init,
         render,
         destroy
     };
-})();
+};

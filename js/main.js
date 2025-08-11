@@ -8,6 +8,9 @@ import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
 
+// Importera den nya globala komponenten som en factory
+import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
+
 // Importera från den nya storen
 import { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState } from './state.js'; 
 window.getState = getState;
@@ -20,19 +23,22 @@ window.StoreActionTypes = StoreActionTypes;
     'use-strict';
 
     const app_container = document.getElementById('app-container');
-    if (!app_container) {
-        console.error("[Main.js] CRITICAL: app_container element not found in DOM!");
-        document.body.innerHTML = "<p style='color:red; font-weight:bold;'>Application Error: App container not found. Check HTML and script load order.</p>";
+    const top_action_bar_container = document.getElementById('global-action-bar-top');
+    const bottom_action_bar_container = document.getElementById('global-action-bar-bottom');
+
+    if (!app_container || !top_action_bar_container || !bottom_action_bar_container) {
+        console.error("[Main.js] CRITICAL: App container or action bar containers not found in DOM!");
+        document.body.innerHTML = "<p style='color:red; font-weight:bold;'>Application Error: Core containers not found. Check HTML.</p>";
         return;
     }
 
     let current_view_component_instance = null;
     let current_view_name_rendered = null;
     let current_view_params_rendered_json = "{}"; 
-
-    let theme_toggle_button_element = null;
-    let language_selector_element = null;
-    let language_label_element = null;
+    
+    // Skapa två separata instanser av komponenten från factoryn
+    const top_action_bar_instance = GlobalActionBarComponentFactory();
+    const bottom_action_bar_instance = GlobalActionBarComponentFactory();
 
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
@@ -56,129 +62,33 @@ window.StoreActionTypes = StoreActionTypes;
         }
         document.title = t('app_title');
         
-        if (theme_toggle_button_element && typeof theme_toggle_button_element.updateContent === 'function') {
-            const current_theme = document.documentElement.getAttribute('data-theme') || 'light';
-            theme_toggle_button_element.updateContent(current_theme);
-        } else if (theme_toggle_button_element) {
-             const current_theme = document.documentElement.getAttribute('data-theme') || 'light';
-             let icon_svg_string;
-             let button_label_text;
-             let icon_color_val = getComputedStyle(document.documentElement).getPropertyValue('--button-default-text').trim();
-             if (!icon_color_val || icon_color_val === "initial" || icon_color_val === "inherit" || icon_color_val === "") {
-                 icon_color_val = (current_theme === 'dark') ? 'var(--text-color)' : 'var(--text-color)';
-             }
-             if (current_theme === 'dark') {
-                 icon_svg_string = window.Helpers.get_icon_svg('light_mode', [icon_color_val], 18);
-                 button_label_text = t('light_mode');
-             } else {
-                 icon_svg_string = window.Helpers.get_icon_svg('dark_mode', [icon_color_val], 18);
-                 button_label_text = t('dark_mode');
-             }
-             theme_toggle_button_element.innerHTML = `<span> ${button_label_text}</span>` + (icon_svg_string || '');
+        // Uppdatera funktionsraderna när språket ändras
+        if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') {
+            top_action_bar_instance.render();
         }
-
-        if (language_selector_element && typeof Translation.get_supported_languages === 'function' && typeof Translation.get_current_language_code === 'function') {
-            const supported_languages = Translation.get_supported_languages();
-            Array.from(language_selector_element.options).forEach(option => {
-                if (supported_languages[option.value]) {
-                    option.textContent = supported_languages[option.value];
-                }
-            });
-            language_selector_element.value = Translation.get_current_language_code();
-            if(language_label_element) language_label_element.textContent = t('language_switcher_label');
+        if (bottom_action_bar_instance && typeof bottom_action_bar_instance.render === 'function') {
+            bottom_action_bar_instance.render();
         }
     }
 
-    function init_ui_controls() {
-        const t = get_t_fallback();
-        if (!window.Translation || typeof window.Translation.t !== 'function' || !window.Helpers || typeof window.Helpers.create_element !== 'function') {
-            console.error("[Main.js] init_ui_controls: Core dependencies (Translation or Helpers) not available!");
+    async function init_global_components() {
+        if (!window.Translation || !window.Helpers || !window.NotificationComponent) {
+            console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
-        
-        let controls_wrapper = document.body.querySelector('.global-controls');
-        if (controls_wrapper) {
-            controls_wrapper.innerHTML = ''; 
-        } else {
-            controls_wrapper = Helpers.create_element('div', { class_name: 'global-controls'});
-            document.body.appendChild(controls_wrapper);
-        }
 
-        const language_selector_container = Helpers.create_element('div', { class_name: 'language-selector-container' });
-        language_label_element = Helpers.create_element('label', {
-            attributes: {for: 'language-selector'},
-            text_content: t('language_switcher_label'),
-            class_name: 'visually-hidden'
-        });
-        language_selector_container.appendChild(language_label_element);
-
-        language_selector_element = Helpers.create_element('select', {
-            id: 'language-selector',
-            class_name: ['form-control', 'form-control-small']
-        });
-
-        if (typeof Translation.get_supported_languages === 'function' && typeof Translation.get_current_language_code === 'function' && typeof Translation.set_language === 'function') {
-            const supported_languages = Translation.get_supported_languages();
-            for (const lang_code in supported_languages) {
-                const option = Helpers.create_element('option', { value: lang_code, text_content: supported_languages[lang_code] });
-                language_selector_element.appendChild(option);
-            }
-            language_selector_element.value = Translation.get_current_language_code();
-            language_selector_element.addEventListener('change', async (event) => {
-                if (window.NotificationComponent && typeof window.NotificationComponent.clear_global_message === 'function') NotificationComponent.clear_global_message();
-                const selected_lang_code = event.target.value;
-                await Translation.set_language(selected_lang_code);
-            });
-        } else { console.error("[Main.js] Translation module functions missing for language selector."); }
-        
-        language_selector_container.appendChild(language_selector_element);
-        controls_wrapper.appendChild(language_selector_container);
-
-        theme_toggle_button_element = Helpers.create_element('button', { 
-            id: 'theme-toggle', 
-            class_name: ['button', 'button-default']
-        });
-
-        theme_toggle_button_element.updateContent = function(theme) {
-            const t_local = get_t_fallback();
-            if (!this || !window.Helpers || !window.Helpers.get_icon_svg) return;
-            
-            let icon_svg_string;
-            let button_label_text;
-            let icon_color_val = getComputedStyle(document.documentElement).getPropertyValue('--button-default-text').trim();
-            if (!icon_color_val || icon_color_val === "initial" || icon_color_val === "inherit" || icon_color_val === "") {
-                icon_color_val = (theme === 'dark') ? '#eafaf9' : '#21867c';
-            }
-
-            if (theme === 'dark') {
-                icon_svg_string = Helpers.get_icon_svg('light_mode', [icon_color_val], 18);
-                button_label_text = t_local('light_mode');
-            } else {
-                icon_svg_string = Helpers.get_icon_svg('dark_mode', [icon_color_val], 18);
-                button_label_text = t_local('dark_mode');
-            }
-            this.innerHTML = `<span> ${button_label_text}</span>` + (icon_svg_string || '');
-        };
-        
-        function set_theme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme_preference', theme);
-            if (theme_toggle_button_element && typeof theme_toggle_button_element.updateContent === 'function') {
-                theme_toggle_button_element.updateContent(theme);
-            }
-        }
-
-        theme_toggle_button_element.addEventListener('click', () => {
-            const current_theme_val = document.documentElement.getAttribute('data-theme') || 'light';
-            set_theme(current_theme_val === 'dark' ? 'light' : 'dark');
-        });
-        controls_wrapper.appendChild(theme_toggle_button_element);
-
-        const saved_theme_val = localStorage.getItem('theme_preference');
-        const initial_theme_val = saved_theme_val || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        set_theme(initial_theme_val);
+        // Initiera båda instanserna med deras respektive containers
+        await top_action_bar_instance.init(
+            top_action_bar_container,
+            getState, dispatch, StoreActionTypes,
+            window.Translation, window.Helpers, window.NotificationComponent
+        );
+        await bottom_action_bar_instance.init(
+            bottom_action_bar_container,
+            getState, dispatch, StoreActionTypes,
+            window.Translation, window.Helpers, window.NotificationComponent
+        );
     }
-
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
@@ -189,11 +99,9 @@ window.StoreActionTypes = StoreActionTypes;
         if (window.location.hash === new_hash) {
             if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 current_view_component_instance.render();
-                // Fokus sätts INTE här vid vanlig omrendering
             }
         } else {
             window.location.hash = new_hash; 
-            // Fokus kommer att sättas av handle_hash_change -> render_view när en ny vy laddas
         }
     }
 
@@ -206,9 +114,6 @@ window.StoreActionTypes = StoreActionTypes;
                         h1_element.setAttribute('tabindex', '-1');
                     }
                     h1_element.focus();
-                    // console.log("[Main.js] Focus set to H1:", h1_element.textContent);
-                } else {
-                    // console.warn("[Main.js] No H1 element found in app_container to set focus to.");
                 }
             }
         }, 100); 
@@ -220,30 +125,26 @@ window.StoreActionTypes = StoreActionTypes;
             ? window.Helpers.escape_html
             : (s) => s; 
 
-        if (!window.Translation || typeof window.Translation.t !== 'function') {
-            console.error("[Main.js] render_view: Translation.t dependency missing!");
-            if(app_container) app_container.innerHTML = `<p>${t('critical_error_system_render_view_failed')}</p>`;
-            return;
+        // Rendra alltid funktionsraderna med deras respektive instanser
+        top_action_bar_instance.render();
+        if (view_name_to_render !== 'upload') {
+            bottom_action_bar_container.style.display = '';
+            bottom_action_bar_instance.render();
+        } else {
+            bottom_action_bar_container.style.display = 'none';
         }
-        
-        // Kontrollera om det är samma vy och samma parametrar.
-        // Om ja, anropa bara komponentens render() och returnera (ingen H1-fokus).
+
         if (current_view_name_rendered === view_name_to_render && 
             current_view_params_rendered_json === JSON.stringify(params_to_render) &&
             current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             
-            // console.log(`[Main.js] Updating existing view (no H1 focus): ${view_name_to_render}`);
             current_view_component_instance.render(); 
-            return; // Avsluta här för att undvika att sätta H1-fokus
+            return;
         }
-
-        // Om det är en ny vy eller nya parametrar, fortsätt med full rendering.
-        // console.log(`[Main.js] Rendering NEW view (will set H1 focus): ${view_name_to_render} with params:`, params_to_render);
+        
         current_view_name_rendered = view_name_to_render;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
 
-        if (!app_container) { console.error("[Main.js] App container not found in render_view!"); return; }
-        
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
             current_view_component_instance.destroy();
         }
@@ -260,8 +161,8 @@ window.StoreActionTypes = StoreActionTypes;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
-                app_container.innerHTML = `<p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
-                 set_focus_to_h1(); // Försök sätta fokus på felmeddelandets H1
+                app_container.innerHTML = `<h1>${t("error_loading_view_details", {viewName: ""})}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
+                set_focus_to_h1();
                 return;
         }
 
@@ -269,16 +170,8 @@ window.StoreActionTypes = StoreActionTypes;
             current_view_component_instance = ComponentClass; 
             
             if (!current_view_component_instance || typeof current_view_component_instance.init !== 'function' || typeof current_view_component_instance.render !== 'function') {
-                console.error(`[Main.js] Component for view ${view_name_to_render} is UNDEFINED or not a valid component object.`);
-                app_container.innerHTML = `<p>${t("error_component_load", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
-                set_focus_to_h1(); // Försök sätta fokus på felmeddelandets H1
-                return;
+                throw new Error("Component is invalid or missing required methods.");
             }
-
-            if (typeof current_view_component_instance.is_dom_initialized !== 'undefined') {
-                 current_view_component_instance.is_dom_initialized = false;
-            }
-
 
             await current_view_component_instance.init(
                 app_container, 
@@ -290,17 +183,13 @@ window.StoreActionTypes = StoreActionTypes;
                 subscribe
             );
             current_view_component_instance.render();
-            set_focus_to_h1(); // Sätt fokus på H1 efter att en NY vy har renderats
+            set_focus_to_h1(); 
 
         } catch (error) {
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
             const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
-            if(app_container) app_container.innerHTML = `<p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
-            
-            if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function') {
-                NotificationComponent.show_global_message(t("error_loading_view_details", {viewName: view_name_escaped_for_error}), 'error');
-            }
-            set_focus_to_h1(); // Försök sätta fokus på felmeddelandets H1
+            if(app_container) app_container.innerHTML = `<h1>${t("error_loading_view_details", {viewName: ""})}</h1><p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
+            set_focus_to_h1();
         }
     }
 
@@ -327,15 +216,12 @@ window.StoreActionTypes = StoreActionTypes;
         }
         
         render_view(target_view, target_params);
-        // set_focus_to_h1() anropas nu inuti render_view när det är en ny vy
     }
 
     function on_language_changed_event() { 
         update_app_chrome_texts();
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-            // console.log(`[Main.js] Language changed, re-rendering current view (no H1 focus): ${current_view_name_rendered}`);
             current_view_component_instance.render();
-            // Fokus sätts INTE här längre
         }
     }
     
@@ -358,7 +244,7 @@ window.StoreActionTypes = StoreActionTypes;
             console.error("[Main.js] NotificationComponent is not available or not initialized correctly.");
         }
 
-        init_ui_controls();
+        await init_global_components();
         
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
@@ -366,23 +252,22 @@ window.StoreActionTypes = StoreActionTypes;
         if (window.NotificationComponent && typeof NotificationComponent.clear_global_message === 'function') {
             NotificationComponent.clear_global_message();
         }
-        handle_hash_change(); // Detta kommer att anropa render_view och set_focus_to_h1 för den initiala vyn
+        handle_hash_change();
         update_app_chrome_texts(); 
 
         subscribe((new_state, old_state) => { 
+            // Uppdatera alltid funktionsraderna vid state-ändring
+            top_action_bar_instance.render();
+            if (current_view_name_rendered !== 'upload') {
+                bottom_action_bar_instance.render();
+            }
+
+            // Om-rendera endast huvudvyn om den fortfarande är densamma
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
-            const params_from_hash_json = current_view_params_rendered_json; 
-
             if (current_view_name_rendered === view_name_from_hash && 
-                current_view_params_rendered_json === params_from_hash_json &&
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                
-                // console.log(`[Main.js - subscribe] State changed, same view (${current_view_name_rendered}), calling component's render (no H1 focus).`);
                 current_view_component_instance.render();
-                // Fokus sätts INTE här längre
-            } else {
-                // console.log(`[Main.js - subscribe] State changed, but view/params might differ or instance not ready. View in hash: ${view_name_from_hash}, Current rendered: ${current_view_name_rendered}. Letting hashchange handle if needed.`);
             }
         });
     }
