@@ -176,7 +176,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    margin-bottom: 2rem;
+    margin-top: 0rem;
 }
 .content-plate h1 { margin-bottom: 0.5rem; }
 .content-plate .view-intro-text { margin-bottom: 1.5rem; font-size: 1rem; color: var(--text-color-muted); }
