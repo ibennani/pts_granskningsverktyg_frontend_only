@@ -231,5 +231,6 @@
 "sort_option_title_desc": "Titel (Ö-A)",
 "sort_option_ref_asc": "Referens (stigande)",
 "sort_option_ref_desc": "Referens (fallande)",
-"sort_option_status": "Status (problem först)"
+"sort_option_status": "Status (problem först)",
+"audited_page_label": "Du granskar:"
 }

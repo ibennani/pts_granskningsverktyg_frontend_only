@@ -9,24 +9,35 @@
     margin-bottom: 0; /* ÄNDRING: Tog bort marginalen under H1 för att minska avståndet */
 }
 
-.requirement-audit-header .standard-reference {
+/* NY REGEL: Gör länken för aktör/stickprov klickbar över hela ytan med rätt pekare */
+.requirement-audit-header p a {
+    cursor: pointer;
+    display: inline-block; /* Säkerställer att hela texten agerar som en enhet */
+}
+
+.requirement-audit-header .standard-reference,
+.requirement-audit-header .audited-page-link { /* Gäller nu båda raderna */
     font-size: 0.9rem;
     color: var(--text-color-muted);
-    margin-top: 0; /* ÄNDRING: Se till att det inte finns någon marginal ovanför referenstexten */
+    margin-top: 0.25rem; /* Lite luft mellan referensraderna */
     margin-bottom: 0.5rem;
 }
 
-.requirement-audit-header .standard-reference a {
+
+.requirement-audit-header .standard-reference a,
+.requirement-audit-header .audited-page-link a { /* Gäller nu båda raderna */
     color: var(--primary-color);
-    text-decoration: none;
+    text-decoration: underline;
 }
 
-.requirement-audit-header .standard-reference a:hover {
+.requirement-audit-header .standard-reference a:hover,
+.requirement-audit-header .audited-page-link a:hover { /* Gäller nu båda raderna */
     text-decoration: underline;
 }
 
 /* NYTT: Regel för att styla den nya etiketten (strong-taggen) */
-.requirement-audit-header .standard-reference strong {
+.requirement-audit-header .standard-reference strong,
+.requirement-audit-header .audited-page-link strong { /* Gäller nu båda raderna */
     color: var(--text-color); /* Åsidosätt den nedtonade färgen för etiketten */
     font-weight: 500;
 }

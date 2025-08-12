@@ -14,6 +14,13 @@
     margin-bottom: 0.35rem; /* Lite mer utrymme till sub-info */
     color: var(--primary-color-dark);
 }
+
+/* NY REGEL: Gör länken i H1 klickbar över hela ytan med rätt pekare */
+.requirement-list-header h1 a {
+    cursor: pointer;
+    /* display: block;  BORTTAGEN för att bara texten ska vara klickbar */
+}
+
 /* Wrapper för "Typ av sida" och "Granskade krav" för att få dem under H1 */
 .requirement-list-header .sample-info-display {
     font-size: 0.95rem;

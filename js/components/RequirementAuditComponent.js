@@ -1,6 +1,6 @@
 // file: js/components/RequirementAuditComponent.js
 export const RequirementAuditComponent = (function () {
-    'use strict';
+    'use-strict';
     
     const CSS_PATH = 'css/components/requirement_audit_component.css';
     let app_container_ref;
@@ -11,9 +11,8 @@ export const RequirementAuditComponent = (function () {
     let local_dispatch;
     let local_StoreActionTypes;
     
-    // --- ÄNDRING HÄR: Ny variabel för saneringsfunktionen ---
     let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css, Helpers_sanitize_and_linkify_html;
+    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css, Helpers_sanitize_and_linkify_html, Helpers_add_protocol_if_missing;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let AuditLogic_calculate_check_status, AuditLogic_calculate_requirement_status, AuditLogic_get_ordered_relevant_requirement_keys, AuditLogic_find_first_incomplete_requirement_key_for_sample;
     
@@ -28,6 +27,7 @@ export const RequirementAuditComponent = (function () {
     let requirement_title_element_ref = null;
     let sample_context_text_element_ref = null; 
     let standard_reference_element_ref = null;
+    let audited_page_link_element_ref = null; // NY VARIABEL FÖR LÄNKEN
     let requirement_status_display_element = null;
     let checks_ui_container_element = null;
     let comment_to_auditor_input, comment_to_actor_input;
@@ -66,9 +66,9 @@ export const RequirementAuditComponent = (function () {
             Helpers_escape_html = window.Helpers.escape_html;
             Helpers_get_current_iso_datetime_utc = window.Helpers.get_current_iso_datetime_utc;
             Helpers_load_css = window.Helpers.load_css;
-            // --- ÄNDRING HÄR: Hämta den nya funktionen ---
+            Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing; // Lade till denna rad
             Helpers_sanitize_and_linkify_html = window.Helpers.sanitize_and_linkify_html;
-            if (!Helpers_create_element || !Helpers_get_icon_svg || !Helpers_escape_html || !Helpers_get_current_iso_datetime_utc || !Helpers_load_css || !Helpers_sanitize_and_linkify_html) {
+            if (!Helpers_create_element || !Helpers_get_icon_svg || !Helpers_escape_html || !Helpers_get_current_iso_datetime_utc || !Helpers_load_css || !Helpers_sanitize_and_linkify_html || !Helpers_add_protocol_if_missing) { // Lade till kontroll
                  console.error("ReqAudit: One or more Helper functions are missing!"); all_assigned = false;
             }
         } else { console.error("ReqAudit: Helpers module is missing!"); all_assigned = false; }
@@ -463,9 +463,6 @@ export const RequirementAuditComponent = (function () {
             type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: { sampleId: params_ref.sampleId, requirementId: params_ref.requirementId, newRequirementResult: modified_result_for_dispatch }
         });
-        
-        // --- BORTTAGET: Logiken för att räkna ut Värdetalet tas bort härifrån ---
-        // ScoreManager hanterar nu detta globalt.
     }
     
     function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') {
@@ -494,14 +491,12 @@ export const RequirementAuditComponent = (function () {
     
             content_element.innerHTML = ''; 
             if (Array.isArray(content_data)) {
-                // --- ÄNDRING HÄR: Använd sanitize för varje listobjekt ---
                 content_data.forEach(item_obj => {
                     const text_content = (typeof item_obj === 'object' && item_obj.text) ? item_obj.text : String(item_obj);
                     const sanitized_html = Helpers_sanitize_and_linkify_html(text_content).replace(/\n/g, '<br>');
                     content_element.appendChild(Helpers_create_element('li', { html_content: sanitized_html }));
                 });
             } else {
-                // --- ÄNDRING HÄR: Använd sanitize för strängen ---
                 const sanitized_html = Helpers_sanitize_and_linkify_html(String(content_data)).replace(/\n/g, '<br>');
                 content_element.innerHTML = sanitized_html;
             }
@@ -773,8 +768,9 @@ export const RequirementAuditComponent = (function () {
         sample_context_text_element_ref = Helpers_create_element('p', { style: 'font-weight: 500; color: var(--text-color-muted); margin-bottom: 0.3rem; margin-top: 0;' });
         requirement_title_element_ref = Helpers_create_element('h1');
         standard_reference_element_ref = Helpers_create_element('p', { class_name: 'standard-reference' });
+        audited_page_link_element_ref = Helpers_create_element('p', { class_name: 'audited-page-link' }); // SKAPA NYA ELEMENTET
         requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display' });
-        header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, requirement_status_display_element);
+        header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, audited_page_link_element_ref, requirement_status_display_element); // LÄGG TILL I DOM
         plate_element_ref.appendChild(header_div_ref);
     
         expected_observation_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
@@ -844,6 +840,7 @@ export const RequirementAuditComponent = (function () {
             if (actor_name.trim() !== '') {
                 context_text = `${actor_name.trim()}: ${sample_description}`;
             }
+
             sample_context_text_element_ref.textContent = context_text;
         }
     
@@ -864,6 +861,33 @@ export const RequirementAuditComponent = (function () {
                 standard_reference_element_ref.appendChild(document.createTextNode(req_for_render.standardReference.text));
             }
         }
+
+        // --- Logik för den nya länken ---
+        audited_page_link_element_ref.innerHTML = '';
+        if (current_sample_object_from_store.url) {
+            const label_strong = Helpers_create_element('strong', {
+                text_content: t('audited_page_label', { defaultValue: "Granskad sida:" })
+            });
+            audited_page_link_element_ref.appendChild(label_strong);
+            audited_page_link_element_ref.appendChild(document.createTextNode(' '));
+        
+            // Vi hämtar texten som redan skapats för rubriken
+            const actor_name = current_global_state_for_render.auditMetadata?.actorName || '';
+            const sample_description = current_sample_object_from_store?.description || '';
+            const context_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
+        
+            const safe_url = Helpers_add_protocol_if_missing(current_sample_object_from_store.url);
+            const link = Helpers_create_element('a', {
+                text_content: context_text, // DENNA RAD ÄR NU ÄNDRAD
+                attributes: { href: safe_url, target: '_blank', rel: 'noopener noreferrer' }
+            });
+            audited_page_link_element_ref.appendChild(link);
+            audited_page_link_element_ref.removeAttribute('hidden');
+        } else {
+            audited_page_link_element_ref.setAttribute('hidden', 'true');
+        }
+
+
         const overall_status_key = result_for_render?.status || 'not_audited';
         const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
@@ -945,7 +969,9 @@ export const RequirementAuditComponent = (function () {
         }
         plate_element_ref = null; header_div_ref = null; requirement_title_element_ref = null;
         sample_context_text_element_ref = null;
-        standard_reference_element_ref = null; requirement_status_display_element = null;
+        standard_reference_element_ref = null; 
+        audited_page_link_element_ref = null; // Rensa nya referensen
+        requirement_status_display_element = null;
         checks_ui_container_element = null; 
         comment_to_auditor_input = null; comment_to_actor_input = null; 
         input_fields_container_ref = null; top_nav_buttons_container_ref = null;

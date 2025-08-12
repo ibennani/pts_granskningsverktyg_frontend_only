@@ -231,5 +231,6 @@
 "sort_option_title_desc": "Title (Z-A)",
 "sort_option_ref_asc": "Reference (ascending)",
 "sort_option_ref_desc": "Reference (descending)",
-"sort_option_status": "Status (problems first)"
+"sort_option_status": "Status (problems first)",
+"audited_page_label": "Currently audited:"
 }

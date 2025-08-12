@@ -1,7 +1,7 @@
 // js/components/RequirementListComponent.js
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 
-const RequirementListComponent_internal = (function () {
+export const RequirementListComponent = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/requirement_list_component.css';
@@ -100,8 +100,6 @@ const RequirementListComponent_internal = (function () {
         return nav_bar;
     }
     
-    // --- FIX HÄR: Denna funktion anropar nu BARA _populate_dynamic_content ---
-    // Den ritar INTE om hela vyn, vilket bevarar toolbar-komponentens DOM och state.
     function handle_toolbar_change(new_toolbar_state) {
         component_state = new_toolbar_state;
         _populate_dynamic_content(); 
@@ -190,8 +188,6 @@ const RequirementListComponent_internal = (function () {
         is_dom_initialized = true;
     }
 
-    // --- FIX HÄR: Renamed from _populate_list_content to _populate_dynamic_content ---
-    // Denna funktion uppdaterar NU BARA header och listan, inte hela vyn.
     function _populate_dynamic_content() {
         const t = get_t_internally();
         const current_global_state = local_getState();
@@ -203,7 +199,23 @@ const RequirementListComponent_internal = (function () {
         const actor_name = current_global_state.auditMetadata?.actorName || '';
         const sample_description = current_sample_object.description || t('undefined_description');
         let title_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
-        header_div.appendChild(Helpers_create_element('h1', { text_content: title_text }));
+
+        const h1 = Helpers_create_element('h1');
+        if (current_sample_object.url) {
+            const safe_url = Helpers_add_protocol_if_missing(current_sample_object.url);
+            const link = Helpers_create_element('a', {
+                href: safe_url,
+                text_content: title_text,
+                attributes: {
+                    target: '_blank',
+                    rel: 'noopener noreferrer'
+                }
+            });
+            h1.appendChild(link);
+        } else {
+            h1.textContent = title_text;
+        }
+        header_div.appendChild(h1);
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
         sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(current_sample_object.pageType)}`;
         header_div.appendChild(sample_type_p);
@@ -292,7 +304,6 @@ const RequirementListComponent_internal = (function () {
             return;
         }
 
-        // --- FIX HÄR: Denna logik styr nu om hela DOM-strukturen ska byggas eller bara uppdateras ---
         if (!is_dom_initialized) {
             await _initialRender();
         }
@@ -398,5 +409,3 @@ const RequirementListComponent_internal = (function () {
 
     return { init, render, destroy };
 })();
-
-export const RequirementListComponent = RequirementListComponent_internal;

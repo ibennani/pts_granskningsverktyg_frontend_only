@@ -200,7 +200,6 @@ a {
 }
 a:hover, a:focus {
     color: var(--primary-color-dark);
-    text-decoration: none;
 }
 
 .button {
