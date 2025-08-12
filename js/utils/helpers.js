@@ -162,27 +162,18 @@
         const computed_style = window.getComputedStyle(textarea);
         const line_height = parseFloat(computed_style.lineHeight);
         
-        // Spara nuvarande höjd innan vi gör något
         const current_height = textarea.offsetHeight;
         
-        // Mät den potentiella nya höjden utan att ändra den existerande
-        // Vi måste tillfälligt sätta height till 'auto' för att få rätt scrollHeight
         textarea.style.height = 'auto';
         const scroll_height = textarea.scrollHeight;
         
-        // Återställ höjden direkt för att undvika visuellt "hopp" om vi inte ska krympa
         textarea.style.height = `${current_height}px`;
 
         const new_height = scroll_height + line_height;
 
-        // Jämför den beräknade nya höjden med den nuvarande
         if (new_height > current_height) {
-            // Om den ska växa, sätt den nya höjden direkt
             textarea.style.height = `${new_height}px`;
         } else {
-            // Om den ska krympa (eller vara samma), måste vi använda 'auto'-tricket igen
-            // för att trigga en omberäkning. Detta kan fortfarande ge ett litet hopp,
-            // men bara när man raderar text, vilket är mindre vanligt.
             setTimeout(() => {
                 textarea.style.height = 'auto';
                 textarea.style.height = `${textarea.scrollHeight + line_height}px`;
@@ -195,12 +186,38 @@
         
         textarea_element.addEventListener('input', auto_resize_textarea_handler);
         
-        // Använd en liten fördröjning för att säkerställa att allt är renderat
-        // innan den första storleksjusteringen sker.
         setTimeout(() => {
             const event = new Event('input');
             textarea_element.dispatchEvent(event);
-        }, 150); // Lite längre fördröjning kan hjälpa
+        }, 150);
+    }
+
+    // --- NY FUNKTION ---
+    function sanitize_and_linkify_html(raw_html_string) {
+        if (typeof raw_html_string !== 'string' || !raw_html_string) {
+            return '';
+        }
+        
+        // Använd <template> för säker parsning utan att exekvera skript
+        const template = document.createElement('template');
+        template.innerHTML = raw_html_string;
+        const content = template.content;
+
+        // Ta bort potentiellt farliga element
+        const elements_to_remove = content.querySelectorAll('script, style, iframe, object, embed');
+        elements_to_remove.forEach(el => el.remove());
+
+        // Gå igenom alla länkar och gör dem säkra
+        const links = content.querySelectorAll('a');
+        links.forEach(link => {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        });
+
+        // Returnera den sanerade HTML-strängen
+        const temp_div = document.createElement('div');
+        temp_div.appendChild(content);
+        return temp_div.innerHTML;
     }
 
     window.Helpers = {
@@ -212,6 +229,7 @@
         create_element,
         get_icon_svg,
         add_protocol_if_missing,
-        init_auto_resize_for_textarea
+        init_auto_resize_for_textarea,
+        sanitize_and_linkify_html // Exponera den nya funktionen
     };
 })();

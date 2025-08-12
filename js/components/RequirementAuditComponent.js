@@ -11,8 +11,9 @@ export const RequirementAuditComponent = (function () {
     let local_dispatch;
     let local_StoreActionTypes;
     
+    // --- ÄNDRING HÄR: Ny variabel för saneringsfunktionen ---
     let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css;
+    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css, Helpers_sanitize_and_linkify_html;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let AuditLogic_calculate_check_status, AuditLogic_calculate_requirement_status, AuditLogic_get_ordered_relevant_requirement_keys, AuditLogic_find_first_incomplete_requirement_key_for_sample;
     
@@ -52,15 +53,7 @@ export const RequirementAuditComponent = (function () {
         if (Translation_t) return Translation_t;
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
-            : (key, replacements) => {
-                let str = replacements && replacements.defaultValue ? replacements.defaultValue : `**${key}**`;
-                if (replacements && !replacements.defaultValue) {
-                    for (const rKey in replacements) {
-                        str += ` (${rKey}: ${replacements[rKey]})`;
-                    }
-                }
-                return str + " (ReqAudit t not found)";
-            };
+            : (key, replacements) => `**${key}**`;
     }
     function assign_globals_once() { 
         if (Translation_t && Helpers_create_element && AuditLogic_calculate_check_status) return true;
@@ -73,7 +66,9 @@ export const RequirementAuditComponent = (function () {
             Helpers_escape_html = window.Helpers.escape_html;
             Helpers_get_current_iso_datetime_utc = window.Helpers.get_current_iso_datetime_utc;
             Helpers_load_css = window.Helpers.load_css;
-            if (!Helpers_create_element || !Helpers_get_icon_svg || !Helpers_escape_html || !Helpers_get_current_iso_datetime_utc || !Helpers_load_css) {
+            // --- ÄNDRING HÄR: Hämta den nya funktionen ---
+            Helpers_sanitize_and_linkify_html = window.Helpers.sanitize_and_linkify_html;
+            if (!Helpers_create_element || !Helpers_get_icon_svg || !Helpers_escape_html || !Helpers_get_current_iso_datetime_utc || !Helpers_load_css || !Helpers_sanitize_and_linkify_html) {
                  console.error("ReqAudit: One or more Helper functions are missing!"); all_assigned = false;
             }
         } else { console.error("ReqAudit: Helpers module is missing!"); all_assigned = false; }
@@ -510,12 +505,16 @@ export const RequirementAuditComponent = (function () {
     
             content_element.innerHTML = ''; 
             if (Array.isArray(content_data)) {
+                // --- ÄNDRING HÄR: Använd sanitize för varje listobjekt ---
                 content_data.forEach(item_obj => {
                     const text_content = (typeof item_obj === 'object' && item_obj.text) ? item_obj.text : String(item_obj);
-                    content_element.appendChild(Helpers_create_element('li', { html_content: Helpers_escape_html(text_content).replace(/\n/g, '<br>') }));
+                    const sanitized_html = Helpers_sanitize_and_linkify_html(text_content).replace(/\n/g, '<br>');
+                    content_element.appendChild(Helpers_create_element('li', { html_content: sanitized_html }));
                 });
             } else {
-                content_element.innerHTML = Helpers_escape_html(String(content_data)).replace(/\n/g, '<br>');
+                // --- ÄNDRING HÄR: Använd sanitize för strängen ---
+                const sanitized_html = Helpers_sanitize_and_linkify_html(String(content_data)).replace(/\n/g, '<br>');
+                content_element.innerHTML = sanitized_html;
             }
         } else if (section_ref) {
             section_ref.setAttribute('hidden', 'true');
@@ -789,12 +788,12 @@ export const RequirementAuditComponent = (function () {
         header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, requirement_status_display_element);
         plate_element_ref.appendChild(header_div_ref);
     
-        expected_observation_section_ref = Helpers_create_element('div');
-        instructions_section_ref = Helpers_create_element('div');
-        tips_section_ref = Helpers_create_element('div');
-        exceptions_section_ref = Helpers_create_element('div');
-        common_errors_section_ref = Helpers_create_element('div');
-        metadata_section_ref = Helpers_create_element('div');
+        expected_observation_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
+        instructions_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
+        tips_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
+        exceptions_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
+        common_errors_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
+        metadata_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         plate_element_ref.append(expected_observation_section_ref, instructions_section_ref, tips_section_ref, exceptions_section_ref, common_errors_section_ref, metadata_section_ref);
     
         top_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
@@ -921,7 +920,7 @@ export const RequirementAuditComponent = (function () {
         restore_focus_state();
     }
     
-    function render() { 
+    async function render() { 
         assign_globals_once();
         const t = get_t_internally();
         if (!app_container_ref || !Helpers_create_element || !t || !local_getState) {
@@ -940,7 +939,7 @@ export const RequirementAuditComponent = (function () {
         }
     
         if (!is_dom_initialized || !plate_element_ref || !document.body.contains(plate_element_ref)) {
-            _initialRender();
+            await _initialRender();
         }
         
         _populateDOMWithData();
@@ -980,4 +979,3 @@ export const RequirementAuditComponent = (function () {
     };
     
     })();
-    
