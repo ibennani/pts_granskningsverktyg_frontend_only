@@ -872,11 +872,29 @@ function _updateDOM() {
         sample_context_text_element_ref.textContent = context_text;
     }
 
-    standard_reference_element_ref.innerHTML = '';
+    // NYTT START: Uppdaterad logik för referenslänken
+    standard_reference_element_ref.innerHTML = ''; // Rensa befintligt innehåll
     if (req_for_render.standardReference?.text) {
-        if (req_for_render.standardReference.url) { const link = Helpers_create_element('a', { text_content: req_for_render.standardReference.text, attributes: { href: req_for_render.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } }); standard_reference_element_ref.appendChild(link); } 
-        else standard_reference_element_ref.textContent = req_for_render.standardReference.text;
+        // Lägg till den nya etiketten
+        const label_strong = Helpers_create_element('strong', { 
+            text_content: t('requirement_standard_reference_label', { defaultValue: "Reference:" }) 
+        });
+        standard_reference_element_ref.appendChild(label_strong);
+        standard_reference_element_ref.appendChild(document.createTextNode(' ')); // Lägg till ett mellanslag
+
+        // Lägg till länken eller texten som tidigare
+        if (req_for_render.standardReference.url) { 
+            const link = Helpers_create_element('a', { 
+                text_content: req_for_render.standardReference.text, 
+                attributes: { href: req_for_render.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
+            });
+            standard_reference_element_ref.appendChild(link); 
+        } else { 
+            standard_reference_element_ref.appendChild(document.createTextNode(req_for_render.standardReference.text));
+        }
     }
+    // NYTT SLUT
+
     const overall_status_key = result_for_render?.status || 'not_audited';
     const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
     requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;

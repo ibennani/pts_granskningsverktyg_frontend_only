@@ -25,6 +25,12 @@
     text-decoration: underline;
 }
 
+/* NYTT: Regel för att styla den nya etiketten (strong-taggen) */
+.requirement-audit-header .standard-reference strong {
+    color: var(--text-color); /* Åsidosätt den nedtonade färgen för etiketten */
+    font-weight: 500;
+}
+
 .requirement-audit-header .overall-requirement-status-display {
     font-size: 1rem;
     font-weight: 500;
