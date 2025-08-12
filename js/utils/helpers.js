@@ -159,31 +159,48 @@
 
     function auto_resize_textarea_handler(event) {
         const textarea = event.target;
-        // Beräkna höjden på en rad text för att kunna lägga till den extra raden
         const computed_style = window.getComputedStyle(textarea);
         const line_height = parseFloat(computed_style.lineHeight);
-
-        // Nollställ höjden tillfälligt för att kunna mäta den verkliga scrollHeight
-        // Detta är tricket för att få den att krympa korrekt också
+        
+        // Spara nuvarande höjd innan vi gör något
+        const current_height = textarea.offsetHeight;
+        
+        // Mät den potentiella nya höjden utan att ändra den existerande
+        // Vi måste tillfälligt sätta height till 'auto' för att få rätt scrollHeight
         textarea.style.height = 'auto';
+        const scroll_height = textarea.scrollHeight;
+        
+        // Återställ höjden direkt för att undvika visuellt "hopp" om vi inte ska krympa
+        textarea.style.height = `${current_height}px`;
 
-        // Sätt den nya höjden till innehållets höjd + en extra rad
-        const new_height = textarea.scrollHeight + line_height;
-        textarea.style.height = `${new_height}px`;
+        const new_height = scroll_height + line_height;
+
+        // Jämför den beräknade nya höjden med den nuvarande
+        if (new_height > current_height) {
+            // Om den ska växa, sätt den nya höjden direkt
+            textarea.style.height = `${new_height}px`;
+        } else {
+            // Om den ska krympa (eller vara samma), måste vi använda 'auto'-tricket igen
+            // för att trigga en omberäkning. Detta kan fortfarande ge ett litet hopp,
+            // men bara när man raderar text, vilket är mindre vanligt.
+            setTimeout(() => {
+                textarea.style.height = 'auto';
+                textarea.style.height = `${textarea.scrollHeight + line_height}px`;
+            }, 0);
+        }
     }
 
     function init_auto_resize_for_textarea(textarea_element) {
         if (!textarea_element || textarea_element.tagName.toLowerCase() !== 'textarea') return;
         
-        // Koppla event listener för framtida ändringar
         textarea_element.addEventListener('input', auto_resize_textarea_handler);
         
-        // Trigga en första justering ifall fältet redan har innehåll när det renderas
-        // Använder en liten timeout för att säkerställa att elementet är fullt renderat i DOM
+        // Använd en liten fördröjning för att säkerställa att allt är renderat
+        // innan den första storleksjusteringen sker.
         setTimeout(() => {
             const event = new Event('input');
             textarea_element.dispatchEvent(event);
-        }, 100);
+        }, 150); // Lite längre fördröjning kan hjälpa
     }
 
     window.Helpers = {

@@ -20,7 +20,6 @@ const MetadataViewComponent_internal = (function () {
     let form_element_ref; 
 
     function get_t_internally() {
-        // ... (som tidigare) ...
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => {
@@ -35,8 +34,7 @@ const MetadataViewComponent_internal = (function () {
     }
 
     function assign_globals_once() {
-        // ... (som tidigare) ...
-        if (Translation_t && Helpers_create_element /* etc. */) return true;
+        if (Translation_t && Helpers_create_element) return true;
 
         let all_assigned = true;
         if (window.Translation && window.Translation.t) { Translation_t = window.Translation.t; }
@@ -65,7 +63,7 @@ const MetadataViewComponent_internal = (function () {
         return all_assigned;
     }
 
-    async function init(_app_container, _navigate_cb, _params, _getState, _dispatch, _StoreActionTypes) { // Lade till _StoreActionTypes
+    async function init(_app_container, _navigate_cb, _params, _getState, _dispatch, _StoreActionTypes) {
         assign_globals_once();
 
         app_container_ref = _app_container;
@@ -73,7 +71,7 @@ const MetadataViewComponent_internal = (function () {
         
         local_getState = _getState;
         local_dispatch = _dispatch;
-        local_StoreActionTypes = _StoreActionTypes; // Spara den medskickade referensen
+        local_StoreActionTypes = _StoreActionTypes;
 
         if (!local_StoreActionTypes) {
             console.error("[MetadataViewComponent] CRITICAL: StoreActionTypes was not passed to init or is undefined.");
@@ -92,11 +90,9 @@ const MetadataViewComponent_internal = (function () {
                 console.warn("Failed to load CSS for MetadataViewComponent:", error);
             }
         }
-        // console.log("[MetadataViewComponent] Init complete.");
     }
 
     function save_metadata_via_dispatch() {
-        // ... (som tidigare, men använd local_StoreActionTypes.UPDATE_METADATA) ...
         const t = get_t_internally();
         const current_global_state = local_getState();
         if (!current_global_state) {
@@ -127,9 +123,8 @@ const MetadataViewComponent_internal = (function () {
             internalComment: internal_comment_input.value.trim()
         };
 
-        console.log("[MetadataViewComponent] Dispatching UPDATE_METADATA with payload:", metadata_payload);
         local_dispatch({
-            type: local_StoreActionTypes.UPDATE_METADATA, // Använd den lokala referensen
+            type: local_StoreActionTypes.UPDATE_METADATA,
             payload: metadata_payload
         });
         
@@ -137,7 +132,6 @@ const MetadataViewComponent_internal = (function () {
     }
 
     function handle_submit(event) {
-        // ... (som tidigare) ...
         event.preventDefault();
         if (save_metadata_via_dispatch()) {
             if(NotificationComponent_clear_global_message) NotificationComponent_clear_global_message();
@@ -148,7 +142,6 @@ const MetadataViewComponent_internal = (function () {
     }
 
     function create_form_field(id, label_key, type = 'text', current_value = '', remove_placeholder = false, is_readonly = false) {
-        // ... (som tidigare) ...
         const t = get_t_internally();
         const form_group = Helpers_create_element('div', { class_name: 'form-group' });
         const label = Helpers_create_element('label', {
@@ -177,14 +170,12 @@ const MetadataViewComponent_internal = (function () {
             input_element.classList.add('readonly-textarea'); 
         }
 
-
         form_group.appendChild(label);
         form_group.appendChild(input_element);
         return { form_group, input_element };
     }
 
     function create_static_field(label_key, value, is_link = false) {
-        // ... (som tidigare) ...
         const t = get_t_internally();
         const field_div = Helpers_create_element('div', { class_name: 'static-field' });
         field_div.appendChild(Helpers_create_element('strong', { text_content: t(label_key) + ":" }));
@@ -214,11 +205,8 @@ const MetadataViewComponent_internal = (function () {
         return field_div;
     }
 
-
     function render() {
-        // ... (som tidigare, men använd local_getState) ...
         assign_globals_once(); 
-        // console.log("[MetadataViewComponent] Rendering. local_getState:", typeof local_getState, "local_dispatch:", typeof local_dispatch, "local_StoreActionTypes:", typeof local_StoreActionTypes);
         const t = get_t_internally();
 
         if (!app_container_ref || !Helpers_create_element || !t || !local_getState) { 
@@ -335,7 +323,6 @@ const MetadataViewComponent_internal = (function () {
     }
 
     function destroy() {
-        // ... (som tidigare) ...
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_submit);
             form_element_ref = null;

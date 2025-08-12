@@ -1,8 +1,7 @@
 // file: js/components/RequirementAuditComponent.js
 export const RequirementAuditComponent = (function () {
-    'use-strict';
+    'use strict';
     
-    // ... (alla variabler och hjälpfunktioner i toppen är oförändrade) ...
     const CSS_PATH = 'css/components/requirement_audit_component.css';
     let app_container_ref;
     let router_ref;
@@ -26,7 +25,7 @@ export const RequirementAuditComponent = (function () {
     let plate_element_ref = null;
     let header_div_ref = null;
     let requirement_title_element_ref = null;
-    let sample_context_text_element_ref = null; // NY referens för kontexttexten
+    let sample_context_text_element_ref = null; 
     let standard_reference_element_ref = null;
     let requirement_status_display_element = null;
     let checks_ui_container_element = null;
@@ -106,7 +105,7 @@ export const RequirementAuditComponent = (function () {
                 checkId: activeEl.closest('.check-item') ? activeEl.closest('.check-item').dataset.checkId : null,
                 pcId: activeEl.closest('.pass-criterion-item') ? activeEl.closest('.pass-criterion-item').dataset.pcId : null,
                 action: activeEl.dataset ? activeEl.dataset.action : null,
-                isPcObservationTextarea: activeEl.classList.contains('pc-observation-detail-textarea'),
+                isPcObservationTextarea: activeEl.classList && activeEl.classList.contains('pc-observation-detail-textarea'),
                 selectionStart: typeof activeEl.selectionStart === 'number' ? activeEl.selectionStart : null,
                 selectionEnd: typeof activeEl.selectionEnd === 'number' ? activeEl.selectionEnd : null
             };
@@ -255,11 +254,8 @@ export const RequirementAuditComponent = (function () {
                 if (current_requirement_result_for_view.checkResults[check_definition.id].overallStatus === undefined) {
                     current_requirement_result_for_view.checkResults[check_definition.id].overallStatus = 'not_audited';
                 }
-                // --- START PÅ KORRIGERAD/UTÖKAD LOGIK HÄR ---
                 const check_res_obj = current_requirement_result_for_view.checkResults[check_definition.id];
-                if (AuditLogic_calculate_check_status) { // Säkerställ att funktionen finns
-                    // Beräkna alltid om checkens status baserat på dess nuvarande overallStatus och pc-statusar
-                    // Detta säkerställer att check.status är synkroniserat med dess delar.
+                if (AuditLogic_calculate_check_status) { 
                     const newly_calculated_check_status = AuditLogic_calculate_check_status(
                         check_definition,
                         check_res_obj.passCriteria || {},
@@ -270,7 +266,6 @@ export const RequirementAuditComponent = (function () {
                         check_res_obj.status = newly_calculated_check_status;
                     }
                 }
-                // --- SLUT PÅ KORRIGERAD/UTÖKAD LOGIK HÄR ---
                 if (current_requirement_result_for_view.checkResults[check_definition.id].passCriteria === undefined) {
                     current_requirement_result_for_view.checkResults[check_definition.id].passCriteria = {};
                 }
@@ -492,47 +487,43 @@ export const RequirementAuditComponent = (function () {
     function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') {
         const t = get_t_internally();
         const has_content = content_data && ((typeof content_data === 'string' && content_data.trim() !== '') || (Array.isArray(content_data) && content_data.length > 0));
-        if (!section_ref && has_content) { 
-            section_ref = Helpers_create_element('div', { class_name: ['audit-section', custom_class_name].filter(Boolean).join(' ') });
-            section_ref.appendChild(Helpers_create_element('h2', { text_content: t(title_key) }));
-            const content_element_tag = Array.isArray(content_data) ? 'ul' : 'p';
-            const content_element = Helpers_create_element(content_element_tag);
-            if (Array.isArray(content_data)) {
-                content_data.forEach(item_obj => {
-                    const text_content = (typeof item_obj === 'object' && item_obj.text) ? item_obj.text : String(item_obj);
-                    content_element.appendChild(Helpers_create_element('li', { html_content: Helpers_escape_html(text_content).replace(/\n/g, '<br>') }));
-                });
-            } else { content_element.innerHTML = Helpers_escape_html(String(content_data)).replace(/\n/g, '<br>'); }
-            section_ref.appendChild(content_element);
-            let insert_before_node_for_section = null;
-            if (input_fields_container_ref && parent_element.contains(input_fields_container_ref)) insert_before_node_for_section = input_fields_container_ref;
-            else if (top_nav_buttons_container_ref && parent_element.contains(top_nav_buttons_container_ref)) insert_before_node_for_section = top_nav_buttons_container_ref; 
-            else if (checks_ui_container_element && parent_element.contains(checks_ui_container_element)) insert_before_node_for_section = checks_ui_container_element; 
-            if (insert_before_node_for_section && parent_element.contains(insert_before_node_for_section)) parent_element.insertBefore(section_ref, insert_before_node_for_section);
-            else if (parent_element) parent_element.appendChild(section_ref); 
-        } else if (section_ref && !has_content) { section_ref.remove(); section_ref = null; }
-        else if (section_ref && has_content) { 
-            if (custom_class_name && !section_ref.classList.contains(custom_class_name)) section_ref.classList.add(custom_class_name);
+        if (has_content) {
+            if (!section_ref || !parent_element.contains(section_ref)) {
+                 console.error("Internal logic error: section_ref is missing for render_audit_section_internal but content exists.");
+                 return null;
+            }
+            section_ref.removeAttribute('hidden');
             let h2_element = section_ref.querySelector('h2');
-            if (!h2_element) { h2_element = Helpers_create_element('h2'); section_ref.insertBefore(h2_element, section_ref.firstChild); }
+            if (!h2_element) {
+                h2_element = Helpers_create_element('h2');
+                section_ref.prepend(h2_element);
+            }
             h2_element.textContent = t(title_key);
+    
             let content_element = section_ref.querySelector('ul') || section_ref.querySelector('p');
-            const expected_content_tag_render = Array.isArray(content_data) ? 'UL' : 'P';
-            if (!content_element || content_element.tagName !== expected_content_tag_render) {
-                if (content_element) content_element.remove();
-                content_element = Helpers_create_element(expected_content_tag_render.toLowerCase());
+            const expected_tag = Array.isArray(content_data) ? 'UL' : 'P';
+            if (!content_element || content_element.tagName !== expected_tag) {
+                if(content_element) content_element.remove();
+                content_element = Helpers_create_element(expected_tag.toLowerCase());
                 section_ref.appendChild(content_element);
             }
+    
             content_element.innerHTML = ''; 
             if (Array.isArray(content_data)) {
                 content_data.forEach(item_obj => {
                     const text_content = (typeof item_obj === 'object' && item_obj.text) ? item_obj.text : String(item_obj);
                     content_element.appendChild(Helpers_create_element('li', { html_content: Helpers_escape_html(text_content).replace(/\n/g, '<br>') }));
                 });
-            } else { content_element.innerHTML = Helpers_escape_html(String(content_data)).replace(/\n/g, '<br>'); }
+            } else {
+                content_element.innerHTML = Helpers_escape_html(String(content_data)).replace(/\n/g, '<br>');
+            }
+        } else if (section_ref) {
+            section_ref.setAttribute('hidden', 'true');
+            section_ref.innerHTML = '';
         }
         return section_ref;
-     }
+    }
+    
     
     function get_current_requirement_index_in_ordered_list() { 
         if (!ordered_requirement_keys_for_sample || ordered_requirement_keys_for_sample.length === 0 || !params_ref || !params_ref.requirementId) {
@@ -616,33 +607,27 @@ export const RequirementAuditComponent = (function () {
         const is_audit_locked = current_global_state_for_render?.auditStatus === 'locked';
         if (!current_requirement_object_from_store?.checks?.length) { container_element.innerHTML = `<p class="text-muted">${t('no_checks_for_this_requirement')}</p>`; return; }
         if (!current_requirement_result_for_view?.checkResults) { container_element.innerHTML = ''; return; }
-        const current_check_ids_in_data = current_requirement_object_from_store.checks.map(c => c.id);
-        Array.from(container_element.querySelectorAll('.check-item[data-check-id]')).forEach(dom_check_item => { if (!current_check_ids_in_data.includes(dom_check_item.dataset.checkId)) dom_check_item.remove(); });
+        
         let checks_title_element = container_element.querySelector('h2');
-        if (!checks_title_element) { checks_title_element = Helpers_create_element('h2', { text_content: t('checks_title') }); const first_check_item = container_element.querySelector('.check-item'); if (first_check_item) container_element.insertBefore(checks_title_element, first_check_item); else container_element.appendChild(checks_title_element); } 
-        else checks_title_element.textContent = t('checks_title'); 
+        if (!checks_title_element) {
+            checks_title_element = Helpers_create_element('h2');
+            container_element.prepend(checks_title_element);
+        }
+        checks_title_element.textContent = t('checks_title');
     
         current_requirement_object_from_store.checks.forEach(check_definition => {
             let check_wrapper = container_element.querySelector(`.check-item[data-check-id="${check_definition.id}"]`);
-            
-            // **START ÄNDRING**
             const check_result_data_for_view = current_requirement_result_for_view.checkResults[check_definition.id];
             const calculated_check_status_for_display = check_result_data_for_view?.status || 'not_audited';
     
-            if (!check_wrapper) { 
-                check_wrapper = Helpers_create_element('div', { 
-                    class_name: ['check-item', `status-${calculated_check_status_for_display}`], // Sätt initial statusklass
-                    attributes: {'data-check-id': check_definition.id }
-                });
-                container_element.appendChild(check_wrapper); 
-            } else {
-                // Uppdatera statusklassen på befintligt element
-                check_wrapper.className = 'check-item'; // Nollställ klasser förutom bas-klassen
-                check_wrapper.classList.add(`status-${calculated_check_status_for_display}`);
+            if (!check_wrapper) {
+                check_wrapper = Helpers_create_element('div', { attributes: {'data-check-id': check_definition.id }});
+                container_element.appendChild(check_wrapper);
             }
-            // **SLUT ÄNDRING**
-    
+            check_wrapper.className = `check-item status-${calculated_check_status_for_display}`;
+            
             check_wrapper.innerHTML = ''; 
+            
             check_wrapper.appendChild(Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check_definition.condition }));
             
             const overall_manual_status_for_check = check_result_data_for_view?.overallStatus || 'not_audited';
@@ -699,12 +684,8 @@ export const RequirementAuditComponent = (function () {
                     const observation_detail_wrapper = Helpers_create_element('div', {
                         class_name: 'pc-observation-detail-wrapper form-group'
                     });
-                    if (current_pc_status !== 'failed') {
-                        observation_detail_wrapper.setAttribute('hidden', '');
-                    } else {
-                        observation_detail_wrapper.removeAttribute('hidden');
-                    }
-    
+                    observation_detail_wrapper.hidden = (current_pc_status !== 'failed');
+                    
                     const observation_label_id = `pc-observation-label-${check_definition.id}-${pc_def.id}`;
                     observation_detail_wrapper.appendChild(Helpers_create_element('label', {
                         attributes: { for: `pc-observation-${check_definition.id}-${pc_def.id}` },
@@ -712,26 +693,26 @@ export const RequirementAuditComponent = (function () {
                         id: observation_label_id
                     }));
                     
-                    const textarea_attributes = { 
-                        rows: '4', 
-                        'aria-labelledby': observation_label_id
-                    };
-                    if (is_audit_locked) {
-                        textarea_attributes.readonly = true; 
-                    }
+                    const textarea_id = `pc-observation-${check_definition.id}-${pc_def.id}`;
+                    let observation_textarea = document.getElementById(textarea_id); 
     
-                    const observation_textarea = Helpers_create_element('textarea', {
-                        id: `pc-observation-${check_definition.id}-${pc_def.id}`,
-                        class_name: 'form-control pc-observation-detail-textarea',
-                        attributes: textarea_attributes
-                    });
-                    observation_textarea.value = pc_data_for_view.observationDetail || '';
-                    if (!is_audit_locked) {
-                        observation_textarea.addEventListener('input', () => debounced_auto_save_pc_observation(check_definition.id, pc_def.id));
-                        if (window.Helpers && window.Helpers.init_auto_resize_for_textarea) {
-                            window.Helpers.init_auto_resize_for_textarea(observation_textarea);
+                    if (!observation_textarea) { 
+                        observation_textarea = Helpers_create_element('textarea', {
+                            id: textarea_id,
+                            class_name: 'form-control pc-observation-detail-textarea',
+                            attributes: { rows: '4', 'aria-labelledby': observation_label_id }
+                        });
+                        if (!is_audit_locked) {
+                            observation_textarea.addEventListener('input', () => debounced_auto_save_pc_observation(check_definition.id, pc_def.id));
+                            if (window.Helpers?.init_auto_resize_for_textarea) {
+                                window.Helpers.init_auto_resize_for_textarea(observation_textarea);
+                            }
                         }
                     }
+                    
+                    observation_textarea.value = pc_data_for_view.observationDetail || '';
+                    observation_textarea.readOnly = is_audit_locked;
+                    
                     observation_detail_wrapper.appendChild(observation_textarea);
                     pc_item_li.appendChild(observation_detail_wrapper);
                     pc_list.appendChild(pc_item_li);
@@ -786,98 +767,67 @@ export const RequirementAuditComponent = (function () {
         }
         nav_container_element.appendChild(nav_group_left);
         if (nav_group_right.hasChildNodes()) nav_container_element.appendChild(nav_group_right);
-     }
+    }
     
-    function _initialRender() { 
+    function _initialRender() {
         const t = get_t_internally();
-        app_container_ref.innerHTML = ''; is_dom_initialized = true;
+        app_container_ref.innerHTML = '';
+        is_dom_initialized = true;
+    
         plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
         app_container_ref.appendChild(plate_element_ref);
-        if (global_message_element_ref) plate_element_ref.appendChild(global_message_element_ref);
+    
+        if (global_message_element_ref) {
+            plate_element_ref.appendChild(global_message_element_ref);
+        }
+    
         header_div_ref = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
+        sample_context_text_element_ref = Helpers_create_element('p', { style: 'font-weight: 500; color: var(--text-color-muted); margin-bottom: 0.3rem; margin-top: 0;' });
         requirement_title_element_ref = Helpers_create_element('h1');
-        sample_context_text_element_ref = Helpers_create_element('p', {
-            style: 'font-weight: 500; color: var(--text-color-muted); margin-bottom: 0.3rem; margin-top: 0;'
-        });
         standard_reference_element_ref = Helpers_create_element('p', { class_name: 'standard-reference' });
-        requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display'});
-        
-        header_div_ref.appendChild(sample_context_text_element_ref); // Flyttad hit
-        header_div_ref.appendChild(requirement_title_element_ref);
-        header_div_ref.appendChild(standard_reference_element_ref);
-        header_div_ref.appendChild(requirement_status_display_element); 
+        requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display' });
+        header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, requirement_status_display_element);
         plate_element_ref.appendChild(header_div_ref);
     
-        // ** ÄNDRING AV ORDNING **
-        expected_observation_section_ref = Helpers_create_element('div'); 
-        plate_element_ref.appendChild(expected_observation_section_ref);
-        instructions_section_ref = Helpers_create_element('div'); 
-        plate_element_ref.appendChild(instructions_section_ref);
-        // ** SLUT ÄNDRING **
-        
-        tips_section_ref = Helpers_create_element('div'); plate_element_ref.appendChild(tips_section_ref);
-        exceptions_section_ref = Helpers_create_element('div'); plate_element_ref.appendChild(exceptions_section_ref);
-        common_errors_section_ref = Helpers_create_element('div'); plate_element_ref.appendChild(common_errors_section_ref); 
+        expected_observation_section_ref = Helpers_create_element('div');
+        instructions_section_ref = Helpers_create_element('div');
+        tips_section_ref = Helpers_create_element('div');
+        exceptions_section_ref = Helpers_create_element('div');
+        common_errors_section_ref = Helpers_create_element('div');
         metadata_section_ref = Helpers_create_element('div');
+        plate_element_ref.append(expected_observation_section_ref, instructions_section_ref, tips_section_ref, exceptions_section_ref, common_errors_section_ref, metadata_section_ref);
+    
         top_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         plate_element_ref.appendChild(top_nav_buttons_container_ref);
+    
         checks_ui_container_element = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
         checks_ui_container_element.addEventListener('click', handle_checks_container_click);
-        checks_ui_container_element.addEventListener('mousedown', (e) => { if (e.target.closest('button')) save_focus_state(); });
-        checks_ui_container_element.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('button')) save_focus_state(); });
-        checks_ui_container_element.addEventListener('touchstart', (e) => { if (e.target.closest('button')) save_focus_state(); }, { passive: true });
         plate_element_ref.appendChild(checks_ui_container_element);
+    
         input_fields_container_ref = Helpers_create_element('div', { class_name: 'input-fields-container audit-section' });
-        input_fields_container_ref.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title')}));
-        let fg, label; 
-        fg = Helpers_create_element('div', {class_name: 'form-group'});
-        label = Helpers_create_element('label', {attributes: {for: 'commentToAuditor'}, text_content: t('comment_to_auditor')});
-        comment_to_auditor_input = Helpers_create_element('textarea', {id: 'commentToAuditor', class_name: 'form-control', attributes: {rows: '4'}});
-        comment_to_auditor_input.addEventListener('input', debounced_auto_save_comments); 
-        if (window.Helpers && window.Helpers.init_auto_resize_for_textarea) { window.Helpers.init_auto_resize_for_textarea(comment_to_auditor_input); }
-        fg.appendChild(label); fg.appendChild(comment_to_auditor_input);
-        input_fields_container_ref.appendChild(fg);
-        fg = Helpers_create_element('div', {class_name: 'form-group'});
-        label = Helpers_create_element('label', {attributes: {for: 'commentToActor'}, text_content: t('comment_to_actor')});
-        comment_to_actor_input = Helpers_create_element('textarea', {id: 'commentToActor', class_name: 'form-control', attributes: {rows: '4'}});
-        comment_to_actor_input.addEventListener('input', debounced_auto_save_comments); 
-        if (window.Helpers && window.Helpers.init_auto_resize_for_textarea) { window.Helpers.init_auto_resize_for_textarea(comment_to_actor_input); }
-        fg.appendChild(label); fg.appendChild(comment_to_actor_input);
-        input_fields_container_ref.appendChild(fg);
+        input_fields_container_ref.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title') }));
+    
+        let fg1 = Helpers_create_element('div', { class_name: 'form-group' });
+        let label1 = Helpers_create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
+        comment_to_auditor_input = Helpers_create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
+        comment_to_auditor_input.addEventListener('input', debounced_auto_save_comments);
+        if (window.Helpers?.init_auto_resize_for_textarea) { window.Helpers.init_auto_resize_for_textarea(comment_to_auditor_input); }
+        fg1.append(label1, comment_to_auditor_input);
+    
+        let fg2 = Helpers_create_element('div', { class_name: 'form-group' });
+        let label2 = Helpers_create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
+        comment_to_actor_input = Helpers_create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
+        comment_to_actor_input.addEventListener('input', debounced_auto_save_comments);
+        if (window.Helpers?.init_auto_resize_for_textarea) { window.Helpers.init_auto_resize_for_textarea(comment_to_actor_input); }
+        fg2.append(label2, comment_to_actor_input);
+    
+        input_fields_container_ref.append(fg1, fg2);
         plate_element_ref.appendChild(input_fields_container_ref);
+    
         bottom_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
         plate_element_ref.appendChild(bottom_nav_buttons_container_ref);
     }
     
-    // **KORRIGERAD RENDER-FUNKTION**
-    function render() {
-        assign_globals_once();
-        const t = get_t_internally();
-        if (!app_container_ref || !Helpers_create_element || !t || !local_getState) {
-            if (app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_requirement_audit_view')}</p>`;
-            return;
-        }
-        if (!load_and_prepare_view_data()) {
-            app_container_ref.innerHTML = '';
-            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_loading_sample_or_requirement_data'), "error");
-            const back_button = Helpers_create_element('button', { class_name: ['button', 'button-default'], text_content: t('back_to_requirement_list') });
-            const sampleIdForBack = params_ref ? params_ref.sampleId : '';
-            back_button.addEventListener('click', () => { save_focus_state(); router_ref('requirement_list', { sampleId: sampleIdForBack }); });
-            app_container_ref.appendChild(back_button);
-            is_dom_initialized = false;
-            return;
-        }
-    
-        // Om DOM inte är skapad, skapa den
-        if (!is_dom_initialized || !plate_element_ref || !document.body.contains(plate_element_ref)) {
-            _initialRender();
-        }
-        
-        // Anropa alltid funktionen som fyller på med data
-        _populateDOMWithData();
-    }
-    
-    // **NY FUNKTION FÖR ATT FYLLA PÅ DOM (TIDIGARE _updateDOM)**
     function _populateDOMWithData() { 
         const t = get_t_internally();
         const req_for_render = current_requirement_object_from_store;
@@ -888,7 +838,7 @@ export const RequirementAuditComponent = (function () {
         if (!plate_element_ref || !requirement_title_element_ref || !comment_to_auditor_input || !comment_to_actor_input) {
             is_dom_initialized = false; 
             console.error("Attempted to populate DOM but essential elements were not found. Re-rendering.");
-            render(); // Fallback för att försöka rendera om allt om något är fel
+            render();
             return;
         }
         if(NotificationComponent_clear_global_message && global_message_element_ref &&
@@ -955,16 +905,45 @@ export const RequirementAuditComponent = (function () {
             if (req_for_render.metadata.impact) { const impact_text = req_for_render.metadata.impact.isCritical ? t('critical') : t('impact_normal'); const li = Helpers_create_element('li'); li.innerHTML = `<strong>${t('impact')}:</strong> ${impact_text}`; metadata_list_ul.appendChild(li); }
             metadata_section_ref.appendChild(metadata_list_ul);
         } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) { metadata_section_ref.remove(); metadata_section_ref = null; }
+        
         render_navigation_buttons(top_nav_buttons_container_ref);
         render_navigation_buttons(bottom_nav_buttons_container_ref);
+        
         render_checks_section(checks_ui_container_element); 
+        
         comment_to_auditor_input.value = result_for_render.commentToAuditor || '';
         comment_to_actor_input.value = result_for_render.commentToActor || '';
         [comment_to_auditor_input, comment_to_actor_input].forEach(input => {
-            if (is_audit_locked_for_render) { input.setAttribute('readonly', 'true'); input.classList.add('readonly-textarea'); }
-            else { input.removeAttribute('readonly'); input.classList.remove('readonly-textarea'); }
+            input.readOnly = is_audit_locked_for_render;
+            input.classList.toggle('readonly-textarea', is_audit_locked_for_render);
         });
+        
         restore_focus_state();
+    }
+    
+    function render() { 
+        assign_globals_once();
+        const t = get_t_internally();
+        if (!app_container_ref || !Helpers_create_element || !t || !local_getState) {
+            if(app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_requirement_audit_view')}</p>`;
+            return;
+        }
+        if (!load_and_prepare_view_data()) { 
+            app_container_ref.innerHTML = '';
+            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_loading_sample_or_requirement_data'), "error");
+            const back_button = Helpers_create_element('button', {class_name: ['button', 'button-default'], text_content: t('back_to_requirement_list')});
+            const sampleIdForBack = params_ref ? params_ref.sampleId : '';
+            back_button.addEventListener('click', () => { save_focus_state(); router_ref('requirement_list', { sampleId: sampleIdForBack }); });
+            app_container_ref.appendChild(back_button);
+            is_dom_initialized = false;
+            return;
+        }
+    
+        if (!is_dom_initialized || !plate_element_ref || !document.body.contains(plate_element_ref)) {
+            _initialRender();
+        }
+        
+        _populateDOMWithData();
     }
     
     function destroy() { 
@@ -975,12 +954,9 @@ export const RequirementAuditComponent = (function () {
         if (comment_to_actor_input) comment_to_actor_input.removeEventListener('input', debounced_auto_save_comments);
         if (checks_ui_container_element) {
             checks_ui_container_element.removeEventListener('click', handle_checks_container_click);
-            checks_ui_container_element.removeEventListener('mousedown', (e) => { if (e.target.closest('button')) save_focus_state(); });
-            checks_ui_container_element.removeEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('button')) save_focus_state(); });
-            checks_ui_container_element.removeEventListener('touchstart', (e) => { if (e.target.closest('button')) save_focus_state(); }, { passive: true });
         }
         plate_element_ref = null; header_div_ref = null; requirement_title_element_ref = null;
-        sample_context_text_element_ref = null; // Rensa den nya referensen
+        sample_context_text_element_ref = null;
         standard_reference_element_ref = null; requirement_status_display_element = null;
         checks_ui_container_element = null; 
         comment_to_auditor_input = null; comment_to_actor_input = null; 
@@ -1004,3 +980,4 @@ export const RequirementAuditComponent = (function () {
     };
     
     })();
+    
