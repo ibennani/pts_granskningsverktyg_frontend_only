@@ -258,6 +258,12 @@ window.StoreActionTypes = StoreActionTypes;
 
         await init_global_components();
         
+        if (window.ScoreManager && typeof window.ScoreManager.init === 'function') {
+            window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes);
+        } else {
+            console.error("[Main.js] CRITICAL: ScoreManager could not be initialized.");
+        }
+        
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
 
@@ -275,10 +281,14 @@ window.StoreActionTypes = StoreActionTypes;
 
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
+            
+            // >>> ÄNDRING HÄR <<<
+            // Denna kodrad ser till att den aktiva vyn alltid ritas om när state ändras.
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 current_view_component_instance.render();
             }
+            // >>> SLUT PÅ ÄNDRING <<<
         });
     }
 

@@ -22,8 +22,7 @@ const AuditOverviewComponent_internal = (function () {
     let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
     let AuditLogic_calculate_overall_audit_progress;
 
-    let VardetalCalculator_calculate_current_vardetal_func;
-    let VardetalCalculator_get_precalculated_data_store_func;
+    // --- BORTTAGNA REFERENSER TILL VARDETALCALCULATOR HÄRIFRÅN ---
     let vardetal_progress_bar_component_instance = null;
     let vardetal_progress_bar_container_element = null;
 
@@ -102,17 +101,7 @@ const AuditOverviewComponent_internal = (function () {
             all_assigned_check = false;
         }
 
-        if (window.VardetalCalculator) {
-            VardetalCalculator_calculate_current_vardetal_func = window.VardetalCalculator.calculate_current_vardetal;
-            VardetalCalculator_get_precalculated_data_store_func = window.VardetalCalculator.get_precalculated_data_store;
-            if (!VardetalCalculator_calculate_current_vardetal_func || !VardetalCalculator_get_precalculated_data_store_func) {
-                console.error("AuditOverview: One or more VardetalCalculator functions are missing!");
-                all_assigned_check = false;
-            }
-        } else {
-            console.error("AuditOverview: VardetalCalculator module not found on window!");
-            all_assigned_check = false;
-        }
+        // --- BORTTAGET: VardetalCalculator-beroenden tas bort från denna komponent ---
 
         return all_assigned_check;
     }
@@ -350,13 +339,7 @@ const AuditOverviewComponent_internal = (function () {
         if (!local_StoreActionTypes) {
             console.error("[AuditOverviewComponent init] CRITICAL: Core StoreActionTypes missing for init.");
         }
-        if (!local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL) {
-            console.warn("[AuditOverviewComponent init] StoreActionTypes.UPDATE_CALCULATED_VARDETAL is not defined.");
-        }
-        if (!local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
-            console.warn("[AuditOverviewComponent init] StoreActionTypes.SET_PRECALCULATED_RULE_DATA is not defined.");
-        }
-
+        
         if (typeof NotificationComponent_get_global_message_element_reference === 'function') {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
@@ -611,71 +594,16 @@ const AuditOverviewComponent_internal = (function () {
         if (!app_container_ref || !app_container_ref.classList.contains(ACTIVE_VIEW_MARKER_CLASS)) {
             return;
         }
-        handle_store_update_for_vardetal_ui(new_state);
-        console.log("==> handle_store_update_for_vardetal_ui, aktuellt vardetal i staten:", new_state.auditCalculations?.currentVardetal);
-        console.log("dispatch av UPDATE_CALCULATED_VARDETAL med", new_state.auditCalculations?.currentVardetal); // Justerad log
+        
+        // --- BORTTAGET: Logiken för att räkna ut Värdetalet tas bort härifrån ---
+        // ScoreManager hanterar nu detta globalt.
     
         if (document.body.contains(app_container_ref)) {
             render();
         }
     }
 
-    function handle_store_update_for_vardetal_ui(new_state_from_store) {
-        console.log("===> AuditOverview: handle_store_update_for_vardetal_ui KÖRS", new_state_from_store.auditCalculations);
-    
-        if (typeof VardetalCalculator_calculate_current_vardetal_func !== 'function' ||
-            typeof VardetalCalculator_get_precalculated_data_store_func !== 'function') {
-            console.warn("[AuditOverview] VardetalCalculator functions not available. Cannot update vardetal.");
-            if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
-                new_state_from_store.auditCalculations?.currentVardetal !== null) {
-                 local_dispatch({
-                    type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
-                    payload: { vardetal: null }
-                });
-            }
-            return; 
-        }
-    
-        let precalculated_rule_data_for_calc = new_state_from_store.auditCalculations?.ruleData;
-    
-        if (!precalculated_rule_data_for_calc || !precalculated_rule_data_for_calc.weights_map) {
-            precalculated_rule_data_for_calc = VardetalCalculator_get_precalculated_data_store_func();
-    
-            if (precalculated_rule_data_for_calc && precalculated_rule_data_for_calc.weights_map &&
-                local_dispatch && local_StoreActionTypes && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA &&
-                (!new_state_from_store.auditCalculations?.ruleData?.weights_map)) {
-                local_dispatch({
-                    type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
-                    payload: precalculated_rule_data_for_calc
-                });
-                return; 
-            }
-        }
-    
-        if (precalculated_rule_data_for_calc && precalculated_rule_data_for_calc.weights_map) {
-            const calculated_vardetal = VardetalCalculator_calculate_current_vardetal_func(new_state_from_store, precalculated_rule_data_for_calc);
-            const current_vardetal_in_state = new_state_from_store.auditCalculations?.currentVardetal;
-    
-            console.log(`[AuditOverview] Vardetal CALC: ${calculated_vardetal}, Vardetal IN STATE: ${current_vardetal_in_state}`);
-    
-            if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
-                current_vardetal_in_state !== calculated_vardetal) {
-                console.log(`[AuditOverview] Dispatching UPDATE_CALCULATED_VARDETAL with: ${calculated_vardetal}`);
-                local_dispatch({
-                    type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
-                    payload: { vardetal: calculated_vardetal }
-                });
-            }
-        } else {
-            if (local_dispatch && local_StoreActionTypes && local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL &&
-                new_state_from_store.auditCalculations?.currentVardetal !== null) {
-                 local_dispatch({
-                    type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL,
-                    payload: { vardetal: null }
-                });
-            }
-        }
-    }
+    // --- BORTTAGET: Hela funktionen `handle_store_update_for_vardetal_ui` är raderad ---
 
     return { init, render, destroy };
 })();

@@ -12,7 +12,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
     let local_getState;
     let local_dispatch;
     let local_StoreActionTypes;
-    let local_subscribe_func; // För att spara subscribe-funktionen från main.js
+    // --- BORTTAGET: local_subscribe_func är inte längre nödvändig här ---
 
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_load_css;
@@ -30,7 +30,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
     let intro_text_element = null;
     let previously_focused_element_for_delete_confirm = null;
 
-    let unsubscribe_from_store_function = null; 
+    // --- BORTTAGET: unsubscribe_from_store_function är inte längre nödvändig här ---
     const ACTIVE_VIEW_MARKER_CLASS = 'sample-management-view-active-marker';
 
 
@@ -242,12 +242,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         }
     }
     
-    function handle_store_update(new_state) {
-        if (!app_container_ref || !app_container_ref.classList.contains(ACTIVE_VIEW_MARKER_CLASS)) {
-            return; 
-        }
-        render();
-    }
+    // --- BORTTAGET: handle_store_update är inte längre nödvändig här ---
 
     async function init(_app_container, _router_cb, _params, _getState, _dispatch, _StoreActionTypes, _subscribe) {
         assign_globals_once();
@@ -257,7 +252,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         local_getState = _getState;
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes;
-        local_subscribe_func = _subscribe;
+        // --- BORTTAGET: local_subscribe_func tas bort ---
 
         if (!local_StoreActionTypes || !local_StoreActionTypes.SET_AUDIT_STATUS || !local_StoreActionTypes.DELETE_SAMPLE || !local_StoreActionTypes.ADD_SAMPLE || !local_StoreActionTypes.UPDATE_SAMPLE) {
             console.error("[SampleManagementViewComponent] CRITICAL: Core StoreActionTypes missing for init.");
@@ -277,10 +272,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
             catch (error) { console.warn("Failed to load CSS for SampleManagementViewComponent:", error); }
         }
         
-        if (!unsubscribe_from_store_function && typeof local_subscribe_func === 'function') {
-            unsubscribe_from_store_function = local_subscribe_func(handle_store_update);
-        } else if (unsubscribe_from_store_function) { /* Redan prenumererad */ }
-        else { console.warn("[SampleManagementViewComponent init] Could not subscribe to store: _subscribe function was not provided or is invalid."); }
+        // --- BORTTAGET: Hela prenumerationslogiken tas bort härifrån ---
     }
 
     function render() {
@@ -417,10 +409,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         if (app_container_ref?.classList) {
             app_container_ref.classList.remove(ACTIVE_VIEW_MARKER_CLASS);
         }
-        if (unsubscribe_from_store_function) {
-            unsubscribe_from_store_function();
-            unsubscribe_from_store_function = null;
-        }
+        // --- BORTTAGET: unsubscribe_from_store_function är inte längre nödvändig här ---
 
         add_sample_form_component_instance?.destroy();
         sample_list_component_instance?.destroy();
@@ -434,7 +423,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         local_getState = null;
         local_dispatch = null;
         local_StoreActionTypes = null;
-        local_subscribe_func = null;
+        // --- BORTTAGET: local_subscribe_func tas bort ---
         previously_focused_element_for_delete_confirm = null;
     }
 

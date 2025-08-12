@@ -463,20 +463,9 @@ export const RequirementAuditComponent = (function () {
             type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: { sampleId: params_ref.sampleId, requirementId: params_ref.requirementId, newRequirementResult: modified_result_for_dispatch }
         });
-        setTimeout(() => { 
-            try {
-                const state = local_getState ? local_getState() : (window.Store?.getState ? window.Store.getState() : null);
-                const precalc = window.VardetalCalculator?.get_precalculated_data_store ? window.VardetalCalculator.get_precalculated_data_store() : null;
-                const vardetal = (window.VardetalCalculator?.calculate_current_vardetal && state && precalc) ? window.VardetalCalculator.calculate_current_vardetal(state, precalc) : null;
-                if (vardetal !== null && vardetal !== undefined) {
-                    if (local_dispatch && local_StoreActionTypes?.UPDATE_CALCULATED_VARDETAL) {
-                        local_dispatch({ type: local_StoreActionTypes.UPDATE_CALCULATED_VARDETAL, payload: { vardetal } });
-                    } else if (window.Store?.dispatch) {
-                        window.Store.dispatch({ type: 'UPDATE_CALCULATED_VARDETAL', payload: { vardetal } });
-                    }
-                }
-            } catch (err) { console.error('[ReqAudit] Fel vid värdetals-dispatch:', err); }
-        }, 10);
+        
+        // --- BORTTAGET: Logiken för att räkna ut Värdetalet tas bort härifrån ---
+        // ScoreManager hanterar nu detta globalt.
     }
     
     function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') {
