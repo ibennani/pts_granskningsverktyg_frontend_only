@@ -157,6 +157,35 @@
         return /^(?:f|ht)tps?:\/\//i.test(url_string) ? url_string : `https://${url_string}`;
     }
 
+    function auto_resize_textarea_handler(event) {
+        const textarea = event.target;
+        // Beräkna höjden på en rad text för att kunna lägga till den extra raden
+        const computed_style = window.getComputedStyle(textarea);
+        const line_height = parseFloat(computed_style.lineHeight);
+
+        // Nollställ höjden tillfälligt för att kunna mäta den verkliga scrollHeight
+        // Detta är tricket för att få den att krympa korrekt också
+        textarea.style.height = 'auto';
+
+        // Sätt den nya höjden till innehållets höjd + en extra rad
+        const new_height = textarea.scrollHeight + line_height;
+        textarea.style.height = `${new_height}px`;
+    }
+
+    function init_auto_resize_for_textarea(textarea_element) {
+        if (!textarea_element || textarea_element.tagName.toLowerCase() !== 'textarea') return;
+        
+        // Koppla event listener för framtida ändringar
+        textarea_element.addEventListener('input', auto_resize_textarea_handler);
+        
+        // Trigga en första justering ifall fältet redan har innehåll när det renderas
+        // Använder en liten timeout för att säkerställa att elementet är fullt renderat i DOM
+        setTimeout(() => {
+            const event = new Event('input');
+            textarea_element.dispatchEvent(event);
+        }, 100);
+    }
+
     window.Helpers = {
         generate_uuid_v4,
         load_css,
@@ -165,6 +194,7 @@
         escape_html,
         create_element,
         get_icon_svg,
-        add_protocol_if_missing
+        add_protocol_if_missing,
+        init_auto_resize_for_textarea
     };
 })();

@@ -164,7 +164,7 @@ const MetadataViewComponent_internal = (function () {
 
         if (type === 'textarea') {
             input_element = Helpers_create_element('textarea', {
-                id: id, class_name: 'form-control', attributes: { rows: '3', ...attributes }
+                id: id, class_name: 'form-control', attributes: { rows: '4', ...attributes }
             });
             input_element.value = current_value;
         } else {
@@ -288,6 +288,10 @@ const MetadataViewComponent_internal = (function () {
             const comment_field = create_form_field('internalComment', 'internal_comment', 'textarea', metadata_from_store.internalComment, false, !is_editable);
             internal_comment_input = comment_field.input_element;
             form_element_ref.appendChild(comment_field.form_group);
+
+            if (window.Helpers && window.Helpers.init_auto_resize_for_textarea) {
+                window.Helpers.init_auto_resize_for_textarea(internal_comment_input);
+            }
 
             const form_actions_wrapper_for_form = Helpers_create_element('div', { class_name: 'form-actions metadata-actions' });
             const submit_button_editable = Helpers_create_element('button', {
