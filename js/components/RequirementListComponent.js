@@ -21,7 +21,6 @@ const RequirementListComponent_internal = (function () {
     let global_message_element_ref;
     let content_div_for_delegation = null;
 
-    // State för filter och sortering
     let component_state = {
         filters: {
             searchText: '',
@@ -30,7 +29,6 @@ const RequirementListComponent_internal = (function () {
         sortBy: 'default'
     };
     
-    // Referenser för att undvika omritning
     let toolbar_component_instance = null;
     let is_dom_initialized = false;
     let plate_element_ref = null;
@@ -102,9 +100,11 @@ const RequirementListComponent_internal = (function () {
         return nav_bar;
     }
     
+    // --- FIX HÄR: Denna funktion anropar nu BARA _populate_dynamic_content ---
+    // Den ritar INTE om hela vyn, vilket bevarar toolbar-komponentens DOM och state.
     function handle_toolbar_change(new_toolbar_state) {
         component_state = new_toolbar_state;
-        _populate_dynamic_content();
+        _populate_dynamic_content(); 
     }
 
     function natural_sort(a, b) {
@@ -190,6 +190,8 @@ const RequirementListComponent_internal = (function () {
         is_dom_initialized = true;
     }
 
+    // --- FIX HÄR: Renamed from _populate_list_content to _populate_dynamic_content ---
+    // Denna funktion uppdaterar NU BARA header och listan, inte hela vyn.
     function _populate_dynamic_content() {
         const t = get_t_internally();
         const current_global_state = local_getState();
@@ -290,6 +292,7 @@ const RequirementListComponent_internal = (function () {
             return;
         }
 
+        // --- FIX HÄR: Denna logik styr nu om hela DOM-strukturen ska byggas eller bara uppdateras ---
         if (!is_dom_initialized) {
             await _initialRender();
         }

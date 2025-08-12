@@ -161,7 +161,7 @@
     width: 1.2em; /* Justera vid behov för att ge ikonen plats */
     text-align: center; /* Centrera ikonen om width är större än ikonen */
     margin-right: 0.3em; /* Lite utrymme mellan ikon och text om texten är kvar i wrappern */
-    font-size: 2.0em; /* Anpassa storleken på ikonen relativt omgivande text */
+    font-size: 1em; /* Anpassa storleken på ikonen relativt omgivande text */
     line-height: 1; /* För att undvika extra vertikalt utrymme */
     vertical-align: middle; /* Försök att linjera den bättre med texten */
 }
@@ -194,12 +194,14 @@
     color: var(--danger-color);
 }
 
-.status-icon-partially::before {
+/* --- FIX HÄR: Lägg till den saknade regeln --- */
+.status-icon-partially-audited::before {
     font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid";
     font-weight: 900; 
     content: "\f5c0"; /* fa-circle-half-stroke */
     color: var(--warning-color);
 }
+/* --- SLUT PÅ FIX --- */
 
 .status-icon-not-audited::before {
     font-family: "Font Awesome 6 Free", "Font Awesome 6 Regular"; /* Fallback om regular inte är i Free */
@@ -207,12 +209,6 @@
     content: "\f111"; /* fa-circle (regular) */
     color: var(--text-color-muted); 
 }
-
-/* Mörkt tema justeringar för ikoner om det behövs (om färgvariabler inte räcker) */
-/* [data-theme="dark"] .status-icon-passed::before { color: var(--success-color); } */
-/* [data-theme="dark"] .status-icon-failed::before { color: var(--danger-color); } */
-/* [data-theme="dark"] .status-icon-partially::before { color: var(--warning-color); } */
-/* [data-theme="dark"] .status-icon-not-audited::before { color: var(--text-color-muted); } */
 
 .requirements-list-content .requirement-checks-info {
     font-style: italic;

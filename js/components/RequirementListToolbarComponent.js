@@ -5,14 +5,12 @@ export const RequirementListToolbarComponent = (function () {
     const CSS_PATH = 'css/components/requirement_list_toolbar_component.css';
     let container_ref;
     
-    // Callbacks och dependencies från föräldern
     let on_change_callback;
     let initial_state;
     let Translation_t;
     let Helpers_create_element;
     let Helpers_load_css;
 
-    // Komponentens interna state
     let component_state;
     let search_debounce_timer;
 
@@ -24,7 +22,6 @@ export const RequirementListToolbarComponent = (function () {
         Helpers_create_element = _Helpers.create_element;
         Helpers_load_css = _Helpers.load_css;
 
-        // Sätt initialt state, antingen från föräldern eller default
         component_state = { ...initial_state };
 
         if (Helpers_load_css && CSS_PATH) {
@@ -47,19 +44,32 @@ export const RequirementListToolbarComponent = (function () {
 
     function handle_status_filter_change(event) {
         const checkbox = event.target;
+        if (!checkbox || checkbox.type !== 'checkbox') return;
+
         const status_key = checkbox.dataset.status;
         const is_checked = checkbox.checked;
 
         if (status_key === 'all') {
-            Object.keys(component_state.filters.status).forEach(key => {
-                component_state.filters.status[key] = is_checked;
-            });
+            component_state.filters.status.passed = is_checked;
+            component_state.filters.status.failed = is_checked;
+            component_state.filters.status.partially_audited = is_checked;
+            component_state.filters.status.not_audited = is_checked;
         } else {
             component_state.filters.status[status_key] = is_checked;
-            const all_individual_checked = Object.keys(component_state.filters.status)
-                .every(key => key === 'all' || component_state.filters.status[key]);
-            component_state.filters.status.all = all_individual_checked;
         }
+
+        const all_individual_checked = 
+            component_state.filters.status.passed &&
+            component_state.filters.status.failed &&
+            component_state.filters.status.partially_audited &&
+            component_state.filters.status.not_audited;
+        
+        component_state.filters.status.all = all_individual_checked;
+
+        // --- FIX HÄR: Rendera om toolbaren för att uppdatera checkboxarna ---
+        render();
+        // --- SLUT PÅ FIX ---
+
         if (on_change_callback) on_change_callback(component_state);
     }
 
@@ -75,20 +85,25 @@ export const RequirementListToolbarComponent = (function () {
         if (panel) {
             panel.hidden = !component_state.isStatusFilterPanelOpen;
             if (component_state.isStatusFilterPanelOpen) {
-                document.addEventListener('click', close_status_filter_panel_on_outside_click, { once: true });
+                // Spara fokus så vi kan återställa det om panelen stängs
+                const focusedElement = document.activeElement;
+                document.addEventListener('click', (e) => close_status_filter_panel_on_outside_click(e, focusedElement), { once: true });
             }
         }
     }
 
-    function close_status_filter_panel_on_outside_click(event) {
+    function close_status_filter_panel_on_outside_click(event, elementToFocus) {
         const panel = document.getElementById('status-filter-panel-smv');
         const button = document.getElementById('status-filter-toggle-btn');
         if (component_state.isStatusFilterPanelOpen && panel && button && !panel.contains(event.target) && !button.contains(event.target)) {
             component_state.isStatusFilterPanelOpen = false;
             panel.hidden = true;
+            // Återställ fokus till knappen som öppnade panelen
+            if (elementToFocus && typeof elementToFocus.focus === 'function') {
+                elementToFocus.focus();
+            }
         } else if (component_state.isStatusFilterPanelOpen) {
-            // Om klicket var inne i panelen, lägg till lyssnaren igen
-            document.addEventListener('click', close_status_filter_panel_on_outside_click, { once: true });
+            document.addEventListener('click', (e) => close_status_filter_panel_on_outside_click(e, elementToFocus), { once: true });
         }
     }
 
@@ -97,6 +112,13 @@ export const RequirementListToolbarComponent = (function () {
             console.error("ToolbarComponent: Cannot render, core dependencies missing.");
             return;
         }
+        
+        // --- FIX HÄR: Spara fokus innan omritning ---
+        const focusedElementId = document.activeElement?.id;
+        const searchInputValue = (focusedElementId === 'req-list-search') ? document.activeElement.value : component_state.filters.searchText;
+        const searchSelectionStart = (focusedElementId === 'req-list-search') ? document.activeElement.selectionStart : null;
+        const searchSelectionEnd = (focusedElementId === 'req-list-search') ? document.activeElement.selectionEnd : null;
+
         container_ref.innerHTML = '';
         const t = Translation_t;
 
@@ -105,7 +127,7 @@ export const RequirementListToolbarComponent = (function () {
         // Söksektion
         const search_group = Helpers_create_element('div', { class_name: 'toolbar-group search-group' });
         const search_label = Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t('search_in_help_texts_label') });
-        const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' }, value: component_state.filters.searchText });
+        const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' }, value: searchInputValue });
         search_input.addEventListener('input', handle_search_input);
         search_group.append(search_label, search_input);
 
@@ -120,7 +142,6 @@ export const RequirementListToolbarComponent = (function () {
         
         const status_types = ['passed', 'failed', 'partially_audited', 'not_audited'];
         
-        // "Visa alla" checkbox
         const all_wrapper = Helpers_create_element('div', { class_name: 'form-check all-check' });
         const all_input = Helpers_create_element('input', { id: 'status-filter-all', class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-status': 'all' } });
         all_input.checked = component_state.filters.status.all;
@@ -128,10 +149,8 @@ export const RequirementListToolbarComponent = (function () {
         all_wrapper.append(all_input, all_label);
         filter_panel.appendChild(all_wrapper);
 
-        // Separator
         filter_panel.appendChild(Helpers_create_element('hr'));
 
-        // Individuella statusar
         status_types.forEach(status => {
             const wrapper = Helpers_create_element('div', { class_name: 'form-check' });
             const input = Helpers_create_element('input', { id: `status-filter-${status}`, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-status': status } });
@@ -165,6 +184,18 @@ export const RequirementListToolbarComponent = (function () {
 
         toolbar.append(search_group, filter_group, sort_group);
         container_ref.appendChild(toolbar);
+        
+        // --- FIX HÄR: Återställ fokus efter omritning ---
+        if (focusedElementId) {
+            const elementToFocus = document.getElementById(focusedElementId);
+            if (elementToFocus) {
+                elementToFocus.focus();
+                // Återställ markörpositionen för sökfältet
+                if (focusedElementId === 'req-list-search' && searchSelectionStart !== null) {
+                    elementToFocus.setSelectionRange(searchSelectionStart, searchSelectionEnd);
+                }
+            }
+        }
     }
 
     function destroy() {

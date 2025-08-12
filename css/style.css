@@ -402,6 +402,12 @@ textarea.form-control, textarea {
     outline: 3px solid var(--primary-color);
     outline-offset: 2px;
 }
+/* --- FIX HÄR: Ta bort fokusmarkering för tabindex="-1" --- */
+[tabindex="-1"]:focus-visible,
+[tabindex="-1"]:focus {
+    outline: none;
+}
+/* --- SLUT PÅ FIX --- */
 .button:focus,
 .form-control:focus,
 input[type="text"]:focus,
