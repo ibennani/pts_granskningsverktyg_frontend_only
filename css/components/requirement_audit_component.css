@@ -175,46 +175,38 @@
     border-left-width: 5px; /* Behåll tjockare vänsterkant */
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.06);
-    transition: border-color 0.3s ease, background-color 0.3s ease;
+    transition: border-color 0.3s ease; /* Tog bort background-color från transition */
+    background-color: var(--plate-background-color); /* Sätt default bakgrund här */
 }
 
 /* Default/Not Audited State */
 .check-item.status-not_audited {
     border-left-color: var(--border-color); /* Standard accentfärg (orange) */
-    background-color: var(--plate-background-color);
+    /* background-color är nu i .check-item */
 }
 
 /* Passed State */
 .check-item.status-passed {
     border-left-color: var(--success-color);
-    background-color: var(--success-color-light);
 }
 
 /* Failed State */
 .check-item.status-failed {
     border-left-color: var(--danger-color);
-    background-color: var(--danger-color-light);
 }
 
 /* Partially Audited State */
 .check-item.status-partially_audited {
     border-left-color: var(--warning-color);
-    background-color: var(--warning-color-light);
 }
 
 /* Mörkt tema anpassningar */
-[data-theme="dark"] .check-item.status-not_audited {
-    border-left-color: color-mix(in srgb, var(--border-color) 80%, white);
+[data-theme="dark"] .check-item { /* Ny regel för dark theme default */
     background-color: color-mix(in srgb, var(--plate-background-color) 92%, black);
 }
-[data-theme="dark"] .check-item.status-passed {
-    background-color: var(--success-color-light); /* success-color-light är redan anpassad för mörkt läge */
-}
-[data-theme="dark"] .check-item.status-failed {
-    background-color: var(--danger-color-light);
-}
-[data-theme="dark"] .check-item.status-partially_audited {
-    background-color: var(--warning-color-light);
+[data-theme="dark"] .check-item.status-not_audited {
+    border-left-color: color-mix(in srgb, var(--border-color) 80%, white);
+    /* background-color är nu i [data-theme="dark"] .check-item */
 }
 /* --- SLUT PÅ NY STYLING FÖR .check-item --- */
 
