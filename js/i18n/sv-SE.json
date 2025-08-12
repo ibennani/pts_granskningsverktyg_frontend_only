@@ -220,5 +220,16 @@
   "no_audit_metadata_available": "Ingen granskningsinformation finns att visa just nu",
   "version_rulefile": "Regelfilens version",
   "pc_observation_detail_label": "Beskriv observationen lite mer detaljerat",
-  "pc_observation_detail_label_export": "Beskrivning av observerad brist"
+  "pc_observation_detail_label_export": "Beskrivning av observerad brist",
+  "search_in_help_texts_label": "Sök i hjälptexter:",
+"filter_by_status_label": "Filtrera på status",
+"status_filter_button_text": "Status",
+"show_all": "Visa alla",
+"sort_by_label": "Sortera efter:",
+"sort_option_default": "Standard (per kategori)",
+"sort_option_title_asc": "Titel (A-Ö)",
+"sort_option_title_desc": "Titel (Ö-A)",
+"sort_option_ref_asc": "Referens (stigande)",
+"sort_option_ref_desc": "Referens (fallande)",
+"sort_option_status": "Status (problem först)"
 }
