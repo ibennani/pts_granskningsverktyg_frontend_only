@@ -27,7 +27,7 @@ export const RequirementAuditComponent = (function () {
     let requirement_title_element_ref = null;
     let sample_context_text_element_ref = null; 
     let standard_reference_element_ref = null;
-    let audited_page_link_element_ref = null; // NY VARIABEL FÖR LÄNKEN
+    let audited_page_link_element_ref = null;
     let requirement_status_display_element = null;
     let checks_ui_container_element = null;
     let comment_to_auditor_input, comment_to_actor_input;
@@ -66,9 +66,9 @@ export const RequirementAuditComponent = (function () {
             Helpers_escape_html = window.Helpers.escape_html;
             Helpers_get_current_iso_datetime_utc = window.Helpers.get_current_iso_datetime_utc;
             Helpers_load_css = window.Helpers.load_css;
-            Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing; // Lade till denna rad
+            Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing;
             Helpers_sanitize_and_linkify_html = window.Helpers.sanitize_and_linkify_html;
-            if (!Helpers_create_element || !Helpers_get_icon_svg || !Helpers_escape_html || !Helpers_get_current_iso_datetime_utc || !Helpers_load_css || !Helpers_sanitize_and_linkify_html || !Helpers_add_protocol_if_missing) { // Lade till kontroll
+            if (!Helpers_create_element || !Helpers_get_icon_svg || !Helpers_escape_html || !Helpers_get_current_iso_datetime_utc || !Helpers_load_css || !Helpers_sanitize_and_linkify_html || !Helpers_add_protocol_if_missing) {
                  console.error("ReqAudit: One or more Helper functions are missing!"); all_assigned = false;
             }
         } else { console.error("ReqAudit: Helpers module is missing!"); all_assigned = false; }
@@ -147,15 +147,19 @@ export const RequirementAuditComponent = (function () {
         }
     
         if (elementToFocus && typeof elementToFocus.focus === 'function') {
-            elementToFocus.focus();
-            if (last_focused_element_info.selectionStart !== null &&
-                typeof elementToFocus.setSelectionRange === 'function') {
-                try {
-                    elementToFocus.setSelectionRange(last_focused_element_info.selectionStart, last_focused_element_info.selectionEnd);
-                } catch (e) { /* Ignorera fel om det inte går */ }
-            }
+            setTimeout(() => {
+                elementToFocus.focus();
+                if (last_focused_element_info.selectionStart !== null &&
+                    typeof elementToFocus.setSelectionRange === 'function') {
+                    try {
+                        elementToFocus.setSelectionRange(last_focused_element_info.selectionStart, last_focused_element_info.selectionEnd);
+                    } catch (e) { /* Ignorera fel om det inte går */ }
+                }
+                last_focused_element_info = null;
+            }, 0);
+        } else {
+            last_focused_element_info = null;
         }
-        last_focused_element_info = null;
      }
     function handle_checks_container_click(event) { 
         const target_button = event.target.closest('button[data-action]');
@@ -687,14 +691,15 @@ export const RequirementAuditComponent = (function () {
                         });
                         if (!is_audit_locked) {
                             observation_textarea.addEventListener('input', () => debounced_auto_save_pc_observation(check_definition.id, pc_def.id));
-                            if (window.Helpers?.init_auto_resize_for_textarea) {
-                                window.Helpers.init_auto_resize_for_textarea(observation_textarea);
-                            }
                         }
                     }
                     
                     observation_textarea.value = pc_data_for_view.observationDetail || '';
                     observation_textarea.readOnly = is_audit_locked;
+                    
+                    if (window.Helpers?.init_auto_resize_for_textarea) {
+                        window.Helpers.init_auto_resize_for_textarea(observation_textarea);
+                    }
                     
                     observation_detail_wrapper.appendChild(observation_textarea);
                     pc_item_li.appendChild(observation_detail_wrapper);
@@ -768,9 +773,9 @@ export const RequirementAuditComponent = (function () {
         sample_context_text_element_ref = Helpers_create_element('p', { style: 'font-weight: 500; color: var(--text-color-muted); margin-bottom: 0.3rem; margin-top: 0;' });
         requirement_title_element_ref = Helpers_create_element('h1');
         standard_reference_element_ref = Helpers_create_element('p', { class_name: 'standard-reference' });
-        audited_page_link_element_ref = Helpers_create_element('p', { class_name: 'audited-page-link' }); // SKAPA NYA ELEMENTET
+        audited_page_link_element_ref = Helpers_create_element('p', { class_name: 'audited-page-link' });
         requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display' });
-        header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, audited_page_link_element_ref, requirement_status_display_element); // LÄGG TILL I DOM
+        header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, audited_page_link_element_ref, requirement_status_display_element);
         plate_element_ref.appendChild(header_div_ref);
     
         expected_observation_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
@@ -795,14 +800,12 @@ export const RequirementAuditComponent = (function () {
         let label1 = Helpers_create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
         comment_to_auditor_input = Helpers_create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
         comment_to_auditor_input.addEventListener('input', debounced_auto_save_comments);
-        if (window.Helpers?.init_auto_resize_for_textarea) { window.Helpers.init_auto_resize_for_textarea(comment_to_auditor_input); }
         fg1.append(label1, comment_to_auditor_input);
     
         let fg2 = Helpers_create_element('div', { class_name: 'form-group' });
         let label2 = Helpers_create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
         comment_to_actor_input = Helpers_create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
         comment_to_actor_input.addEventListener('input', debounced_auto_save_comments);
-        if (window.Helpers?.init_auto_resize_for_textarea) { window.Helpers.init_auto_resize_for_textarea(comment_to_actor_input); }
         fg2.append(label2, comment_to_actor_input);
     
         input_fields_container_ref.append(fg1, fg2);
@@ -862,7 +865,6 @@ export const RequirementAuditComponent = (function () {
             }
         }
 
-        // --- Logik för den nya länken ---
         audited_page_link_element_ref.innerHTML = '';
         if (current_sample_object_from_store.url) {
             const label_strong = Helpers_create_element('strong', {
@@ -871,14 +873,13 @@ export const RequirementAuditComponent = (function () {
             audited_page_link_element_ref.appendChild(label_strong);
             audited_page_link_element_ref.appendChild(document.createTextNode(' '));
         
-            // Vi hämtar texten som redan skapats för rubriken
             const actor_name = current_global_state_for_render.auditMetadata?.actorName || '';
             const sample_description = current_sample_object_from_store?.description || '';
             const context_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
         
             const safe_url = Helpers_add_protocol_if_missing(current_sample_object_from_store.url);
             const link = Helpers_create_element('a', {
-                text_content: context_text, // DENNA RAD ÄR NU ÄNDRAD
+                text_content: context_text,
                 attributes: { href: safe_url, target: '_blank', rel: 'noopener noreferrer' }
             });
             audited_page_link_element_ref.appendChild(link);
@@ -925,6 +926,14 @@ export const RequirementAuditComponent = (function () {
         
         comment_to_auditor_input.value = result_for_render.commentToAuditor || '';
         comment_to_actor_input.value = result_for_render.commentToActor || '';
+        
+        // *** HÄR ÄR DEN KRITISKA ÄNDRINGEN ***
+        // Anropa storleksjusteringen EFTER att .value har satts.
+        if (window.Helpers?.init_auto_resize_for_textarea) {
+            window.Helpers.init_auto_resize_for_textarea(comment_to_auditor_input);
+            window.Helpers.init_auto_resize_for_textarea(comment_to_actor_input);
+        }
+
         [comment_to_auditor_input, comment_to_actor_input].forEach(input => {
             input.readOnly = is_audit_locked_for_render;
             input.classList.toggle('readonly-textarea', is_audit_locked_for_render);
@@ -970,7 +979,7 @@ export const RequirementAuditComponent = (function () {
         plate_element_ref = null; header_div_ref = null; requirement_title_element_ref = null;
         sample_context_text_element_ref = null;
         standard_reference_element_ref = null; 
-        audited_page_link_element_ref = null; // Rensa nya referensen
+        audited_page_link_element_ref = null;
         requirement_status_display_element = null;
         checks_ui_container_element = null; 
         comment_to_auditor_input = null; comment_to_actor_input = null; 
@@ -993,4 +1002,4 @@ export const RequirementAuditComponent = (function () {
         destroy
     };
     
-    })();
+})();

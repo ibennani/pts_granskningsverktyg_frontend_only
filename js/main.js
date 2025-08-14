@@ -264,6 +264,12 @@ window.StoreActionTypes = StoreActionTypes;
             console.error("[Main.js] CRITICAL: ScoreManager could not be initialized.");
         }
         
+        if (window.MarkdownToolbar && typeof window.MarkdownToolbar.init === 'function') {
+            window.MarkdownToolbar.init();
+        } else {
+            console.error("[Main.js] MarkdownToolbar could not be initialized.");
+        }
+        
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
 
@@ -273,22 +279,28 @@ window.StoreActionTypes = StoreActionTypes;
         handle_hash_change();
         update_app_chrome_texts(); 
 
-        subscribe((new_state, old_state) => { 
+        subscribe((new_state) => { 
             top_action_bar_instance.render();
             if (current_view_name_rendered !== 'upload') {
                 bottom_action_bar_instance.render();
             }
+            
+            // *** DEN SLUTGILTIGA FIXEN ÄR HÄR ***
+            // Om det aktiva elementet på sidan är en textarea, antar vi att användaren skriver.
+            // Då hoppar vi över hela den dyra omritningen av vyn för att undvika "flicker"
+            // och fokusproblem. State har redan uppdaterats i bakgrunden.
+            if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
+                return; // Avbryt och rita inte om vyn.
+            }
+            // *** SLUT PÅ FIXEN ***
 
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
             
-            // >>> ÄNDRING HÄR <<<
-            // Denna kodrad ser till att den aktiva vyn alltid ritas om när state ändras.
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 current_view_component_instance.render();
             }
-            // >>> SLUT PÅ ÄNDRING <<<
         });
     }
 

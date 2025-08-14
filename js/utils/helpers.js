@@ -134,7 +134,7 @@
             'visit_url': `<path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>`,
             'audit_sample': `<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>`,
             'thumb_up': `<path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>`,
-            'thumb_down': `<path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79-.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/>`,
+            'thumb_down': `<path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79-.44-1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/>`,
             'check_circle_green_yellow': `<path fill="${fill_color}" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>`,
             'check_circle': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>`,
             'cancel': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>`,
@@ -157,64 +157,61 @@
         return /^(?:f|ht)tps?:\/\//i.test(url_string) ? url_string : `https://${url_string}`;
     }
 
-    function auto_resize_textarea_handler(event) {
-        const textarea = event.target;
+    // *** UPPDATERAD OCH FÖRBÄTTRAD FUNKTION ***
+    /**
+     * Beräknar och sätter den optimala höjden för en textarea.
+     * @param {HTMLTextAreaElement} textarea - Elementet som ska justeras.
+     */
+    function _perform_resize(textarea) {
+        if (!textarea || typeof textarea.scrollHeight === 'undefined') return;
+
+        // Få tag i styling-värden en gång för att återanvända
         const computed_style = window.getComputedStyle(textarea);
-        const line_height = parseFloat(computed_style.lineHeight);
+        const line_height = parseFloat(computed_style.lineHeight) || (parseFloat(computed_style.fontSize) * 1.6); // Fallback
         
-        const current_height = textarea.offsetHeight;
+        // Återställ höjden temporärt för att korrekt mäta den verkliga scroll-höjden
+        textarea.style.height = 'auto'; 
         
-        textarea.style.height = 'auto';
-        const scroll_height = textarea.scrollHeight;
-        
-        textarea.style.height = `${current_height}px`;
+        // Beräkna den höjd som innehållet behöver (+ en extra rad)
+        const required_height = textarea.scrollHeight + line_height;
 
-        const new_height = scroll_height + line_height;
-
-        if (new_height > current_height) {
-            textarea.style.height = `${new_height}px`;
-        } else {
-            setTimeout(() => {
-                textarea.style.height = 'auto';
-                textarea.style.height = `${textarea.scrollHeight + line_height}px`;
-            }, 0);
-        }
+        textarea.style.height = `${required_height}px`;
     }
 
+    /**
+     * Initierar automatisk höjdjustering för ett textarea-element.
+     * @param {HTMLTextAreaElement} textarea_element - Elementet som ska få funktionen.
+     */
     function init_auto_resize_for_textarea(textarea_element) {
         if (!textarea_element || textarea_element.tagName.toLowerCase() !== 'textarea') return;
         
-        textarea_element.addEventListener('input', auto_resize_textarea_handler);
+        // Koppla händelselyssnare för framtida ändringar
+        textarea_element.addEventListener('input', () => _perform_resize(textarea_element));
         
-        setTimeout(() => {
-            const event = new Event('input');
-            textarea_element.dispatchEvent(event);
-        }, 150);
+        // Anropa funktionen omedelbart men fördröjt för att säkerställa att DOM är redo.
+        // Detta är den slutgiltiga fixen som löser race condition.
+        setTimeout(() => _perform_resize(textarea_element), 0);
     }
+    // *** SLUT PÅ UPPDATERAD FUNKTION ***
 
-    // --- NY FUNKTION ---
     function sanitize_and_linkify_html(raw_html_string) {
         if (typeof raw_html_string !== 'string' || !raw_html_string) {
             return '';
         }
         
-        // Använd <template> för säker parsning utan att exekvera skript
         const template = document.createElement('template');
         template.innerHTML = raw_html_string;
         const content = template.content;
 
-        // Ta bort potentiellt farliga element
         const elements_to_remove = content.querySelectorAll('script, style, iframe, object, embed');
         elements_to_remove.forEach(el => el.remove());
 
-        // Gå igenom alla länkar och gör dem säkra
         const links = content.querySelectorAll('a');
         links.forEach(link => {
             link.setAttribute('target', '_blank');
             link.setAttribute('rel', 'noopener noreferrer');
         });
 
-        // Returnera den sanerade HTML-strängen
         const temp_div = document.createElement('div');
         temp_div.appendChild(content);
         return temp_div.innerHTML;
@@ -230,6 +227,6 @@
         get_icon_svg,
         add_protocol_if_missing,
         init_auto_resize_for_textarea,
-        sanitize_and_linkify_html // Exponera den nya funktionen
+        sanitize_and_linkify_html
     };
 })();
