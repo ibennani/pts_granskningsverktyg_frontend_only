@@ -3,7 +3,6 @@
 (function () { // IIFE för att undvika globala konflikter
     'use-strict';
 
-    // Definiera en global placeholder om den inte redan finns
     window.MarkdownToolbar = window.MarkdownToolbar || {};
 
     const CSS_PATH = 'css/features/markdown_toolbar.css';
@@ -11,7 +10,6 @@
     let initialized = false;
     let observer = null;
     
-    // Använder en Map för att hålla reda på varje textrutas unika tillstånd
     const instanceMap = new Map();
 
     /**
@@ -50,8 +48,7 @@
     }
 
     /**
-     * Bearbetar en enskild textarea: skapar en wrapper, verktygsrad, och förhandsgranskning.
-     * @param {HTMLTextAreaElement} textarea - Textrutan som ska bearbetas.
+     * Bearbetar en enskild textarea.
      */
     function processTextarea(textarea) {
         if (textarea.closest('.markdown-editor-wrapper')) {
@@ -97,10 +94,7 @@
     }
 
     /**
-     * Skapar verktygsraden med alla knappar och händelselyssnare.
-     * @param {HTMLTextAreaElement} textarea - Textrutan som verktygsraden tillhör.
-     * @param {boolean} isPreviewInitiallyVisible - Om förhandsgranskningen ska vara synlig från start.
-     * @returns {HTMLElement} - Det färdiga verktygsrads-elementet.
+     * Skapar verktygsraden.
      */
     function createToolbar(textarea, isPreviewInitiallyVisible) {
         const t = window.Translation.t;
@@ -168,9 +162,9 @@
         return toolbar;
     }
 
-    // *** UPPDATERAD FUNKTION ***
+    // *** HELT OMSKRIVEN OCH SMARTARE FUNKTION ***
     /**
-     * Applicerar Markdown-formatering på den markerade texten, med "toggle" och "replace"-logik för listor.
+     * Applicerar eller tar bort Markdown-formatering på den markerade texten.
      * @param {HTMLTextAreaElement} textarea - Mål-textrutan.
      * @param {string} format - Vilken formatering som ska appliceras.
      */
@@ -178,61 +172,88 @@
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const selectedText = textarea.value.substring(start, end);
+        
+        const linePrefixFormats = {
+            'heading': { prefix: '## ', regex: /^\s*##\s+/ },
+            'ul': { prefix: '- ', regex: /^\s*([*+-])\s+/ },
+            'ol': { prefix: '1. ', regex: /^\s*([0-9]+)\.\s+/ }
+        };
+
+        const wrapperFormats = {
+            'bold': { wrapper: '**' },
+            'italic': { wrapper: '*' },
+            'code': { wrapper: '`' },
+            'link': { wrapper: '[', suffix: '](url)' }
+        };
+
         let replacement = selectedText;
 
-        const bulletListRegex = /^\s*([*+-])\s+/;
-        const numberedListRegex = /^\s*([0-9]+)\.\s+/;
-
-        if (format === 'ul' || format === 'ol') {
+        if (linePrefixFormats[format]) {
+            // Logik för format som appliceras i början av varje rad (listor, rubriker)
             const lines = selectedText.split('\n');
             const nonEmptyLines = lines.filter(line => line.trim() !== '');
             if (nonEmptyLines.length === 0) {
                 textarea.focus();
-                return; // Gör ingenting om bara tomma rader är markerade
+                return;
             }
 
-            const targetRegex = (format === 'ul') ? bulletListRegex : numberedListRegex;
-            const isAlreadyFormatted = nonEmptyLines.every(line => targetRegex.test(line));
+            const formatInfo = linePrefixFormats[format];
+            const isAlreadyFormatted = nonEmptyLines.every(line => formatInfo.regex.test(line));
 
             if (isAlreadyFormatted) {
                 // Ta bort formatering
-                replacement = lines.map(line => line.replace(targetRegex, '')).join('\n');
+                replacement = lines.map(line => line.replace(formatInfo.regex, '')).join('\n');
             } else {
                 // Lägg till eller byt formatering
                 let counter = 1;
                 replacement = lines.map(line => {
                     if (line.trim() === '') return line;
-                    // Ta bort ALLA befintliga listmarkörer först
-                    const strippedLine = line.replace(bulletListRegex, '').replace(numberedListRegex, '');
+                    // Ta bort ALLA befintliga list/rubrik-markörer först för att kunna byta
+                    let strippedLine = line;
+                    Object.values(linePrefixFormats).forEach(info => {
+                        strippedLine = strippedLine.replace(info.regex, '');
+                    });
+                    
                     if (format === 'ol') {
                         return `${counter++}. ${strippedLine}`;
-                    } else { // format === 'ul'
-                        return `- ${strippedLine}`;
+                    } else {
+                        return `${formatInfo.prefix}${strippedLine}`;
                     }
                 }).join('\n');
             }
-        } else if (format === 'heading') {
-            // Rubrik är ett specialfall av radprefix
-            if (selectedText.startsWith('## ')) {
-                replacement = selectedText.substring(3);
-            } else {
-                replacement = `## ${selectedText}`;
+
+        } else if (wrapperFormats[format]) {
+            // Logik för format som omsluter text (fet, kursiv, etc.)
+            const formatInfo = wrapperFormats[format];
+            const wrapper = formatInfo.wrapper;
+            
+            // Kontrollera om texten redan är omsluten
+            const textBefore = textarea.value.substring(start - wrapper.length, start);
+            const textAfter = textarea.value.substring(end, end + wrapper.length);
+
+            if (textBefore === wrapper && textAfter === wrapper) {
+                // Ta bort befintlig formatering
+                const fullText = textarea.value;
+                replacement = fullText.substring(0, start - wrapper.length) + selectedText + fullText.substring(end + wrapper.length);
+                textarea.value = replacement;
+                textarea.setSelectionRange(start - wrapper.length, end - wrapper.length);
+                textarea.focus();
+                textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                return;
             }
-        } else {
-            // Logik för att omsluta text (bold, italic, etc.) med smart trimning
+
+            // Annars, lägg till formatering med smart trimning
             const leadingSpace = selectedText.match(/^\s*/)?.[0] || '';
             const trailingSpace = selectedText.match(/\s*$/)?.[0] || '';
             const trimmedText = selectedText.trim();
-
+            
             if (trimmedText === '') {
                 textarea.focus();
                 textarea.setSelectionRange(start, end);
                 return;
             }
             
-            const wrappers = { 'bold': '**', 'italic': '*', 'code': '`', 'link': '[' };
-            const wrapper = wrappers[format];
-            const formattedText = `${wrapper}${trimmedText}${wrapper === '[' ? '](url)' : wrapper}`;
+            const formattedText = `${wrapper}${trimmedText}${formatInfo.suffix || wrapper}`;
             replacement = `${leadingSpace}${formattedText}${trailingSpace}`;
         }
         
@@ -243,8 +264,6 @@
 
     /**
      * Uppdaterar förhandsgranskningens innehåll.
-     * @param {HTMLTextAreaElement} textarea - Käll-textrutan.
-     * @param {HTMLElement} previewDiv - Mål-diven för förhandsgranskningen.
      */
     function updatePreview(textarea, previewDiv) {
         if (typeof marked === 'undefined') {
@@ -272,9 +291,6 @@
     
     /**
      * Debounce-funktion.
-     * @param {Function} func - Funktionen att anropa.
-     * @param {number} delay - Fördröjning i ms.
-     * @returns {Function} - Den debouncade funktionen.
      */
     function debounce(func, delay) {
         let timeout;
