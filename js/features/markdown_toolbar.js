@@ -78,14 +78,12 @@
         wrapper.appendChild(textarea);
         wrapper.appendChild(previewDiv);
 
-        // *** Återinför debouncedUpdate ***
         instanceMap.set(textarea.id, {
             previewVisible: wasPreviewVisible,
             previewDiv: previewDiv,
             debouncedUpdate: debounce(() => updatePreview(textarea, previewDiv), DEBOUNCE_DELAY_MS)
         });
 
-        // *** Återinför input-lyssnaren ***
         textarea.addEventListener('input', () => {
             const instance = instanceMap.get(textarea.id);
             if (instance && instance.previewVisible) {
@@ -170,8 +168,9 @@
         return toolbar;
     }
 
+    // *** UPPDATERAD FUNKTION ***
     /**
-     * Applicerar Markdown-formatering på den markerade texten.
+     * Applicerar Markdown-formatering på den markerade texten, med "toggle" och "replace"-logik för listor.
      * @param {HTMLTextAreaElement} textarea - Mål-textrutan.
      * @param {string} format - Vilken formatering som ska appliceras.
      */
@@ -181,25 +180,56 @@
         const selectedText = textarea.value.substring(start, end);
         let replacement = selectedText;
 
-        const linePrefixFormats = { 'heading': '## ', 'ul': '- ' };
-        if (linePrefixFormats[format] || format === 'ol') {
+        const bulletListRegex = /^\s*([*+-])\s+/;
+        const numberedListRegex = /^\s*([0-9]+)\.\s+/;
+
+        if (format === 'ul' || format === 'ol') {
             const lines = selectedText.split('\n');
-            let counter = 1;
-            const formattedLines = lines.map(line => {
-                if (line.trim() === '') return line;
-                if (format === 'ol') return `${counter++}. ${line}`;
-                return linePrefixFormats[format] + line;
-            });
-            replacement = formattedLines.join('\n');
+            const nonEmptyLines = lines.filter(line => line.trim() !== '');
+            if (nonEmptyLines.length === 0) {
+                textarea.focus();
+                return; // Gör ingenting om bara tomma rader är markerade
+            }
+
+            const targetRegex = (format === 'ul') ? bulletListRegex : numberedListRegex;
+            const isAlreadyFormatted = nonEmptyLines.every(line => targetRegex.test(line));
+
+            if (isAlreadyFormatted) {
+                // Ta bort formatering
+                replacement = lines.map(line => line.replace(targetRegex, '')).join('\n');
+            } else {
+                // Lägg till eller byt formatering
+                let counter = 1;
+                replacement = lines.map(line => {
+                    if (line.trim() === '') return line;
+                    // Ta bort ALLA befintliga listmarkörer först
+                    const strippedLine = line.replace(bulletListRegex, '').replace(numberedListRegex, '');
+                    if (format === 'ol') {
+                        return `${counter++}. ${strippedLine}`;
+                    } else { // format === 'ul'
+                        return `- ${strippedLine}`;
+                    }
+                }).join('\n');
+            }
+        } else if (format === 'heading') {
+            // Rubrik är ett specialfall av radprefix
+            if (selectedText.startsWith('## ')) {
+                replacement = selectedText.substring(3);
+            } else {
+                replacement = `## ${selectedText}`;
+            }
         } else {
+            // Logik för att omsluta text (bold, italic, etc.) med smart trimning
             const leadingSpace = selectedText.match(/^\s*/)?.[0] || '';
             const trailingSpace = selectedText.match(/\s*$/)?.[0] || '';
             const trimmedText = selectedText.trim();
+
             if (trimmedText === '') {
                 textarea.focus();
                 textarea.setSelectionRange(start, end);
                 return;
             }
+            
             const wrappers = { 'bold': '**', 'italic': '*', 'code': '`', 'link': '[' };
             const wrapper = wrappers[format];
             const formattedText = `${wrapper}${trimmedText}${wrapper === '[' ? '](url)' : wrapper}`;
