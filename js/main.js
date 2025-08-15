@@ -88,7 +88,6 @@ window.StoreActionTypes = StoreActionTypes;
         );
     }
     
-    // NY FUNKTION för att sätta initialt tema
     function set_initial_theme() {
         const saved_theme = localStorage.getItem('theme_preference');
         if (saved_theme) {
@@ -236,7 +235,7 @@ window.StoreActionTypes = StoreActionTypes;
     }
     
     async function init_app() { 
-        set_initial_theme(); // Sätt temat FÖRE något annat renderas
+        set_initial_theme();
         
         const t_init = get_t_fallback();
 
@@ -284,15 +283,11 @@ window.StoreActionTypes = StoreActionTypes;
             if (current_view_name_rendered !== 'upload') {
                 bottom_action_bar_instance.render();
             }
-            
-            // *** DEN SLUTGILTIGA FIXEN ÄR HÄR ***
-            // Om det aktiva elementet på sidan är en textarea, antar vi att användaren skriver.
-            // Då hoppar vi över hela den dyra omritningen av vyn för att undvika "flicker"
-            // och fokusproblem. State har redan uppdaterats i bakgrunden.
+
+            // *** DEN SLUTGILTIGA FIXEN ÅTERINFÖRS HÄR ***
             if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
                 return; // Avbryt och rita inte om vyn.
             }
-            // *** SLUT PÅ FIXEN ***
 
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');

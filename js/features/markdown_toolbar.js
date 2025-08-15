@@ -11,14 +11,11 @@
     let initialized = false;
     let observer = null;
     
-    // Använder en Map för att hålla reda på varje textrutas unika tillstånd (t.ex. om förhandsgranskning är synlig)
+    // Använder en Map för att hålla reda på varje textrutas unika tillstånd
     const instanceMap = new Map();
 
     /**
      * Huvudfunktion för att initiera modulen.
-     * Denna funktion ska anropas en gång från main.js.
-     * Den hittar alla befintliga textrutor och startar en MutationObserver
-     * för att hitta textrutor som läggs till dynamiskt i DOM.
      */
     function init() {
         if (initialized) {
@@ -26,25 +23,20 @@
             return;
         }
 
-        // Ladda den tillhörande CSS-filen dynamiskt med hjälp av befintlig hjälpfunktion
         if (window.Helpers && window.Helpers.load_css) {
             window.Helpers.load_css(CSS_PATH).catch(err => console.error(err));
         }
 
-        // Bearbeta alla textrutor som redan finns på sidan vid initiering
         document.querySelectorAll('textarea').forEach(processTextarea);
 
-        // Skapa och starta en MutationObserver för att upptäcka nya textrutor som läggs till i DOM
         observer = new MutationObserver((mutationsList) => {
             for (const mutation of mutationsList) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
-                            // Om noden själv är en textarea
                             if (node.matches('textarea')) {
                                 processTextarea(node);
                             }
-                            // Sök efter textrutor inuti den tillagda noden
                             node.querySelectorAll('textarea').forEach(processTextarea);
                         }
                     });
@@ -62,17 +54,14 @@
      * @param {HTMLTextAreaElement} textarea - Textrutan som ska bearbetas.
      */
     function processTextarea(textarea) {
-        // Hoppa över om denna textarea redan har en verktygsrad (säkerhetsåtgärd)
         if (textarea.closest('.markdown-editor-wrapper')) {
             return;
         }
         
-        // Ge textrutan ett unikt ID om den inte redan har ett. Detta är viktigt för ARIA och för att spåra instanser.
         if (!textarea.id) {
             textarea.id = `md-editor-${window.Helpers.generate_uuid_v4()}`;
         }
 
-        // Hämta det tidigare sparade tillståndet för denna textarea (om det finns) innan vi bygger om DOM.
         const existingInstance = instanceMap.get(textarea.id);
         const wasPreviewVisible = existingInstance ? existingInstance.previewVisible : false;
 
@@ -82,23 +71,28 @@
         const toolbar = createToolbar(textarea, wasPreviewVisible);
         const previewDiv = document.createElement('div');
         previewDiv.className = 'md-preview';
-        
-        // Sätt initial synlighet baserat på det sparade tillståndet
         previewDiv.style.display = wasPreviewVisible ? 'block' : 'none';
 
-        // Flytta textrutan in i wrappern och lägg till de nya elementen
         textarea.parentNode.insertBefore(wrapper, textarea);
         wrapper.appendChild(toolbar);
         wrapper.appendChild(textarea);
         wrapper.appendChild(previewDiv);
 
-        // Spara (eller uppdatera) instansinformationen i vår Map, med det bevarade tillståndet
+        // *** Återinför debouncedUpdate ***
         instanceMap.set(textarea.id, {
             previewVisible: wasPreviewVisible,
-            previewDiv: previewDiv
+            previewDiv: previewDiv,
+            debouncedUpdate: debounce(() => updatePreview(textarea, previewDiv), DEBOUNCE_DELAY_MS)
         });
 
-        // Uppdatera förhandsgranskningen direkt om den var synlig
+        // *** Återinför input-lyssnaren ***
+        textarea.addEventListener('input', () => {
+            const instance = instanceMap.get(textarea.id);
+            if (instance && instance.previewVisible) {
+                instance.debouncedUpdate();
+            }
+        });
+
         if (wasPreviewVisible) {
             updatePreview(textarea, previewDiv);
         }
@@ -126,7 +120,7 @@
             { format: 'ul', icon: 'fa-list-ul', tooltipKey: 'md_tooltip_ul' },
             { format: 'ol', icon: 'fa-list-ol', tooltipKey: 'md_tooltip_ol' },
             { format: 'link', icon: 'fa-link', tooltipKey: 'md_tooltip_link' },
-            { type: 'spacer' }, // Flexibel separator för att trycka nästa knapp till höger
+            { type: 'spacer' },
             { format: 'preview', icon: 'fa-eye', tooltipKey: 'md_tooltip_preview' }
         ];
 
@@ -139,14 +133,12 @@
                 toolbar.appendChild(separator);
                 return;
             }
-
             if (btnConfig.type === 'spacer') {
                 const spacer = document.createElement('div');
                 spacer.style.flexGrow = '1';
                 toolbar.appendChild(spacer);
                 return;
             }
-            
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'md-toolbar-btn';
@@ -155,7 +147,6 @@
             button.innerHTML = `<i class="fa-solid ${btnConfig.icon}" aria-hidden="true"></i>`;
 
             if (btnConfig.format === 'preview') {
-                // Sätt initialt ARIA-tillstånd korrekt
                 button.setAttribute('aria-pressed', String(isPreviewInitiallyVisible));
                 button.addEventListener('click', () => {
                     const instance = instanceMap.get(textarea.id);
@@ -170,21 +161,19 @@
                 });
             } else {
                 button.addEventListener('click', (e) => {
-                    e.preventDefault(); // Förhindra eventuellt formulär-submit
+                    e.preventDefault();
                     applyFormat(textarea, btnConfig.format);
                 });
             }
-
             toolbar.appendChild(button);
         });
-
         return toolbar;
     }
 
     /**
-     * Applicerar Markdown-formatering på den markerade texten i en textruta.
+     * Applicerar Markdown-formatering på den markerade texten.
      * @param {HTMLTextAreaElement} textarea - Mål-textrutan.
-     * @param {string} format - Vilken formatering som ska appliceras ('bold', 'italic', etc.).
+     * @param {string} format - Vilken formatering som ska appliceras.
      */
     function applyFormat(textarea, format) {
         const start = textarea.selectionStart;
@@ -192,48 +181,27 @@
         const selectedText = textarea.value.substring(start, end);
         let replacement = selectedText;
 
-        const linePrefixFormats = {
-            'heading': '## ',
-            'ul': '- ',
-        };
-        
+        const linePrefixFormats = { 'heading': '## ', 'ul': '- ' };
         if (linePrefixFormats[format] || format === 'ol') {
-            // Logik för listor och rubriker (rad-för-rad)
             const lines = selectedText.split('\n');
             let counter = 1;
             const formattedLines = lines.map(line => {
                 if (line.trim() === '') return line;
-                if (format === 'ol') {
-                    return `${counter++}. ${line}`;
-                }
+                if (format === 'ol') return `${counter++}. ${line}`;
                 return linePrefixFormats[format] + line;
             });
             replacement = formattedLines.join('\n');
         } else {
-            // Logik för att omsluta text (bold, italic, etc.)
-            const leadingSpaceMatch = selectedText.match(/^\s*/);
-            const trailingSpaceMatch = selectedText.match(/\s*$/);
-            
-            const leadingSpace = leadingSpaceMatch ? leadingSpaceMatch[0] : '';
-            const trailingSpace = trailingSpaceMatch ? trailingSpaceMatch[0] : '';
-            
+            const leadingSpace = selectedText.match(/^\s*/)?.[0] || '';
+            const trailingSpace = selectedText.match(/\s*$/)?.[0] || '';
             const trimmedText = selectedText.trim();
-
-            // Om markeringen bara består av mellanslag, gör ingenting.
             if (trimmedText === '') {
                 textarea.focus();
                 textarea.setSelectionRange(start, end);
-                return; // Avsluta funktionen
+                return;
             }
-
-            const wrappers = {
-                'bold': '**',
-                'italic': '*',
-                'code': '`',
-                'link': '[',
-            };
+            const wrappers = { 'bold': '**', 'italic': '*', 'code': '`', 'link': '[' };
             const wrapper = wrappers[format];
-
             const formattedText = `${wrapper}${trimmedText}${wrapper === '[' ? '](url)' : wrapper}`;
             replacement = `${leadingSpace}${formattedText}${trailingSpace}`;
         }
@@ -243,9 +211,8 @@
         textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
     }
 
-    // *** UPPDATERAD FUNKTION ***
     /**
-     * Uppdaterar förhandsgranskningens innehåll genom att konvertera Markdown till HTML.
+     * Uppdaterar förhandsgranskningens innehåll.
      * @param {HTMLTextAreaElement} textarea - Käll-textrutan.
      * @param {HTMLElement} previewDiv - Mål-diven för förhandsgranskningen.
      */
@@ -254,32 +221,19 @@
             previewDiv.innerHTML = '<p style="color: red;">Error: marked.js library not loaded.</p>';
             return;
         }
-
         let markdownText = textarea.value;
-
-        // Förbehandling: Hitta slutet på listor och lägg till en extra nyrad om det behövs.
         const listEndRegex = /(^(\s*(\*|\-|\+)\s|[0-9]+\.\s).*\n)(?!\s*(\*|\-|\+)\s|[0-9]+\.\s|\s*$)/gm;
         markdownText = markdownText.replace(listEndRegex, '$1\n');
         
-        // Skapa en anpassad renderer för att hantera länkar
         const renderer = new marked.Renderer();
-        // Spara en referens till den ursprungliga länk-funktionen
         const originalLinkRenderer = renderer.link.bind(renderer);
-        // Skriv över länk-funktionen med vår anpassade version
         renderer.link = (href, title, text) => {
-            // Anropa den ursprungliga funktionen för att få standard-HTML
             const link = originalLinkRenderer(href, title, text);
-            // Modifiera den för att lägga till säkra attribut
             return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
         };
 
         try {
-            // Konvertera och rendera med de nya GFM-inställningarna
-            previewDiv.innerHTML = marked.parse(markdownText, {
-                breaks: true,
-                gfm: true,
-                renderer: renderer
-            });
+            previewDiv.innerHTML = marked.parse(markdownText, { breaks: true, gfm: true, renderer: renderer });
         } catch (error) {
             console.error("Error parsing Markdown:", error);
             previewDiv.innerHTML = `<p style="color: red;">Error rendering preview. Check console for details.</p>`;
@@ -287,10 +241,10 @@
     }
     
     /**
-     * En klassisk debounce-funktion.
-     * @param {Function} func - Funktionen som ska anropas efter fördröjningen.
-     * @param {number} delay - Fördröjning i millisekunder.
-     * @returns {Function} - Den "debouncade" funktionen.
+     * Debounce-funktion.
+     * @param {Function} func - Funktionen att anropa.
+     * @param {number} delay - Fördröjning i ms.
+     * @returns {Function} - Den debouncade funktionen.
      */
     function debounce(func, delay) {
         let timeout;
@@ -301,7 +255,7 @@
         };
     }
     
-    // Exponera init-funktionen globalt så att main.js kan anropa den
+    // Exponera init-funktionen globalt
     window.MarkdownToolbar.init = init;
 
 })();
