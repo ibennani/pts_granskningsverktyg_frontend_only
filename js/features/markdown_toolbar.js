@@ -162,7 +162,6 @@
         return toolbar;
     }
 
-    // *** HELT OMSKRIVEN OCH SMARTARE FUNKTION ***
     /**
      * Applicerar eller tar bort Markdown-formatering på den markerade texten.
      * @param {HTMLTextAreaElement} textarea - Mål-textrutan.
@@ -186,40 +185,54 @@
             'link': { wrapper: '[', suffix: '](url)' }
         };
 
-        let replacement = selectedText;
-
         if (linePrefixFormats[format]) {
             // Logik för format som appliceras i början av varje rad (listor, rubriker)
             const lines = selectedText.split('\n');
             const nonEmptyLines = lines.filter(line => line.trim() !== '');
-            if (nonEmptyLines.length === 0) {
-                textarea.focus();
-                return;
-            }
-
-            const formatInfo = linePrefixFormats[format];
-            const isAlreadyFormatted = nonEmptyLines.every(line => formatInfo.regex.test(line));
-
-            if (isAlreadyFormatted) {
-                // Ta bort formatering
-                replacement = lines.map(line => line.replace(formatInfo.regex, '')).join('\n');
-            } else {
-                // Lägg till eller byt formatering
-                let counter = 1;
-                replacement = lines.map(line => {
-                    if (line.trim() === '') return line;
-                    // Ta bort ALLA befintliga list/rubrik-markörer först för att kunna byta
-                    let strippedLine = line;
-                    Object.values(linePrefixFormats).forEach(info => {
+            if (nonEmptyLines.length === 0 && start === end) {
+                // Om ingen text är markerad, applicera på hela raden
+                let lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
+                let lineEnd = textarea.value.indexOf('\n', end);
+                if (lineEnd === -1) lineEnd = textarea.value.length;
+                
+                const lineText = textarea.value.substring(lineStart, lineEnd);
+                const formatInfo = linePrefixFormats[format];
+                
+                if (formatInfo.regex.test(lineText)) {
+                    // Ta bort formatering
+                    const replacement = lineText.replace(formatInfo.regex, '');
+                    textarea.setRangeText(replacement, lineStart, lineEnd, 'end');
+                } else {
+                    // Lägg till formatering
+                    let strippedLine = lineText;
+                     Object.values(linePrefixFormats).forEach(info => {
                         strippedLine = strippedLine.replace(info.regex, '');
                     });
-                    
-                    if (format === 'ol') {
-                        return `${counter++}. ${strippedLine}`;
-                    } else {
+                    const replacement = `${formatInfo.prefix}${strippedLine}`;
+                    textarea.setRangeText(replacement, lineStart, lineEnd, 'end');
+                }
+            } else {
+                 // Samma logik som tidigare för markerad text
+                const formatInfo = linePrefixFormats[format];
+                const isAlreadyFormatted = nonEmptyLines.every(line => formatInfo.regex.test(line));
+                let replacement;
+
+                if (isAlreadyFormatted) {
+                    replacement = lines.map(line => line.replace(formatInfo.regex, '')).join('\n');
+                } else {
+                    let counter = 1;
+                    replacement = lines.map(line => {
+                        if (line.trim() === '') return line;
+                        let strippedLine = line;
+                        Object.values(linePrefixFormats).forEach(info => {
+                            strippedLine = strippedLine.replace(info.regex, '');
+                        });
+                        
+                        if (format === 'ol') return `${counter++}. ${strippedLine}`;
                         return `${formatInfo.prefix}${strippedLine}`;
-                    }
-                }).join('\n');
+                    }).join('\n');
+                }
+                textarea.setRangeText(replacement, start, end, 'select');
             }
 
         } else if (wrapperFormats[format]) {
@@ -227,40 +240,43 @@
             const formatInfo = wrapperFormats[format];
             const wrapper = formatInfo.wrapper;
             
-            // Kontrollera om texten redan är omsluten
             const textBefore = textarea.value.substring(start - wrapper.length, start);
             const textAfter = textarea.value.substring(end, end + wrapper.length);
 
+            // FALL 1: Texten är redan omsluten (t.ex. användaren markerade 'ord' i '**ord**')
             if (textBefore === wrapper && textAfter === wrapper) {
-                // Ta bort befintlig formatering
-                const fullText = textarea.value;
-                replacement = fullText.substring(0, start - wrapper.length) + selectedText + fullText.substring(end + wrapper.length);
-                textarea.value = replacement;
-                textarea.setSelectionRange(start - wrapper.length, end - wrapper.length);
-                textarea.focus();
-                textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                return;
+                textarea.setRangeText(selectedText, start - wrapper.length, end + wrapper.length, 'select');
+            } 
+            // FALL 2: Markeringen INNEHÅLLER omslutningen (t.ex. användaren markerade '**ord**')
+            else if (selectedText.startsWith(wrapper) && selectedText.endsWith(wrapper)) {
+                const unwrappedText = selectedText.substring(wrapper.length, selectedText.length - wrapper.length);
+                textarea.setRangeText(unwrappedText, start, end, 'select');
+            } 
+            // FALL 3: Texten är omarkerad och ska formateras
+            else {
+                const leadingSpace = selectedText.match(/^\s*/)?.[0] || '';
+                const trailingSpace = selectedText.match(/\s*$/)?.[0] || '';
+                const trimmedText = selectedText.trim();
+                
+                if (trimmedText === '' && format !== 'link') {
+                    // Om ingen text är markerad, infoga bara tecknen och placera markören i mitten
+                    textarea.setRangeText(`${wrapper}${wrapper}`, start, end, 'end');
+                    textarea.setSelectionRange(start + wrapper.length, start + wrapper.length);
+                    textarea.focus();
+                    textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+                    return; // Avsluta här för detta specialfall
+                }
+                
+                const formattedText = `${wrapper}${trimmedText}${formatInfo.suffix || wrapper}`;
+                const replacement = `${leadingSpace}${formattedText}${trailingSpace}`;
+                textarea.setRangeText(replacement, start, end, 'select');
             }
-
-            // Annars, lägg till formatering med smart trimning
-            const leadingSpace = selectedText.match(/^\s*/)?.[0] || '';
-            const trailingSpace = selectedText.match(/\s*$/)?.[0] || '';
-            const trimmedText = selectedText.trim();
-            
-            if (trimmedText === '') {
-                textarea.focus();
-                textarea.setSelectionRange(start, end);
-                return;
-            }
-            
-            const formattedText = `${wrapper}${trimmedText}${formatInfo.suffix || wrapper}`;
-            replacement = `${leadingSpace}${formattedText}${trailingSpace}`;
         }
         
-        textarea.setRangeText(replacement, start, end, 'select');
         textarea.focus();
         textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
     }
+
 
     /**
      * Uppdaterar förhandsgranskningens innehåll.
