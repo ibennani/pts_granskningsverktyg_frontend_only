@@ -89,6 +89,34 @@ function assign_globals_once() {
     } else { console.error("ReqAudit: AuditLogic module is missing!"); all_assigned = false; }
     return all_assigned;
  }
+
+ function _sync_dom_to_internal_state() {
+    if (!current_requirement_result_for_view || !plate_element_ref) return;
+
+    // Synkronisera de allmänna kommentarerna
+    if (comment_to_auditor_input) {
+        current_requirement_result_for_view.commentToAuditor = comment_to_auditor_input.value;
+    }
+    if (comment_to_actor_input) {
+        current_requirement_result_for_view.commentToActor = comment_to_actor_input.value;
+    }
+
+    // Synkronisera alla synliga observationsfält för godkännandekriterier
+    const all_pc_textareas = plate_element_ref.querySelectorAll('.pc-observation-detail-textarea');
+    all_pc_textareas.forEach(textarea => {
+        const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = textarea.closest('.check-item[data-check-id]');
+        if (pc_item && check_item) {
+            const check_id = check_item.dataset.checkId;
+            const pc_id = pc_item.dataset.pcId;
+            
+            if (current_requirement_result_for_view.checkResults?.[check_id]?.passCriteria?.[pc_id]) {
+                current_requirement_result_for_view.checkResults[check_id].passCriteria[pc_id].observationDetail = textarea.value;
+            }
+        }
+    });
+}
+
 function save_focus_state() { 
     const activeEl = document.activeElement;
     if (activeEl && activeEl !== document.body) {
@@ -378,6 +406,7 @@ function auto_save_pc_observation_detail(check_id, pc_id) {
 }
 
 function handle_check_overall_status_change(check_id, new_overall_status_for_check_button_click) { 
+    _sync_dom_to_internal_state(); // <-- LÄGG TILL DENNA RAD
     const t = get_t_internally();
     save_focus_state(); 
     if (!current_requirement_result_for_view?.checkResults?.[check_id] || !current_requirement_object_from_store) {
@@ -421,7 +450,8 @@ function handle_check_overall_status_change(check_id, new_overall_status_for_che
     });
  }
 
-function handle_pass_criterion_status_change(check_id, pc_id, new_pc_status) { 
+ function handle_pass_criterion_status_change(check_id, pc_id, new_pc_status) { 
+    _sync_dom_to_internal_state(); // <-- UPPDATERAD RAD (ersätter den gamla fixen)
     const t = get_t_internally();
     save_focus_state(); 
     if (!current_requirement_result_for_view?.checkResults?.[check_id]?.passCriteria || !current_requirement_object_from_store) {
@@ -451,22 +481,17 @@ function handle_pass_criterion_status_change(check_id, pc_id, new_pc_status) {
         check_result_to_modify.passCriteria[pc_id].status = new_pc_status;
     }
 
-    // *** NY LOGIK STARTAR HÄR ***
-    // Om kriteriet blir underkänt OCH dess observationsfält är tomt...
     if (check_result_to_modify.passCriteria[pc_id].status === 'failed' && 
         (!check_result_to_modify.passCriteria[pc_id].observationDetail || check_result_to_modify.passCriteria[pc_id].observationDetail.trim() === '')) {
         
-        // ...hämta då malltexten från regelfilen.
         const check_definition = current_requirement_object_from_store.checks.find(c => c.id === check_id);
         if (check_definition && check_definition.passCriteria) {
             const pc_definition = check_definition.passCriteria.find(pc => pc.id === pc_id);
             if (pc_definition && pc_definition.failureStatementTemplate) {
-                // Fyll i textfältet i vårt state-objekt med malltexten.
                 check_result_to_modify.passCriteria[pc_id].observationDetail = pc_definition.failureStatementTemplate;
             }
         }
     }
-    // *** NY LOGIK SLUTAR HÄR ***
     
     const check_definition = current_requirement_object_from_store.checks.find(c => c.id === check_id);
     if (check_definition && AuditLogic_calculate_check_status) {
@@ -479,7 +504,7 @@ function handle_pass_criterion_status_change(check_id, pc_id, new_pc_status) {
     }
     if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
     
-    if (!local_StoreActionTypes?.UPDATE_REQUIREMENT_RESULT) { /* ... felhantering ... */ return; }
+    if (!local_StoreActionTypes?.UPDATE_REQUIREMENT_RESULT) { if(NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for update result is missing.", "error"); return; }
     local_dispatch({
         type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
         payload: { sampleId: params_ref.sampleId, requirementId: params_ref.requirementId, newRequirementResult: modified_result_for_dispatch }
@@ -981,6 +1006,7 @@ async function render() {
     
     _populateDOMWithData();
 }
+
 
 function destroy() { 
     clearTimeout(debounceTimerComments); 
