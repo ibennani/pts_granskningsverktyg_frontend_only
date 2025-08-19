@@ -33,7 +33,11 @@
     --font-family-base: var(--font-family-sans-serif);
     --font-size-base: 1rem;
     --line-height-base: 1.6;
+    
+    /* Gammal fokusfärg, behålls om den används någonstans */
     --focus-ring-color: rgba(42, 157, 143, 0.4);
+    /* NY, NEUTRAL FOKUSFÄRG FÖR HYBRID-METODEN */
+    --focus-ring-color-outer: #007bff; /* En neutral, högkontrast-blå för ljust tema */
 
     --container-max-width: 1080px;
     --spacing-unit: 1rem;
@@ -103,7 +107,11 @@
     --input-background-color: #324247;
 
     --border-color: #6fa6a1;
+    
+    /* Gammal fokusfärg */
     --focus-ring-color: rgba(54, 226, 213, 0.4);
+    /* NY, NEUTRAL FOKUSFÄRG FÖR HYBRID-METODEN */
+    --focus-ring-color-outer: #4dabf7; /* En ljusare blå för mörkt tema */
 
     --button-default-bg: #37474f;
     --button-default-text: var(--text-color);
@@ -282,7 +290,7 @@ a:hover, a:focus {
 }
 
 .button-warning {
-    background-color: var(--warning-color);
+    background-color: var(--button-warning-bg);
     color: var(--button-warning-text);
 }
 .button-warning:hover, .button-warning:focus {
@@ -397,41 +405,65 @@ textarea.form-control, textarea {
     padding-left: 0;
 }
 
-:focus-visible {
-    outline: 3px solid var(--primary-color);
-    outline-offset: 2px;
-}
 /* --- FIX HÄR: Ta bort fokusmarkering för tabindex="-1" --- */
 [tabindex="-1"]:focus-visible,
 [tabindex="-1"]:focus {
     outline: none;
 }
 /* --- SLUT PÅ FIX --- */
-.button:focus,
-.form-control:focus,
-input[type="text"]:focus,
-input[type="url"]:focus,
-input[type="email"]:focus,
-textarea:focus,
-select:focus {
-    outline: none;
+
+/* BORTTAGET GAMMALT FOKUS-BLOCK */
+
+/* --- NYA, FÖRBÄTTRADE FOKUS-STILAR (HYBRIDMETODEN) --- */
+
+/* Steg A: Ta bort webbläsarens standard-outline för alla element som vi stylar själva. */
+:focus-visible {
+  outline: none;
 }
-.button:focus-visible,
+
+/* Steg B: Generell fokusstil för de flesta element (formulärfält, länkar etc.) */
+/* Den inre ringen använder den primära temafärgen. */
+a:focus-visible,
 .form-control:focus-visible,
 input[type="text"]:focus-visible,
 input[type="url"]:focus-visible,
 input[type="email"]:focus-visible,
 textarea:focus-visible,
-select:focus-visible {
-    border-color: var(--primary-color) !important;
-    outline: 2px solid var(--primary-color) !important;
-    outline-offset: 1px !important;
-    box-shadow: 0 0 0 0.2rem var(--focus-ring-color) !important;
+select:focus-visible,
+.button-default:focus-visible,
+.button-secondary:focus-visible {
+    box-shadow: 0 0 0 2px var(--primary-color), 0 0 0 4px var(--focus-ring-color-outer);
 }
+
+/* Steg C: Specifika fokusstilar för färgade knappar. */
+/* Den inre ringen matchar knappens specifika färg. */
+.button-primary:focus-visible {
+    box-shadow: 0 0 0 2px var(--button-primary-bg), 0 0 0 4px var(--focus-ring-color-outer);
+}
+.button-accent:focus-visible {
+    box-shadow: 0 0 0 2px var(--button-accent-bg), 0 0 0 4px var(--focus-ring-color-outer);
+}
+.button-success:focus-visible {
+    box-shadow: 0 0 0 2px var(--button-success-bg), 0 0 0 4px var(--focus-ring-color-outer);
+}
+.button-danger:focus-visible {
+    box-shadow: 0 0 0 2px var(--button-danger-bg), 0 0 0 4px var(--focus-ring-color-outer);
+}
+.button-warning:focus-visible {
+    box-shadow: 0 0 0 2px var(--button-warning-bg), 0 0 0 4px var(--focus-ring-color-outer);
+}
+.button-info:focus-visible {
+    box-shadow: 0 0 0 2px var(--button-info-bg), 0 0 0 4px var(--focus-ring-color-outer);
+}
+
+/* Steg D: Specialregel för checkboxes, där vi applicerar skuggan på etiketten. */
 .form-check-input:focus-visible + .form-check-label {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+    border-radius: var(--border-radius); /* Säkerställer att skuggan blir snyggt rundad */
+    box-shadow: 0 0 0 2px var(--primary-color), 0 0 0 4px var(--focus-ring-color-outer);
 }
+
+/* --- SLUT PÅ NYA FOKUS-STILAR --- */
+
 
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
