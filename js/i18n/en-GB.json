@@ -240,5 +240,13 @@
   "md_tooltip_ul": "Create a bulleted list",
   "md_tooltip_ol": "Create a numbered list",
   "md_tooltip_link": "Insert link",
-  "md_tooltip_preview": "Toggle preview"
+  "md_tooltip_preview": "Toggle preview",
+  "app_title_suffix": "Audit Tool",
+  "audit_requirement_title": "Audit Requirement",
+  "edit_prefix": "Edit",
+  "enter_metadata_title": "Enter Metadata",
+  "manage_samples_title": "Manage Samples",
+  "requirement_list_title_suffix": "Requirement List",
+  "start_or_load_audit_title": "Start or Load Audit",
+  "view_prefix": "View"
 }

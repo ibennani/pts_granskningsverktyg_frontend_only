@@ -36,7 +36,6 @@ window.StoreActionTypes = StoreActionTypes;
     let current_view_name_rendered = null;
     let current_view_params_rendered_json = "{}"; 
     
-    // Skapa två separata instanser av komponenten från factoryn
     const top_action_bar_instance = GlobalActionBarComponentFactory();
     const bottom_action_bar_instance = GlobalActionBarComponentFactory();
 
@@ -54,13 +53,60 @@ window.StoreActionTypes = StoreActionTypes;
             };
     }
 
+    // --- NY CENTRAL FUNKTION FÖR ATT UPPDATERA SIDTITELN ---
+    function updatePageTitle(viewName, params = {}) {
+        const t = get_t_fallback();
+        const title_suffix = ` | ${t('app_title_suffix', { defaultValue: 'Granskningsverktyget' })}`;
+        let title_prefix = t('app_title'); // En säker fallback
+        const current_state = getState();
+
+        try {
+            switch (viewName) {
+                case 'upload':
+                    title_prefix = t('start_or_load_audit_title', { defaultValue: 'Starta eller ladda granskning' });
+                    break;
+                case 'metadata':
+                    title_prefix = t('enter_metadata_title', { defaultValue: 'Ange metadata' });
+                    break;
+                case 'sample_management':
+                    title_prefix = t('manage_samples_title', { defaultValue: 'Hantera stickprov' });
+                    break;
+                case 'audit_overview':
+                    title_prefix = t('audit_overview_title');
+                    break;
+                case 'requirement_list':
+                    // --- ÄNDRING HÄR ---
+                    // Tar bort logiken som hämtade stickprovets namn och visar enbart den statiska titeln.
+                    title_prefix = t('requirement_list_title_suffix', { defaultValue: 'Kravlista' });
+                    break;
+                case 'requirement_audit':
+                    const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
+                    const requirementTitle = requirement?.title;
+                    const prefix = (current_state?.auditStatus === 'locked') ? t('view_prefix', { defaultValue: 'Visa' }) : t('edit_prefix', { defaultValue: 'Redigera' });
+                    if (requirementTitle) {
+                        title_prefix = `${prefix} ${requirementTitle}`;
+                    } else {
+                        title_prefix = t('audit_requirement_title', { defaultValue: 'Granska krav' });
+                    }
+                    break;
+                default:
+                    // Använder den generella fallbacken
+                    break;
+            }
+        } catch (e) {
+            console.error("Error building page title:", e);
+            // Faller tillbaka till den säkra titeln
+        }
+        
+        document.title = `${title_prefix}${title_suffix}`;
+    }
+
     function update_app_chrome_texts() {
         const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
         }
-        document.title = t('app_title');
         
         if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') {
             top_action_bar_instance.render();
@@ -129,11 +175,15 @@ window.StoreActionTypes = StoreActionTypes;
         }, 100); 
     }
 
+    // --- UPPDATERAD FUNKTION ---
     async function render_view(view_name_to_render, params_to_render = {}) {
         const t = get_t_fallback();
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html
             : (s) => s; 
+
+        // Anropa den nya centrala funktionen varje gång en vy ska ritas om
+        updatePageTitle(view_name_to_render, params_to_render);
 
         top_action_bar_instance.render();
         if (view_name_to_render !== 'upload') {
@@ -227,8 +277,13 @@ window.StoreActionTypes = StoreActionTypes;
         render_view(target_view, target_params);
     }
 
+    // --- UPPDATERAD FUNKTION ---
     function on_language_changed_event() { 
         update_app_chrome_texts();
+
+        // Anropa den centrala titelfunktionen för att översätta den nuvarande titeln
+        updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
+
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             current_view_component_instance.render();
         }
@@ -247,6 +302,7 @@ window.StoreActionTypes = StoreActionTypes;
             return;
         }
         
+        // Sätt initial titel här, innan första vyn renderas
         document.title = get_t_fallback()('app_title');
 
         if (window.NotificationComponent && typeof window.NotificationComponent.init === 'function') {
@@ -278,15 +334,18 @@ window.StoreActionTypes = StoreActionTypes;
         handle_hash_change();
         update_app_chrome_texts(); 
 
+        // --- UPPDATERAD FUNKTION ---
         subscribe((new_state) => { 
             top_action_bar_instance.render();
             if (current_view_name_rendered !== 'upload') {
                 bottom_action_bar_instance.render();
             }
 
-            // *** DEN SLUTGILTIGA FIXEN ÅTERINFÖRS HÄR ***
+            // Anropa den centrala titelfunktionen för att fånga upp dataförändringar
+            updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
+
             if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
-                return; // Avbryt och rita inte om vyn.
+                return;
             }
 
             const hash = window.location.hash.substring(1);

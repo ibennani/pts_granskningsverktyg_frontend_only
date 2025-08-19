@@ -240,5 +240,13 @@
   "md_tooltip_ul": "Skapa en punktlista",
   "md_tooltip_ol": "Skapa en numrerad lista",
   "md_tooltip_link": "Infoga länk",
-  "md_tooltip_preview": "Växla förhandsgranskning"
+  "md_tooltip_preview": "Växla förhandsgranskning",
+  "app_title_suffix": "Granskningsverktyget",
+  "audit_requirement_title": "Granska krav",
+  "edit_prefix": "Redigera",
+  "enter_metadata_title": "Ange metadata",
+  "manage_samples_title": "Hantera stickprov",
+  "requirement_list_title_suffix": "Kravlista",
+  "start_or_load_audit_title": "Starta eller ladda granskning",
+  "view_prefix": "Visa"
 }
