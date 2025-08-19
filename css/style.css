@@ -412,17 +412,15 @@ textarea.form-control, textarea {
 }
 /* --- SLUT PÅ FIX --- */
 
-/* BORTTAGET GAMMALT FOKUS-BLOCK */
+/* --- NYA, FÖRBÄTTRADE FOKUS-STILAR (HYBRIDMETODEN MED 2PX MELLANRUM) --- */
 
-/* --- NYA, FÖRBÄTTRADE FOKUS-STILAR (HYBRIDMETODEN) --- */
-
-/* Steg A: Ta bort webbläsarens standard-outline för alla element som vi stylar själva. */
+/* Steg A: Ta bort webbläsarens standard-outline. */
 :focus-visible {
   outline: none;
 }
 
-/* Steg B: Generell fokusstil för de flesta element (formulärfält, länkar etc.) */
-/* Den inre ringen använder den primära temafärgen. */
+/* Steg B: Generell fokusstil för de flesta element. */
+/* 1:a skuggan är en 2px lucka. 2:a är den inre ringen. 3:e är den yttre. */
 a:focus-visible,
 .form-control:focus-visible,
 input[type="text"]:focus-visible,
@@ -432,34 +430,33 @@ textarea:focus-visible,
 select:focus-visible,
 .button-default:focus-visible,
 .button-secondary:focus-visible {
-    box-shadow: 0 0 0 2px var(--primary-color), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--primary-color), 0 0 0 6px var(--focus-ring-color-outer);
 }
 
 /* Steg C: Specifika fokusstilar för färgade knappar. */
-/* Den inre ringen matchar knappens specifika färg. */
 .button-primary:focus-visible {
-    box-shadow: 0 0 0 2px var(--button-primary-bg), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-primary-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 .button-accent:focus-visible {
-    box-shadow: 0 0 0 2px var(--button-accent-bg), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-accent-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 .button-success:focus-visible {
-    box-shadow: 0 0 0 2px var(--button-success-bg), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-success-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 .button-danger:focus-visible {
-    box-shadow: 0 0 0 2px var(--button-danger-bg), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-danger-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 .button-warning:focus-visible {
-    box-shadow: 0 0 0 2px var(--button-warning-bg), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-warning-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 .button-info:focus-visible {
-    box-shadow: 0 0 0 2px var(--button-info-bg), 0 0 0 4px var(--focus-ring-color-outer);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-info-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 
-/* Steg D: Specialregel för checkboxes, där vi applicerar skuggan på etiketten. */
+/* Steg D: Specialregel för checkboxes. */
 .form-check-input:focus-visible + .form-check-label {
-    border-radius: var(--border-radius); /* Säkerställer att skuggan blir snyggt rundad */
-    box-shadow: 0 0 0 2px var(--primary-color), 0 0 0 4px var(--focus-ring-color-outer);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--primary-color), 0 0 0 6px var(--focus-ring-color-outer);
 }
 
 /* --- SLUT PÅ NYA FOKUS-STILAR --- */

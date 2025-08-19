@@ -329,7 +329,7 @@
 /* STATE 2: Aktivt (valt) - Solid stil + den befintliga ramen */
 .condition-actions .button-small.active,
 .pass-criterion-actions .button-small.active {
-    outline: 2px solid var(--primary-color);
+/*    outline: 2px solid var(--primary-color);
     outline-offset: 2px;
     /* Säkerställ solid stil ifall hover-stilen skulle störa */
     background-color: var(--success-color);
