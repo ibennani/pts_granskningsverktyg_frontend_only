@@ -219,7 +219,7 @@
   "no_actions_available": "No actions are available at the moment",
   "no_audit_metadata_available": "No audit metadata is available at the moment",
   "version_rulefile": "Rulefile version",
-  "pc_observation_detail_label": "Provide a more detailed description of the observation. Why did you choose to fail this?",
+  "pc_observation_detail_label": "Describe the observation, specifying where and how it is deficient.",
   "pc_observation_detail_label_export": "Observation Details (for failed criteria)",
   "search_in_help_texts_label": "Search in help texts:",
   "filter_by_status_label": "Filter by status",

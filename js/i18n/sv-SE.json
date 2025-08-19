@@ -219,7 +219,7 @@
   "no_actions_available": "Inga åtger är möjliga för tillfället",
   "no_audit_metadata_available": "Ingen granskningsinformation finns att visa just nu",
   "version_rulefile": "Regelfilens version",
-  "pc_observation_detail_label": "Beskriv observationen lite mer detaljerat. Varför valde du att underkänna detta?",
+  "pc_observation_detail_label": "Beskriv observationen, ange var och hur det brister",
   "pc_observation_detail_label_export": "Beskrivning av observerad brist",
   "search_in_help_texts_label": "Sök i hjälptexter:",
   "filter_by_status_label": "Filtrera på status",
