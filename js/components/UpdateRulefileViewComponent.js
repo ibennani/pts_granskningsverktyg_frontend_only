@@ -1,4 +1,4 @@
-// js/components/UpdateRulefileViewComponent.js
+import { RulefileUpdaterLogic } from '../logic/rulefile_updater_logic.js';
 
 export const UpdateRulefileViewComponent = (function () {
     'use-strict';
@@ -85,17 +85,18 @@ export const UpdateRulefileViewComponent = (function () {
         }
     }
 
+
+    // js/components/UpdateRulefileViewComponent.js
+
     function handle_new_rule_file_upload(event) {
         const t = get_t_internally();
         const file = event.target.files[0];
         if (!file) return;
 
-        if (file.type !== "application/json") {
-            NotificationComponent_show_global_message(t('error_file_must_be_json'), 'error');
-            return;
-        }
+        // ... (resten av funktionen är densamma som i mitt förra svar) ...
 
         const reader = new FileReader();
+
         reader.onload = function (e) {
             try {
                 const new_rule_file_content = JSON.parse(e.target.result);
@@ -106,26 +107,31 @@ export const UpdateRulefileViewComponent = (function () {
                     return;
                 }
 
-                // Kör avstämningslogiken
-                const current_audit_state = local_getState();
-                const { reconciled_state, report } = RulefileUpdaterLogic_reconcile(current_audit_state, new_rule_file_content);
+                // Anropa den importerade funktionen direkt!
+                const { reconciled_state, report } = RulefileUpdaterLogic.reconcile_audit_with_new_rule_file(local_getState(), new_rule_file_content);
 
-                // Dispatcha det nya, uppdaterade tillståndet
                 local_dispatch({
                     type: local_StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE,
                     payload: reconciled_state
                 });
                 
-                // Spara rapporten för att visa i nästa steg och rendera om
-                plate_element_ref.dataset.report = JSON.stringify(report);
+                if (plate_element_ref) {
+                    plate_element_ref.dataset.report = JSON.stringify(report);
+                }
                 current_step = VIEW_STEPS.REPORT;
                 render();
 
             } catch (error) {
-                console.error("Error processing new rule file:", error);
-                NotificationComponent_show_global_message(t('rule_file_invalid_json'), 'error');
+                console.error("DETALJERAT FEL VID UPPDATERING AV REGELFIL:", error);
+                const detailed_error_message = `${t('rule_file_invalid_json')}. Teknisk detalj: ${error.message}`;
+                NotificationComponent_show_global_message(detailed_error_message, 'error');
+            } finally {
+                if (event.target) {
+                    event.target.value = '';
+                }
             }
         };
+        
         reader.readAsText(file);
     }
     
