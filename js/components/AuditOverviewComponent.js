@@ -1,7 +1,6 @@
 // file: js/components/AuditOverviewComponent.js
 import { SampleListComponent } from './SampleListComponent.js';
 import { AddSampleFormComponent } from './AddSampleFormComponent.js';
-// SaveAuditButtonComponent-importen tas bort
 import { VardetalProgressBarComponent } from './VardetalProgressBarComponent.js';
 
 const AuditOverviewComponent_internal = (function () {
@@ -22,7 +21,6 @@ const AuditOverviewComponent_internal = (function () {
     let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
     let AuditLogic_calculate_overall_audit_progress;
 
-    // --- BORTTAGNA REFERENSER TILL VARDETALCALCULATOR HÄRIFRÅN ---
     let vardetal_progress_bar_component_instance = null;
     let vardetal_progress_bar_container_element = null;
 
@@ -100,8 +98,6 @@ const AuditOverviewComponent_internal = (function () {
             console.error("AuditOverview: AuditLogic.calculate_overall_audit_progress is missing!");
             all_assigned_check = false;
         }
-
-        // --- BORTTAGET: VardetalCalculator-beroenden tas bort från denna komponent ---
 
         return all_assigned_check;
     }
@@ -415,14 +411,12 @@ const AuditOverviewComponent_internal = (function () {
             overall_progress_section.appendChild(overall_progress_bar);
             plate_element.appendChild(overall_progress_section);
 
-            // --- Sektion för Värdetal Progress Bar ---
             const vardetal_section = Helpers_create_element('section', { class_name: 'audit-overview-section vardetal-progress-section' });
             if (vardetal_progress_bar_container_element && vardetal_progress_bar_component_instance?.render) {
                 vardetal_progress_bar_container_element.innerHTML = '';
                 vardetal_section.appendChild(vardetal_progress_bar_container_element);
                 const vardetal_value_from_state = current_global_state.auditCalculations?.currentVardetal;
-                console.log("[AuditOverview RENDER] Vardetal från state för progressbar:", vardetal_value_from_state);
-
+                
                 vardetal_progress_bar_component_instance.render(
                     (vardetal_value_from_state !== null && vardetal_value_from_state !== undefined) ? vardetal_value_from_state : 0,
                     500,
@@ -453,7 +447,7 @@ const AuditOverviewComponent_internal = (function () {
         }
         info_grid.appendChild(create_info_item('auditor_name', md.auditorName));
         info_grid.appendChild(create_info_item('rule_file_title', rf_meta.title));
-        info_grid.appendChild(create_info_item('version_rulefile', rf_meta.version)); // Bättre translation key!
+        info_grid.appendChild(create_info_item('version_rulefile', rf_meta.version));
         info_grid.appendChild(create_info_item('status', t(`audit_status_${current_global_state.auditStatus}`)));
         if (Helpers_format_iso_to_local_datetime) {
             info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime)));
@@ -513,6 +507,7 @@ const AuditOverviewComponent_internal = (function () {
         toggle_add_sample_form(is_add_sample_form_visible,
             is_add_sample_form_visible && add_sample_form_component_instance ? add_sample_form_component_instance.current_editing_sample_id : null);
 
+        // *** UPPDATERAD ACTION-SEKTION ***
         const section3 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         section3.appendChild(Helpers_create_element('h2', { text_content: t('audit_actions_title') }));
         const actions_div = Helpers_create_element('div', { class_name: 'audit-overview-actions' });
@@ -520,6 +515,15 @@ const AuditOverviewComponent_internal = (function () {
         const right_actions_group = Helpers_create_element('div', { class_name: 'action-group-right' });
 
         if (current_global_state.auditStatus === 'in_progress') {
+            // Ny knapp för att uppdatera regelfil (längst till vänster)
+            const update_rulefile_btn = Helpers_create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t('update_rulefile_button', {defaultValue: "Update Rule File"})}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('update', ['currentColor'], 18) : '') // Behöver en 'update'-ikon
+            });
+            update_rulefile_btn.addEventListener('click', () => router_ref('update_rulefile'));
+            left_actions_group.appendChild(update_rulefile_btn);
+
+            // "Lås"-knappen flyttas längst till höger
             const lock_btn = Helpers_create_element('button', {
                 class_name: ['button', 'button-warning'],
                 html_content: `<span>${t('lock_audit')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('lock_audit', ['currentColor'], 18) : '')
@@ -527,6 +531,7 @@ const AuditOverviewComponent_internal = (function () {
             lock_btn.addEventListener('click', handle_lock_audit);
             right_actions_group.appendChild(lock_btn);
         }
+
         if (current_global_state.auditStatus === 'locked') {
             const unlock_btn = Helpers_create_element('button', {
                 class_name: ['button', 'button-secondary'],
@@ -595,15 +600,10 @@ const AuditOverviewComponent_internal = (function () {
             return;
         }
         
-        // --- BORTTAGET: Logiken för att räkna ut Värdetalet tas bort härifrån ---
-        // ScoreManager hanterar nu detta globalt.
-    
         if (document.body.contains(app_container_ref)) {
             render();
         }
     }
-
-    // --- BORTTAGET: Hela funktionen `handle_store_update_for_vardetal_ui` är raderad ---
 
     return { init, render, destroy };
 })();

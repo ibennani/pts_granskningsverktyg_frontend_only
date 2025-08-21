@@ -41,13 +41,14 @@
     color: var(--text-color-muted);
 }
 
-/* KORRIGERAD SEKTION */
+/* *** UPPDATERAD SEKTION FÖR ATT HANTERA NY LAYOUT *** */
 .audit-overview-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem; /* Avstånd mellan vänster och höger grupp om de wrappar */
     justify-content: space-between; /* Sprid ut vänster och höger grupp */
     width: 100%; /* Se till att den tar full bredd för att space-between ska fungera */
+    align-items: center; /* Linjera knapparna vertikalt */
 }
 
 .audit-overview-actions .action-group-left,
@@ -56,7 +57,6 @@
     flex-wrap: wrap;
     gap: 0.75rem; /* Avstånd mellan knappar INUTI varje grupp */
     align-items: center; /* Linjera knappar om de har olika höjd */
-    /* justify-content här är default (flex-start), vilket är bra för knappar i en grupp */
 }
 
 /* Ta bort margin-right från knappar inuti dessa grupper, då gap hanterar det */

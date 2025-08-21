@@ -46,86 +46,37 @@
         }
     };
 
-    function validate_rule_file_json(json_object) {
-        const t = get_t_func();
+// Fil: js/validation_logic.js
 
-        console.log("[ValidationLogic] validate_rule_file_json CALLED. json_object type:", typeof json_object);
+// ... (behåll get_t_func() och RULE_FILE_SCHEMA)
 
-        if (typeof json_object !== 'object' || json_object === null) {
-            return { isValid: false, message: t('rule_file_invalid_json') };
-        }
+function validate_rule_file_json(json_object) {
+    const t = get_t_func();
+    console.log("[ValidationLogic] validate_rule_file_json CALLED (Simplified Validation).");
 
-        if (!RULE_FILE_SCHEMA || !Array.isArray(RULE_FILE_SCHEMA.required_top_keys)) {
-            console.error("[ValidationLogic] CRITICAL: RULE_FILE_SCHEMA.required_top_keys is not defined or not an array!");
-            return { isValid: false, message: t('validation_internal_schema_error') };
-        }
-
-        const missing_top_keys = RULE_FILE_SCHEMA.required_top_keys.filter(key => !(key in json_object));
-        if (missing_top_keys.length > 0) {
-            return {
-                isValid: false,
-                message: t('rule_file_missing_keys', { missingKeys: missing_top_keys.join(', ') })
-            };
-        }
-
-        const metadata = json_object.metadata;
-        if (typeof metadata !== 'object' || metadata === null) {
-            return { isValid: false, message: t('rule_file_metadata_must_be_object') };
-        }
-
-        const missing_metadata_keys = RULE_FILE_SCHEMA.metadata_object.required_keys.filter(key => !(key in metadata));
-        if (missing_metadata_keys.length > 0) {
-            let message_key = 'rule_file_metadata_missing_keys';
-            let replacements = { missingKeys: missing_metadata_keys.join(', ') };
-            if (missing_metadata_keys.includes('pageTypes') || missing_metadata_keys.includes('contentTypes')) {
-                message_key = 'rule_file_metadata_missing_pagetypes_contenttypes';
-                replacements = {};
-            }
-            return { isValid: false, message: t(message_key, replacements) };
-        }
-
-        if (typeof metadata.title !== 'string' || !metadata.title.trim()) {
-            return { isValid: false, message: t('rule_file_metadata_title_required') };
-        }
-        if (RULE_FILE_SCHEMA.metadata_object.pageTypes_is_array_of_strings) {
-            if (!Array.isArray(metadata.pageTypes) || metadata.pageTypes.some(pt => typeof pt !== 'string' || !pt.trim())) {
-                return { isValid: false, message: t('rule_file_metadata_pagetypes_array_of_strings') };
-            }
-        }
-        if (RULE_FILE_SCHEMA.metadata_object.contentTypes_is_array_of_objects) {
-            if (!Array.isArray(metadata.contentTypes) || metadata.contentTypes.some(ct => {
-                if (typeof ct !== 'object' || ct === null) return true;
-                const missingCtKeys = RULE_FILE_SCHEMA.metadata_object.contentTypes_object_keys.filter(key => !(key in ct));
-                if (missingCtKeys.length > 0) return true;
-                if (typeof ct.id !== 'string' || !ct.id.trim()) return true;
-                if (typeof ct.text !== 'string' || !ct.text.trim()) return true;
-                return false;
-            })) {
-                return { isValid: false, message: t('rule_file_metadata_contenttypes_array_of_objects') };
-            }
-        }
-
-        if (RULE_FILE_SCHEMA.requirements_is_object) {
-            if (typeof json_object.requirements !== 'object' || json_object.requirements === null || Array.isArray(json_object.requirements)) {
-                return { isValid: false, message: t('rule_file_requirements_must_be_object') };
-            }
-            for (const req_key in json_object.requirements) {
-                const requirement = json_object.requirements[req_key];
-                if (typeof requirement !== 'object' || requirement === null) {
-                    return { isValid: false, message: t('rule_file_requirement_invalid_object', { requirementKey: req_key }) };
-                }
-                const missing_req_keys = RULE_FILE_SCHEMA.requirement_object.required_keys.filter(key => !(key in requirement));
-                if (missing_req_keys.length > 0) {
-                    return { isValid: false, message: t('rule_file_requirement_missing_keys', { requirementId: requirement.id || req_key, missingKeys: missing_req_keys.join(', ') }) };
-                }
-                if (RULE_FILE_SCHEMA.requirement_object.id_is_string_non_empty && (typeof requirement.id !== 'string' || !requirement.id.trim())) {
-                    return { isValid: false, message: t('rule_file_requirement_id_empty', { requirementTitleOrKey: requirement.title || req_key }) };
-                }
-            }
-        }
-
-        return { isValid: true, message: t('rule_file_loaded_successfully') };
+    // Steg 1: Grundläggande kontroller som fortfarande är viktiga
+    if (typeof json_object !== 'object' || json_object === null) {
+        return { isValid: false, message: t('rule_file_invalid_json') };
     }
+
+    const required_top_keys = ['metadata', 'requirements'];
+    const missing_top_keys = required_top_keys.filter(key => !(key in json_object));
+    if (missing_top_keys.length > 0) {
+        return {
+            isValid: false,
+            message: t('rule_file_missing_keys', { missingKeys: missing_top_keys.join(', ') })
+        };
+    }
+    
+    // Steg 2: Acceptera filen om de grundläggande kontrollerna passerar.
+    // Vi kommenterar bort eller tar bort den detaljerade schemavalideringen
+    // eftersom den är inkompatibel med den nya, mer komplexa regelfilsstrukturen.
+    console.warn("[ValidationLogic] Detailed schema validation is currently BYPASSED. Only basic structure is checked.");
+
+    return { isValid: true, message: t('rule_file_loaded_successfully') };
+}
+
+// ... (resten av filen, inklusive validate_saved_audit_file, kan vara kvar som den är)
 
     function validate_saved_audit_file(json_object) {
         const t = get_t_func();

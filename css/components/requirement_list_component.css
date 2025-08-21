@@ -201,14 +201,12 @@
     color: var(--danger-color);
 }
 
-/* --- FIX HÄR: Lägg till den saknade regeln --- */
 .status-icon-partially-audited::before {
     font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid";
     font-weight: 900; 
     content: "\f5c0"; /* fa-circle-half-stroke */
     color: var(--warning-color);
 }
-/* --- SLUT PÅ FIX --- */
 
 .status-icon-not-audited::before {
     font-family: "Font Awesome 6 Free", "Font Awesome 6 Regular"; /* Fallback om regular inte är i Free */
@@ -216,6 +214,20 @@
     content: "\f111"; /* fa-circle (regular) */
     color: var(--text-color-muted); 
 }
+
+/* *** NYA REGLER FÖR "UPPDATERAD"-STATUS *** */
+.status-icon-updated::before {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid";
+    font-weight: 900;
+    content: "\f01e"; /* fa-arrows-rotate (tidigare fa-sync-alt) */
+    color: var(--info-color); /* Använder info-färgen (blå) */
+}
+
+.requirements-list-content .status-text-updated {
+    color: var(--info-color);
+    font-weight: 500;
+}
+/* *** SLUT PÅ NYA REGLER *** */
 
 .requirements-list-content .requirement-checks-info {
     font-style: italic;

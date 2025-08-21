@@ -24,7 +24,8 @@ export const RequirementListComponent = (function () {
     let component_state = {
         filters: {
             searchText: '',
-            status: { passed: true, failed: true, partially_audited: true, not_audited: true }
+            // Initialvärdena sätts nu i toolbar-komponenten för att garantera att 'updated' finns med
+            status: {} 
         },
         sortBy: 'default'
     };
@@ -233,18 +234,39 @@ export const RequirementListComponent = (function () {
             header_div.appendChild(window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {}));
         }
 
-        // Filtrera och sortera kraven
+        // *** UPPDATERAD FILTERLOGIK ***
         const search_term = component_state.filters.searchText.toLowerCase();
         const filtered_requirements = all_relevant_requirements.filter(req => {
             const result = (current_sample_object.requirementResults || {})[req.key];
             const status = AuditLogic_calculate_requirement_status(req, result);
-            if (!component_state.filters.status[status]) return false;
+            const needs_review = result?.needsReview === true;
+
+            // Logik för att avgöra om kravet ska visas
+            let show = false;
+            if (component_state.filters.status.passed && status === 'passed') show = true;
+            if (component_state.filters.status.failed && status === 'failed') show = true;
+            if (component_state.filters.status.partially_audited && status === 'partially_audited') show = true;
+            if (component_state.filters.status.not_audited && status === 'not_audited') show = true;
+            if (component_state.filters.status.updated && needs_review) show = true; // Ny kontroll
+
+            if (!show) return false;
+
+            // Om sökterm finns, filtrera ytterligare
             if (search_term) {
-                const searchable_content = [req.expectedObservation, ...(Array.isArray(req.instructions) ? req.instructions.map(i => i.text) : [req.instructions]), ...(Array.isArray(req.tips) ? req.tips : [req.tips]), ...(Array.isArray(req.exceptions) ? req.exceptions : [req.exceptions]), ...(Array.isArray(req.commonErrors) ? req.commonErrors : [req.commonErrors]), req.standardReference?.text].filter(Boolean).join(' ').toLowerCase();
+                const searchable_content = [
+                    req.title,
+                    req.expectedObservation,
+                    ...(Array.isArray(req.instructions) ? req.instructions.map(i => i.text || i) : [req.instructions]),
+                    ...(Array.isArray(req.tips) ? req.tips : [req.tips]),
+                    ...(Array.isArray(req.exceptions) ? req.exceptions : [req.exceptions]),
+                    ...(Array.isArray(req.commonErrors) ? req.commonErrors : [req.commonErrors]),
+                    req.standardReference?.text
+                ].filter(Boolean).join(' ').toLowerCase();
                 if (!searchable_content.includes(search_term)) return false;
             }
             return true;
         });
+        // *** SLUT PÅ UPPDATERAD FILTERLOGIK ***
 
         const sorted_requirements = [...filtered_requirements];
         switch(component_state.sortBy) {
@@ -265,7 +287,7 @@ export const RequirementListComponent = (function () {
         // Rendera listan
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
-            content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_relevant_requirements_for_sample') }));
+            content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter', {defaultValue: "No requirements match the current filter."}) }));
         } else if (component_state.sortBy === 'default') {
             const requirements_by_category_map = {};
             sorted_requirements.forEach(req => {
@@ -327,6 +349,7 @@ export const RequirementListComponent = (function () {
         const t = get_t_internally();
         const req_result_object = (sample.requirementResults || {})[req.key];
         const status = AuditLogic_calculate_requirement_status(req, req_result_object);
+        const needs_review = req_result_object?.needsReview === true; // *** NY KONTROLL ***
 
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-row' });
@@ -344,14 +367,28 @@ export const RequirementListComponent = (function () {
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
         const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
 
-        let status_specific_class = `status-icon-${status.replace('_', '-')}`;
-        let status_icon_title = t(`audit_status_${status}`);
+        // *** NY LOGIK FÖR IKON OCH TEXT BASERAT PÅ needs_review ***
+        let status_icon_class, status_icon_title, status_text;
+        if (needs_review) {
+            status_icon_class = 'status-icon-updated'; // Ny CSS-klass för blå färg
+            status_icon_title = t('status_updated_needs_review', {defaultValue: "Updated, needs review"});
+            status_text = t('status_updated', {defaultValue: "Updated"});
+        } else {
+            status_icon_class = `status-icon-${status.replace('_', '-')}`;
+            status_icon_title = t(`audit_status_${status}`);
+            status_text = t(`audit_status_${status}`);
+        }
 
         const status_indicator_span_for_icon = Helpers_create_element('span', {
-           class_name: ['status-icon-indicator', status_specific_class].join(' '),
+           class_name: ['status-icon-indicator', status_icon_class],
            attributes: { 'aria-hidden': 'true', title: status_icon_title }
         });
-        status_indicator_wrapper.append(status_indicator_span_for_icon, ` ${t('audit_status_' + status)}`);
+        const status_text_span = Helpers_create_element('span', {
+            class_name: needs_review ? 'status-text-updated' : '', // Ny CSS-klass för blå text
+            text_content: ` ${status_text}`
+        });
+
+        status_indicator_wrapper.append(status_indicator_span_for_icon, status_text_span);
         details_row_div.appendChild(status_indicator_wrapper);
 
         const total_checks_count = req.checks?.length || 0;

@@ -1,24 +1,18 @@
 // js/components/SampleListComponent.js
 
-// Denna komponent får getState och dispatch via sin förälders init.
-
 const SampleListComponent_internal = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/sample_list_component.css';
     let list_container_ref;
-    let on_edit_callback; // Callback till förälder för att initiera redigering
-    let on_delete_callback; // Callback till förälder för att initiera radering
-    let router_ref_from_parent; // För navigering
+    let on_edit_callback; 
+    let on_delete_callback;
+    let router_ref_from_parent;
 
-    // Store-funktioner och ActionTypes - sätts via init från föräldern
     let local_getState;
-    // local_dispatch och local_StoreActionTypes behövs inte direkt här, då actions hanteras av föräldern.
-    // Men vi kan ta emot dem för framtida bruk eller om vi bestämmer oss för att dispatcha härifrån.
 
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_add_protocol_if_missing, Helpers_load_css;
-    // State_getCurrentAudit tas bort
     let AuditLogic_get_relevant_requirements_for_sample, AuditLogic_find_first_incomplete_requirement_key_for_sample, AuditLogic_calculate_requirement_status;
     
     let ul_element_for_delegation = null; 
@@ -56,9 +50,6 @@ const SampleListComponent_internal = (function () {
             }
         } else { console.error("SampleList: Helpers module is missing!"); all_assigned = false; }
 
-        // State_getCurrentAudit tas bort
-        // local_getState kommer från init
-
         if (window.AuditLogic) {
             AuditLogic_get_relevant_requirements_for_sample = window.AuditLogic.get_relevant_requirements_for_sample;
             AuditLogic_find_first_incomplete_requirement_key_for_sample = window.AuditLogic.find_first_incomplete_requirement_key_for_sample;
@@ -71,16 +62,12 @@ const SampleListComponent_internal = (function () {
     }
 
     function handle_list_click(event) {
-        // Denna funktion är i stort sett oförändrad, den anropar fortfarande callbacks.
-        // Föräldrakomponenten kommer att hantera dispatch.
         const t = get_t_internally();
         const target = event.target;
         
-        // Försök hämta state här om det behövs för att validera action
         const current_global_state = local_getState ? local_getState() : null; 
         if (!current_global_state) {
             console.warn("[SampleListComponent] handle_list_click: Could not get current state via local_getState.");
-            // Eventuellt visa ett felmeddelande för användaren här.
             return;
         }
 
@@ -135,22 +122,19 @@ const SampleListComponent_internal = (function () {
         }
     }
 
-    // Uppdaterad init
     async function init(
         _list_container, 
         _on_edit_cb, 
         _on_delete_cb, 
         _router_cb,
-        _getState // NYTT
-        // _dispatch och _StoreActionTypes kan läggas till om de behövs direkt här
+        _getState
     ) {
         assign_globals_once();
         list_container_ref = _list_container;
         on_edit_callback = _on_edit_cb;
         on_delete_callback = _on_delete_cb;
         router_ref_from_parent = _router_cb;
-
-        local_getState = _getState; // Spara getState-funktionen
+        local_getState = _getState;
 
         if (!local_getState) {
             console.error("[SampleListComponent] CRITICAL: getState function not passed correctly during init.");
@@ -171,7 +155,6 @@ const SampleListComponent_internal = (function () {
 
     function render() {
         assign_globals_once();
-        console.log("[SampleListComponent] Rendering. local_getState:", typeof local_getState);
         const t = get_t_internally();
 
         if (!list_container_ref || !t || !local_getState || !Helpers_create_element || !AuditLogic_get_relevant_requirements_for_sample || !AuditLogic_calculate_requirement_status) {
@@ -181,7 +164,7 @@ const SampleListComponent_internal = (function () {
         }
         list_container_ref.innerHTML = ''; 
 
-        const current_global_state = local_getState(); // Hämta aktuellt state från storen
+        const current_global_state = local_getState();
         if (!current_global_state || !current_global_state.ruleFileContent) {
              list_container_ref.textContent = t('error_audit_data_missing_for_list');
              return; 
@@ -211,7 +194,24 @@ const SampleListComponent_internal = (function () {
             });
             
             const info_div = Helpers_create_element('div', { class_name: 'sample-info' });
-            const desc_h3 = Helpers_create_element('h3', { text_content: sample.description || t('undefined_description', {defaultValue: "Undefined description"}) });
+            
+            // *** NY LOGIK för att kolla om stickprovet har krav som behöver ses över ***
+            let sample_needs_review = false;
+            if (sample.requirementResults) {
+                sample_needs_review = Object.values(sample.requirementResults).some(res => res.needsReview === true);
+            }
+
+            const desc_h3 = Helpers_create_element('h3');
+            if (sample_needs_review) {
+                const icon_span = Helpers_create_element('span', {
+                    style: 'margin-right: 0.5rem; color: var(--info-color);',
+                    attributes: { title: t('sample_has_updated_reqs_tooltip', {defaultValue: "This sample has updated requirements that need re-review."}) },
+                    html_content: Helpers_get_icon_svg ? Helpers_get_icon_svg('update', ['currentColor'], 20) : ''
+                });
+                desc_h3.appendChild(icon_span);
+            }
+            desc_h3.appendChild(document.createTextNode(sample.description || t('undefined_description', {defaultValue: "Undefined description"})));
+            
             const type_p = Helpers_create_element('p');
             type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(sample.pageType)}`;
             info_div.appendChild(desc_h3);
@@ -229,14 +229,12 @@ const SampleListComponent_internal = (function () {
             let audited_reqs_count_info = 0;
 
             relevant_reqs_for_sample_list_info.forEach(req_definition_from_list => {
-                // I en store-baserad modell kan req_definition_from_list.key vara ID:t.
-                // Vi behöver hämta det fullständiga kravobjektet från ruleFileContent.
                 const req_object_from_rulefile = current_global_state.ruleFileContent.requirements[req_definition_from_list.id] || current_global_state.ruleFileContent.requirements[req_definition_from_list.key];
                 const req_result_from_sample = sample.requirementResults ? sample.requirementResults[req_definition_from_list.id] || sample.requirementResults[req_definition_from_list.key] : null;
                 
-                if (req_object_from_rulefile) { // Säkerställ att vi hittade kravobjektet
+                if (req_object_from_rulefile) { 
                     const req_status = AuditLogic_calculate_requirement_status(req_object_from_rulefile, req_result_from_sample);
-                    if (req_status === 'passed' || req_status === 'failed') {
+                    if (status === 'passed' || status === 'failed') {
                         audited_reqs_count_info++;
                     }
                 } else {
@@ -314,7 +312,6 @@ const SampleListComponent_internal = (function () {
                     attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
                     html_content: `<span>${t('edit_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit', ['currentColor'], 16) : '')
                 });
-                // Lägg till redigeringsknappen först i main_actions_div för konsekvent placering
                 if (main_actions_div.firstChild) {
                     main_actions_div.insertBefore(edit_button, main_actions_div.firstChild);
                 } else {
@@ -322,7 +319,6 @@ const SampleListComponent_internal = (function () {
                 }
             }
 
-            // Raderingsknappen visas bara om det finns fler än ett stickprov och can_edit_or_delete är true
             if (can_edit_or_delete && typeof on_delete_callback === 'function' && current_global_state.samples.length > 1) {
                 const delete_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
@@ -350,7 +346,7 @@ const SampleListComponent_internal = (function () {
         on_edit_callback = null;
         on_delete_callback = null;
         router_ref_from_parent = null;
-        local_getState = null; // Rensa referensen
+        local_getState = null;
     }
 
     return {

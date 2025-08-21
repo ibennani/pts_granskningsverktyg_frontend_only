@@ -1,6 +1,6 @@
 // js/utils/helpers.js
 (function () { // IIFE start
-    'use strict';
+    'use-strict';
 
     function generate_uuid_v4() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -139,7 +139,9 @@
             'check_circle': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>`,
             'cancel': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>`,
             'check': `<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>`,
-            'close': `<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>`
+            'close': `<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>`,
+            // *** NY IKON ***
+            'update': `<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>`
         };
 
         svg_path = base_paths[icon_name];
@@ -157,42 +159,26 @@
         return /^(?:f|ht)tps?:\/\//i.test(url_string) ? url_string : `https://${url_string}`;
     }
 
-    // *** UPPDATERAD OCH FÖRBÄTTRAD FUNKTION ***
-    /**
-     * Beräknar och sätter den optimala höjden för en textarea.
-     * @param {HTMLTextAreaElement} textarea - Elementet som ska justeras.
-     */
     function _perform_resize(textarea) {
         if (!textarea || typeof textarea.scrollHeight === 'undefined') return;
 
-        // Få tag i styling-värden en gång för att återanvända
         const computed_style = window.getComputedStyle(textarea);
         const line_height = parseFloat(computed_style.lineHeight) || (parseFloat(computed_style.fontSize) * 1.6); // Fallback
         
-        // Återställ höjden temporärt för att korrekt mäta den verkliga scroll-höjden
         textarea.style.height = 'auto'; 
         
-        // Beräkna den höjd som innehållet behöver (+ en extra rad)
         const required_height = textarea.scrollHeight + line_height;
 
         textarea.style.height = `${required_height}px`;
     }
 
-    /**
-     * Initierar automatisk höjdjustering för ett textarea-element.
-     * @param {HTMLTextAreaElement} textarea_element - Elementet som ska få funktionen.
-     */
     function init_auto_resize_for_textarea(textarea_element) {
         if (!textarea_element || textarea_element.tagName.toLowerCase() !== 'textarea') return;
         
-        // Koppla händelselyssnare för framtida ändringar
         textarea_element.addEventListener('input', () => _perform_resize(textarea_element));
         
-        // Anropa funktionen omedelbart men fördröjt för att säkerställa att DOM är redo.
-        // Detta är den slutgiltiga fixen som löser race condition.
         setTimeout(() => _perform_resize(textarea_element), 0);
     }
-    // *** SLUT PÅ UPPDATERAD FUNKTION ***
 
     function sanitize_and_linkify_html(raw_html_string) {
         if (typeof raw_html_string !== 'string' || !raw_html_string) {

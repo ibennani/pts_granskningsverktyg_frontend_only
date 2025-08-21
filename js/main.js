@@ -7,6 +7,8 @@ import { SampleManagementViewComponent } from './components/SampleManagementView
 import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
+// *** NY IMPORT ***
+import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js';
 
 // Importera den nya globala komponenten som en factory
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
@@ -75,9 +77,11 @@ window.StoreActionTypes = StoreActionTypes;
                     title_prefix = t('audit_overview_title');
                     break;
                 case 'requirement_list':
-                    // --- ÄNDRING HÄR ---
-                    // Tar bort logiken som hämtade stickprovets namn och visar enbart den statiska titeln.
                     title_prefix = t('requirement_list_title_suffix', { defaultValue: 'Kravlista' });
+                    break;
+                // *** NYTT CASE FÖR DEN NYA VYN ***
+                case 'update_rulefile':
+                    title_prefix = t('update_rulefile_title', {defaultValue: "Update Rule File"});
                     break;
                 case 'requirement_audit':
                     const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
@@ -175,18 +179,16 @@ window.StoreActionTypes = StoreActionTypes;
         }, 100); 
     }
 
-    // --- UPPDATERAD FUNKTION ---
     async function render_view(view_name_to_render, params_to_render = {}) {
         const t = get_t_fallback();
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html
             : (s) => s; 
 
-        // Anropa den nya centrala funktionen varje gång en vy ska ritas om
         updatePageTitle(view_name_to_render, params_to_render);
 
         top_action_bar_instance.render();
-        if (view_name_to_render !== 'upload') {
+        if (view_name_to_render !== 'upload' && view_name_to_render !== 'update_rulefile') { // *** ÄNDRING HÄR ***
             bottom_action_bar_container.style.display = '';
             bottom_action_bar_instance.render();
         } else {
@@ -218,6 +220,8 @@ window.StoreActionTypes = StoreActionTypes;
             case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
+            // *** NYTT CASE FÖR DEN NYA VYN ***
+            case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 app_container.innerHTML = `<h1>${t("error_loading_view_details", {viewName: ""})}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
@@ -277,13 +281,9 @@ window.StoreActionTypes = StoreActionTypes;
         render_view(target_view, target_params);
     }
 
-    // --- UPPDATERAD FUNKTION ---
     function on_language_changed_event() { 
         update_app_chrome_texts();
-
-        // Anropa den centrala titelfunktionen för att översätta den nuvarande titeln
         updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
-
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             current_view_component_instance.render();
         }
@@ -302,7 +302,6 @@ window.StoreActionTypes = StoreActionTypes;
             return;
         }
         
-        // Sätt initial titel här, innan första vyn renderas
         document.title = get_t_fallback()('app_title');
 
         if (window.NotificationComponent && typeof window.NotificationComponent.init === 'function') {
@@ -334,14 +333,13 @@ window.StoreActionTypes = StoreActionTypes;
         handle_hash_change();
         update_app_chrome_texts(); 
 
-        // --- UPPDATERAD FUNKTION ---
         subscribe((new_state) => { 
             top_action_bar_instance.render();
-            if (current_view_name_rendered !== 'upload') {
+            // *** ÄNDRING HÄR ***
+            if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'update_rulefile') {
                 bottom_action_bar_instance.render();
             }
 
-            // Anropa den centrala titelfunktionen för att fånga upp dataförändringar
             updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
 
             if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {

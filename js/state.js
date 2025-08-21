@@ -12,7 +12,8 @@ export const ActionTypes = {
     DELETE_SAMPLE: 'DELETE_SAMPLE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
-    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT', // Kan vara användbar för framtida funktioner
+    REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE', // *** NY ACTION ***
     SET_PRECALCULATED_RULE_DATA: 'SET_PRECALCULATED_RULE_DATA',
     UPDATE_CALCULATED_VARDETAL: 'UPDATE_CALCULATED_VARDETAL'
 };
@@ -153,13 +154,20 @@ function root_reducer(current_state, action) {
                 return current_state;
             }
             const { sampleId, requirementId, newRequirementResult } = action.payload;
+
+            // *** NY LOGIK HÄR ***
+            // Skapa en kopia av det nya resultatobjektet för att undvika att modifiera originalet
+            const result_to_save = { ...newRequirementResult };
+            // När en användare aktivt sparar en ny bedömning, tas "needsReview"-flaggan bort.
+            delete result_to_save.needsReview;
+
             return {
                 ...current_state,
                 samples: current_state.samples.map(sample => {
                     if (sample.id === sampleId) {
                         const updatedRequirementResults = {
                             ...(sample.requirementResults || {}),
-                            [requirementId]: newRequirementResult
+                            [requirementId]: result_to_save // Använd den modifierade kopian
                         };
                         return {
                             ...sample,
@@ -170,6 +178,20 @@ function root_reducer(current_state, action) {
                 })
             };
         
+        // *** NY CASE FÖR ATT HANTERA REGELFILUPPDATERING ***
+        case ActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
+            // Denna action förväntar sig att få ett komplett, nytt state-objekt i sin payload.
+            // Den tunga logiken för avstämning sker i en dedikerad logikmodul *innan* denna action skickas.
+            if (!action.payload || !action.payload.ruleFileContent || !action.payload.samples) {
+                console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload. Must be a complete new state object.');
+                return current_state;
+            }
+            // Ersätt hela statet med det nya, avstämda statet och stämpla med aktuell app-version.
+            return {
+                ...action.payload,
+                saveFileVersion: APP_STATE_VERSION
+            };
+
         case ActionTypes.SET_RULE_FILE_CONTENT:
             if (!action.payload || typeof action.payload.ruleFileContent !== 'object') {
                 console.error('[State.js] SET_RULE_FILE_CONTENT: Invalid payload. Expected ruleFileContent object.');
