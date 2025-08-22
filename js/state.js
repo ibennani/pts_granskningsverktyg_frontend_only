@@ -12,10 +12,11 @@ export const ActionTypes = {
     DELETE_SAMPLE: 'DELETE_SAMPLE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
-    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT', // Kan vara användbar för framtida funktioner
-    REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE', // *** NY ACTION ***
+    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_PRECALCULATED_RULE_DATA: 'SET_PRECALCULATED_RULE_DATA',
-    UPDATE_CALCULATED_VARDETAL: 'UPDATE_CALCULATED_VARDETAL'
+    UPDATE_CALCULATED_VARDETAL: 'UPDATE_CALCULATED_VARDETAL',
+    SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS' 
 };
 
 const initial_state = {
@@ -32,14 +33,26 @@ const initial_state = {
     startTime: null,
     endTime: null,
     samples: [],
-    uiSettings: {},
-    auditCalculations: { // Behåller den här strukturen
-        ruleData: { // Data från VardetalCalculator.precalculate_rule_data
-            weights_map: null, // Kommer att vara ett objekt: { reqId: weight, ... }
+    uiSettings: {
+        requirementListFilter: {
+            searchText: '',
+            sortBy: 'default',
+            status: { 
+                passed: true, 
+                failed: true, 
+                partially_audited: true, 
+                not_audited: true, 
+                updated: true
+            }
+        }
+    },
+    auditCalculations: {
+        ruleData: {
+            weights_map: null,
             rE_total: 0,
             sum_of_all_weights: 0
         },
-        currentVardetal: null // Senast beräknade värdetal
+        currentVardetal: null
     }
 };
 
@@ -51,33 +64,33 @@ function get_current_iso_datetime_utc_internal() {
 }
 
 function root_reducer(current_state, action) {
-    // console.log('[State.js] root_reducer called. Action:', action.type, 'Payload:', action.payload ? JSON.parse(JSON.stringify(action.payload)) : 'No payload');
     let new_state_slice;
 
     switch (action.type) {
         case ActionTypes.INITIALIZE_NEW_AUDIT:
             return {
-                ...initial_state, // Viktigt att återställa helt, inklusive auditCalculations
+                ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileContent: action.payload.ruleFileContent,
-                // auditStatus, samples, auditMetadata, startTime, endTime återställs av initial_state
             };
 
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
             if (action.payload && typeof action.payload === 'object') {
                 const loaded_calculations = action.payload.auditCalculations || { ...initial_state.auditCalculations };
-                
+                const loaded_ui_settings = action.payload.uiSettings || { ...initial_state.uiSettings };
+
                 let new_loaded_state = {
                     ...action.payload,
                     saveFileVersion: APP_STATE_VERSION,
-                    auditCalculations: loaded_calculations
+                    auditCalculations: loaded_calculations,
+                    uiSettings: loaded_ui_settings
                 };
 
                 if (action.payload.saveFileVersion && action.payload.saveFileVersion !== APP_STATE_VERSION && 
-                    !action.payload.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) { // Strängare versionskontroll
+                    !action.payload.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
                     console.warn(`[State.js] LOAD_AUDIT_FROM_FILE: Major version mismatch. File version: ${action.payload.saveFileVersion}, App version: ${APP_STATE_VERSION}. Overwriting with current app state version.`);
-                    // För en stor versionsskillnad kan det vara säkrare att inte lita på auditCalculations från filen alls
                     new_loaded_state.auditCalculations = { ...initial_state.auditCalculations };
+                    new_loaded_state.uiSettings = { ...initial_state.uiSettings };
                 } else if (action.payload.saveFileVersion && action.payload.saveFileVersion !== APP_STATE_VERSION) {
                      console.warn(`[State.js] LOAD_AUDIT_FROM_FILE: Minor/patch version mismatch. File: ${action.payload.saveFileVersion}, App: ${APP_STATE_VERSION}. Stamping with current app version.`);
                 }
@@ -114,7 +127,7 @@ function root_reducer(current_state, action) {
                 ...current_state,
                 samples: current_state.samples.map(sample =>
                     sample.id === action.payload.sampleId
-                        ? { ...sample, ...action.payload.updatedSampleData } // requirementResults hanteras av UPDATE_REQUIREMENT_RESULT
+                        ? { ...sample, ...action.payload.updatedSampleData }
                         : sample
                 )
             };
@@ -135,12 +148,12 @@ function root_reducer(current_state, action) {
                 return current_state;
             }
             new_state_slice = { auditStatus: action.payload.status };
-            if (action.payload.status === 'in_progress' && !current_state.startTime) { // Sätt bara startTime om det inte redan finns
+            if (action.payload.status === 'in_progress' && !current_state.startTime) {
                 new_state_slice.startTime = get_current_iso_datetime_utc_internal();
-                new_state_slice.endTime = null; // Se till att endTime rensas om man går från locked -> in_progress
+                new_state_slice.endTime = null;
             } else if (action.payload.status === 'locked') {
                 new_state_slice.endTime = current_state.endTime || get_current_iso_datetime_utc_internal();
-            } else if (action.payload.status === 'in_progress' && current_state.auditStatus === 'locked') { // Om man låser upp
+            } else if (action.payload.status === 'in_progress' && current_state.auditStatus === 'locked') {
                  new_state_slice.endTime = null;
             }
             return {
@@ -155,10 +168,7 @@ function root_reducer(current_state, action) {
             }
             const { sampleId, requirementId, newRequirementResult } = action.payload;
 
-            // *** NY LOGIK HÄR ***
-            // Skapa en kopia av det nya resultatobjektet för att undvika att modifiera originalet
             const result_to_save = { ...newRequirementResult };
-            // När en användare aktivt sparar en ny bedömning, tas "needsReview"-flaggan bort.
             delete result_to_save.needsReview;
 
             return {
@@ -167,7 +177,7 @@ function root_reducer(current_state, action) {
                     if (sample.id === sampleId) {
                         const updatedRequirementResults = {
                             ...(sample.requirementResults || {}),
-                            [requirementId]: result_to_save // Använd den modifierade kopian
+                            [requirementId]: result_to_save
                         };
                         return {
                             ...sample,
@@ -178,17 +188,21 @@ function root_reducer(current_state, action) {
                 })
             };
         
-        // *** NY CASE FÖR ATT HANTERA REGELFILUPPDATERING ***
         case ActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
-            // Denna action förväntar sig att få ett komplett, nytt state-objekt i sin payload.
-            // Den tunga logiken för avstämning sker i en dedikerad logikmodul *innan* denna action skickas.
             if (!action.payload || !action.payload.ruleFileContent || !action.payload.samples) {
                 console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload. Must be a complete new state object.');
                 return current_state;
             }
-            // Ersätt hela statet med det nya, avstämda statet och stämpla med aktuell app-version.
+            
+            // *** KORRIGERING: Kör om förberäkningen för Värdetalet ***
+            const new_precalculated_data = window.VardetalCalculator.precalculate_rule_data(action.payload.ruleFileContent);
+            
             return {
                 ...action.payload,
+                auditCalculations: {
+                    ...current_state.auditCalculations, // Behåll eventuellt gammalt Värdetal tills det räknas om
+                    ruleData: new_precalculated_data // Spara den nya förberäknade datan
+                },
                 saveFileVersion: APP_STATE_VERSION
             };
 
@@ -202,6 +216,22 @@ function root_reducer(current_state, action) {
                 ruleFileContent: action.payload.ruleFileContent,
                 auditCalculations: { ...initial_state.auditCalculations } 
             };
+        
+        case ActionTypes.SET_UI_FILTER_SETTINGS:
+            if (!action.payload || typeof action.payload !== 'object') {
+                console.error('[State.js] SET_UI_FILTER_SETTINGS: Invalid payload. Expected an object.');
+                return current_state;
+            }
+            return {
+                ...current_state,
+                uiSettings: {
+                    ...current_state.uiSettings,
+                    requirementListFilter: {
+                        ...current_state.uiSettings.requirementListFilter,
+                        ...action.payload
+                    }
+                }
+            };
 
         case ActionTypes.SET_PRECALCULATED_RULE_DATA:
             if (!action.payload || typeof action.payload !== 'object' || 
@@ -212,7 +242,7 @@ function root_reducer(current_state, action) {
             return {
                 ...current_state,
                 auditCalculations: {
-                    ...current_state.auditCalculations, // Behåll currentVardetal
+                    ...current_state.auditCalculations,
                     ruleData: { ...action.payload }
                 }
             };
@@ -222,11 +252,9 @@ function root_reducer(current_state, action) {
                 console.error('[State.js] UPDATE_CALCULATED_VARDETAL: Invalid payload. Expected vardetal to be a number or null.', action.payload);
                 return current_state;
             }
-            // Undvik onödig uppdatering om värdet är detsamma
             if (current_state.auditCalculations && current_state.auditCalculations.currentVardetal === action.payload.vardetal) {
                 return current_state;
             }
-            console.log('[Store] Uppdaterar currentVardetal till:', action.payload.vardetal);
             return {
                 ...current_state,
                 auditCalculations: {
@@ -247,15 +275,13 @@ function dispatch(action) {
         return;
     }
     try {
-        const previous_state_for_comparison = internal_state; // Spara referens till nuvarande state
+        const previous_state_for_comparison = internal_state;
         const new_state = root_reducer(internal_state, action);
         
-        if (new_state !== previous_state_for_comparison) { // Kolla om statet faktiskt ändrades
+        if (new_state !== previous_state_for_comparison) {
             internal_state = new_state;
             saveStateToSessionStorage(internal_state);
             notify_listeners();
-        } else {
-            // console.log("[State.js] Dispatch did not result in a state change. No notification needed.", action.type);
         }
     } catch (error) {
         console.error('[State.js] Error in dispatch or reducer:', error, 'Action:', action);
@@ -296,11 +322,11 @@ function loadStateFromSessionStorage() {
     }
     try {
         const storedState = JSON.parse(serializedState);
-        // Strängare versionskontroll: om huvudversionen skiljer sig, återställ.
         if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
             console.log(`[State.js] Loaded state from sessionStorage. Version compatible (File: ${storedState.saveFileVersion}, App: ${APP_STATE_VERSION}).`);
             const calculations = storedState.auditCalculations || { ...initial_state.auditCalculations };
-            return { ...storedState, auditCalculations: calculations, saveFileVersion: APP_STATE_VERSION };
+            const uiSettings = storedState.uiSettings || { ...initial_state.uiSettings };
+            return { ...storedState, auditCalculations: calculations, uiSettings: uiSettings, saveFileVersion: APP_STATE_VERSION };
         } else {
             console.warn(`[State.js] State version mismatch in sessionStorage. Found ${storedState.saveFileVersion}, expected major version ${APP_STATE_VERSION.split('.')[0]}.x.x. Clearing stored state and using initial_state.`);
             sessionStorage.removeItem(APP_STATE_KEY);
@@ -327,7 +353,6 @@ function saveStateToSessionStorage(state_to_save) {
 }
 
 internal_state = loadStateFromSessionStorage();
-// Spara bara initial state om det faktiskt är tomt i sessionStorage, för att undvika att skriva över ett medvetet rensat state.
 if (sessionStorage.getItem(APP_STATE_KEY) === null) {
     saveStateToSessionStorage(internal_state);
 }

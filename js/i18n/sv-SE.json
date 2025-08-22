@@ -254,7 +254,6 @@
   "update_rulefile_warning_intro": "Du är på väg att uppdatera regelfilen för en pågående granskning. Detta är en avancerad åtgärd med följande konsekvenser:",
   "update_rulefile_warning_li1": "Resultat för krav som tas bort i den nya regelfilen kommer att raderas permanent.",
   "update_rulefile_warning_li2": "Krav som har ändrats kommer att markeras för omgranskning.",
-  "update_rulefile_warning_li3": "Stickprov med inställningar (som sidtyp) som inte längre finns kommer att markeras som ogiltiga och måste korrigeras.",
   "update_rulefile_recommendation": "Steg 1: Spara en säkerhetskopia",
   "update_rulefile_backup_text": "Det rekommenderas starkt att du sparar en säkerhetskopia av din nuvarande granskning innan du fortsätter.",
   "update_rulefile_backup_saved": "Säkerhetskopia sparad.",
@@ -272,5 +271,9 @@
   "requirement_updated_needs_review": "Detta krav har uppdaterats sedan din senaste granskning. Vänligen verifiera din bedömning nedan.",
   "no_requirements_match_filter": "Inga krav matchar det nuvarande filtret.",
   "search_placeholder_default": "Sök i kravtexter...",
-  "error_set_check_status_first": "Vänligen sätt först status för kontrollpunkten ('Stämmer'/'Stämmer inte')."
+  "error_set_check_status_first": "Vänligen sätt först status för kontrollpunkten ('Stämmer'/'Stämmer inte').",
+  "update_rulefile_success": "Regelfilen har uppdaterats.",
+  "update_rulefile_confirm_intro": "Den nya regelfilen har analyserats. Granska ändringarna nedan innan du bekräftar.",
+  "update_rulefile_confirm_button": "Bekräfta och genomför ändringar",
+  "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas."
 }

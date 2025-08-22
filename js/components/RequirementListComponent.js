@@ -21,15 +21,6 @@ export const RequirementListComponent = (function () {
     let global_message_element_ref;
     let content_div_for_delegation = null;
 
-    let component_state = {
-        filters: {
-            searchText: '',
-            // Initialvärdena sätts nu i toolbar-komponenten för att garantera att 'updated' finns med
-            status: {} 
-        },
-        sortBy: 'default'
-    };
-    
     let toolbar_component_instance = null;
     let is_dom_initialized = false;
     let plate_element_ref = null;
@@ -102,8 +93,10 @@ export const RequirementListComponent = (function () {
     }
     
     function handle_toolbar_change(new_toolbar_state) {
-        component_state = new_toolbar_state;
-        _populate_dynamic_content(); 
+        local_dispatch({
+            type: local_StoreActionTypes.SET_UI_FILTER_SETTINGS,
+            payload: new_toolbar_state 
+        });
     }
 
     function natural_sort(a, b) {
@@ -169,10 +162,15 @@ export const RequirementListComponent = (function () {
         plate_element_ref.appendChild(toolbar_container_element);
         
         toolbar_component_instance = RequirementListToolbarComponent;
+        
+        // *** KORRIGERING: Hämta de korrekta filterinställningarna från state ***
+        const current_state_for_init = local_getState();
+        const current_ui_settings = current_state_for_init.uiSettings.requirementListFilter;
+
         await toolbar_component_instance.init(
             toolbar_container_element,
             handle_toolbar_change,
-            component_state,
+            current_ui_settings,
             { t: Translation_t },
             { create_element: Helpers_create_element, load_css: Helpers_load_css }
         );
@@ -192,6 +190,7 @@ export const RequirementListComponent = (function () {
     function _populate_dynamic_content() {
         const t = get_t_internally();
         const current_global_state = local_getState();
+        const component_state = current_global_state.uiSettings.requirementListFilter;
         const current_sample_object = current_global_state.samples.find(s => s.id === params_ref.sampleId);
 
         // Uppdatera header
@@ -234,24 +233,22 @@ export const RequirementListComponent = (function () {
             header_div.appendChild(window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {}));
         }
 
-        // *** UPPDATERAD FILTERLOGIK ***
-        const search_term = component_state.filters.searchText.toLowerCase();
+        // Filterlogik
+        const search_term = component_state.searchText.toLowerCase();
         const filtered_requirements = all_relevant_requirements.filter(req => {
             const result = (current_sample_object.requirementResults || {})[req.key];
             const status = AuditLogic_calculate_requirement_status(req, result);
             const needs_review = result?.needsReview === true;
 
-            // Logik för att avgöra om kravet ska visas
             let show = false;
-            if (component_state.filters.status.passed && status === 'passed') show = true;
-            if (component_state.filters.status.failed && status === 'failed') show = true;
-            if (component_state.filters.status.partially_audited && status === 'partially_audited') show = true;
-            if (component_state.filters.status.not_audited && status === 'not_audited') show = true;
-            if (component_state.filters.status.updated && needs_review) show = true; // Ny kontroll
+            if (component_state.status.passed && status === 'passed') show = true;
+            if (component_state.status.failed && status === 'failed') show = true;
+            if (component_state.status.partially_audited && status === 'partially_audited') show = true;
+            if (component_state.status.not_audited && status === 'not_audited') show = true;
+            if (component_state.status.updated && needs_review) show = true;
 
             if (!show) return false;
 
-            // Om sökterm finns, filtrera ytterligare
             if (search_term) {
                 const searchable_content = [
                     req.title,
@@ -266,8 +263,8 @@ export const RequirementListComponent = (function () {
             }
             return true;
         });
-        // *** SLUT PÅ UPPDATERAD FILTERLOGIK ***
 
+        // Sorteringslogik
         const sorted_requirements = [...filtered_requirements];
         switch(component_state.sortBy) {
             case 'title_asc': sorted_requirements.sort((a, b) => a.title.localeCompare(b.title)); break;
@@ -284,7 +281,7 @@ export const RequirementListComponent = (function () {
                 break;
         }
 
-        // Rendera listan
+        // Renderingslogik
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
             content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter', {defaultValue: "No requirements match the current filter."}) }));
@@ -328,6 +325,19 @@ export const RequirementListComponent = (function () {
 
         if (!is_dom_initialized) {
             await _initialRender();
+        } else {
+            const current_ui_settings = local_getState().uiSettings.requirementListFilter;
+            // Uppdatera verktygsraden med det senaste statet
+            // Notera: Init anropas igen här för att säkerställa att toolbar har det senaste statet.
+            // En mer avancerad lösning skulle kunna ha en "update" metod på toolbaren.
+            await toolbar_component_instance.init(
+                plate_element_ref.querySelector('#requirement-list-toolbar-container'),
+                handle_toolbar_change,
+                current_ui_settings,
+                { t: Translation_t },
+                { create_element: Helpers_create_element, load_css: Helpers_load_css }
+            );
+            toolbar_component_instance.render();
         }
 
         const current_global_state = local_getState();
@@ -349,7 +359,7 @@ export const RequirementListComponent = (function () {
         const t = get_t_internally();
         const req_result_object = (sample.requirementResults || {})[req.key];
         const status = AuditLogic_calculate_requirement_status(req, req_result_object);
-        const needs_review = req_result_object?.needsReview === true; // *** NY KONTROLL ***
+        const needs_review = req_result_object?.needsReview === true;
 
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-row' });
@@ -367,10 +377,9 @@ export const RequirementListComponent = (function () {
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
         const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
 
-        // *** NY LOGIK FÖR IKON OCH TEXT BASERAT PÅ needs_review ***
         let status_icon_class, status_icon_title, status_text;
         if (needs_review) {
-            status_icon_class = 'status-icon-updated'; // Ny CSS-klass för blå färg
+            status_icon_class = 'status-icon-updated';
             status_icon_title = t('status_updated_needs_review', {defaultValue: "Updated, needs review"});
             status_text = t('status_updated', {defaultValue: "Updated"});
         } else {
@@ -384,7 +393,7 @@ export const RequirementListComponent = (function () {
            attributes: { 'aria-hidden': 'true', title: status_icon_title }
         });
         const status_text_span = Helpers_create_element('span', {
-            class_name: needs_review ? 'status-text-updated' : '', // Ny CSS-klass för blå text
+            class_name: needs_review ? 'status-text-updated' : '',
             text_content: ` ${status_text}`
         });
 
@@ -422,7 +431,6 @@ export const RequirementListComponent = (function () {
         li.appendChild(details_row_div);
         return li;
     }
-
 
     function destroy() {
         if (content_div_for_delegation) {

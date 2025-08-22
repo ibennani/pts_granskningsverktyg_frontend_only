@@ -6,33 +6,21 @@ export const RequirementListToolbarComponent = (function () {
     let container_ref;
     
     let on_change_callback;
-    let initial_state;
+    let component_state; // Byt namn från initial_state för tydlighet
     let Translation_t;
     let Helpers_create_element;
     let Helpers_load_css;
 
-    let component_state;
     let search_debounce_timer;
 
     async function init(_container, _on_change_cb, _initial_state, _Translation, _Helpers) {
         container_ref = _container;
         on_change_callback = _on_change_cb;
-        initial_state = _initial_state;
+        component_state = _initial_state; // Lagra det aktuella state som skickas in
         Translation_t = _Translation.t;
         Helpers_create_element = _Helpers.create_element;
         Helpers_load_css = _Helpers.load_css;
 
-        // *** NY LOGIK: Se till att filterobjektet innehåller den nya nyckeln ***
-        const default_filters = {
-            searchText: '',
-            status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true } // Lägg till 'updated'
-        };
-        component_state = { ..._initial_state };
-        component_state.filters = { ...default_filters, ..._initial_state.filters };
-        if (component_state.filters.status.updated === undefined) {
-            component_state.filters.status.updated = true; // Sätt default om den saknas
-        }
-        
         if (Helpers_load_css && CSS_PATH) {
             try {
                 const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
@@ -46,8 +34,8 @@ export const RequirementListToolbarComponent = (function () {
     function handle_search_input(event) {
         clearTimeout(search_debounce_timer);
         search_debounce_timer = setTimeout(() => {
-            component_state.filters.searchText = event.target.value;
-            if (on_change_callback) on_change_callback(component_state);
+            const new_state = { ...component_state, searchText: event.target.value };
+            if (on_change_callback) on_change_callback(new_state);
         }, 300);
     }
 
@@ -58,37 +46,26 @@ export const RequirementListToolbarComponent = (function () {
         const status_key = checkbox.dataset.status;
         const is_checked = checkbox.checked;
 
+        const new_status_filters = { ...component_state.status };
+
         if (status_key === 'all') {
-            component_state.filters.status.passed = is_checked;
-            component_state.filters.status.failed = is_checked;
-            component_state.filters.status.partially_audited = is_checked;
-            component_state.filters.status.not_audited = is_checked;
-            component_state.filters.status.updated = is_checked; // *** Uppdatera "all" att inkludera den nya ***
+            new_status_filters.passed = is_checked;
+            new_status_filters.failed = is_checked;
+            new_status_filters.partially_audited = is_checked;
+            new_status_filters.not_audited = is_checked;
+            new_status_filters.updated = is_checked;
         } else {
-            component_state.filters.status[status_key] = is_checked;
+            new_status_filters[status_key] = is_checked;
         }
-
-        const all_individual_checked = 
-            component_state.filters.status.passed &&
-            component_state.filters.status.failed &&
-            component_state.filters.status.partially_audited &&
-            component_state.filters.status.not_audited &&
-            component_state.filters.status.updated; // *** Lägg till den nya här också ***
         
-        // Synka "Visa alla"-checkboxen
-        const all_checkbox = document.getElementById('status-filter-all');
-        if (all_checkbox) {
-            all_checkbox.checked = all_individual_checked;
+        if (on_change_callback) {
+            on_change_callback({ ...component_state, status: new_status_filters });
         }
-
-        // Eftersom vi inte längre gör en fullständig omritning vid varje ändring, behöver vi inte oroa oss för fokus.
-        // Vi skickar bara callbacken.
-        if (on_change_callback) on_change_callback(component_state);
     }
 
     function handle_sort_change(event) {
-        component_state.sortBy = event.target.value;
-        if (on_change_callback) on_change_callback(component_state);
+        const new_state = { ...component_state, sortBy: event.target.value };
+        if (on_change_callback) on_change_callback(new_state);
     }
 
     function toggle_status_filter_panel(event) {
@@ -98,7 +75,6 @@ export const RequirementListToolbarComponent = (function () {
             const is_hidden = panel.hasAttribute('hidden');
             if (is_hidden) {
                 panel.removeAttribute('hidden');
-                // Spara fokus så vi kan återställa det om panelen stängs
                 const focusedElement = document.activeElement;
                 document.addEventListener('click', (e) => close_status_filter_panel_on_outside_click(e, focusedElement), { once: true });
             } else {
@@ -112,12 +88,10 @@ export const RequirementListToolbarComponent = (function () {
         const button = document.getElementById('status-filter-toggle-btn');
         if (panel && !panel.hasAttribute('hidden') && button && !panel.contains(event.target) && !button.contains(event.target)) {
             panel.setAttribute('hidden', 'true');
-            // Återställ fokus till knappen som öppnade panelen
             if (elementToFocus && typeof elementToFocus.focus === 'function') {
                 elementToFocus.focus();
             }
         } else if (panel && !panel.hasAttribute('hidden')) {
-            // Om klicket var inuti panelen, sätt upp en ny lyssnare.
             document.addEventListener('click', (e) => close_status_filter_panel_on_outside_click(e, elementToFocus), { once: true });
         }
     }
@@ -127,9 +101,15 @@ export const RequirementListToolbarComponent = (function () {
             console.error("ToolbarComponent: Cannot render, core dependencies missing.");
             return;
         }
+        // *** KORRIGERING: Kontrollera att component_state och component_state.status finns ***
+        if (!component_state || !component_state.status) {
+            console.error("ToolbarComponent: Cannot render, component_state or component_state.status is undefined. Check data passed from parent.");
+            container_ref.innerHTML = `<p style="color:red;">Error rendering toolbar.</p>`;
+            return;
+        }
         
         const focusedElementId = document.activeElement?.id;
-        const searchInputValue = (focusedElementId === 'req-list-search') ? document.activeElement.value : component_state.filters.searchText;
+        const searchInputValue = (focusedElementId === 'req-list-search') ? document.activeElement.value : component_state.searchText;
         const searchSelectionStart = (focusedElementId === 'req-list-search') ? document.activeElement.selectionStart : null;
         const searchSelectionEnd = (focusedElementId === 'req-list-search') ? document.activeElement.selectionEnd : null;
 
@@ -154,35 +134,32 @@ export const RequirementListToolbarComponent = (function () {
         const filter_panel = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
         filter_panel.setAttribute('hidden', 'true');
         
-        const status_types = ['passed', 'failed', 'partially_audited', 'not_audited'];
-        const all_statuses_checked = status_types.every(status => component_state.filters.status[status]) && component_state.filters.status.updated;
+        const all_individual_checked = 
+            component_state.status.passed &&
+            component_state.status.failed &&
+            component_state.status.partially_audited &&
+            component_state.status.not_audited &&
+            component_state.status.updated;
 
         const all_wrapper = Helpers_create_element('div', { class_name: 'form-check all-check' });
         const all_input = Helpers_create_element('input', { id: 'status-filter-all', class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-status': 'all' } });
-        all_input.checked = all_statuses_checked;
+        all_input.checked = all_individual_checked;
         const all_label_el = Helpers_create_element('label', { attributes: { for: 'status-filter-all' }, text_content: t('show_all') });
         all_wrapper.append(all_input, all_label_el);
         filter_panel.appendChild(all_wrapper);
 
         filter_panel.appendChild(Helpers_create_element('hr'));
 
+        const status_types = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
         status_types.forEach(status => {
             const wrapper = Helpers_create_element('div', { class_name: 'form-check' });
             const input = Helpers_create_element('input', { id: `status-filter-${status}`, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-status': status } });
-            input.checked = component_state.filters.status[status];
-            const label_el = Helpers_create_element('label', { attributes: { for: `status-filter-${status}` }, text_content: t(`audit_status_${status}`) });
+            input.checked = component_state.status[status];
+            const label_key = status === 'updated' ? 'filter_option_updated' : `audit_status_${status}`;
+            const label_el = Helpers_create_element('label', { attributes: { for: `status-filter-${status}` }, text_content: t(label_key) });
             wrapper.append(input, label_el);
             filter_panel.appendChild(wrapper);
         });
-        
-        // *** NY KOD: Lägg till "Uppdaterade"-checkboxen ***
-        const updated_wrapper = Helpers_create_element('div', { class_name: 'form-check' });
-        const updated_input = Helpers_create_element('input', { id: `status-filter-updated`, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-status': 'updated' } });
-        updated_input.checked = component_state.filters.status.updated;
-        const updated_label_el = Helpers_create_element('label', { attributes: { for: `status-filter-updated` }, text_content: t('filter_option_updated', { defaultValue: "Updated" }) });
-        updated_wrapper.append(updated_input, updated_label_el);
-        filter_panel.appendChild(updated_wrapper);
-        // *** SLUT PÅ NY KOD ***
 
         filter_panel.addEventListener('change', handle_status_filter_change);
 

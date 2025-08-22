@@ -7,7 +7,6 @@ import { SampleManagementViewComponent } from './components/SampleManagementView
 import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
-// *** NY IMPORT ***
 import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js';
 
 // Importera den nya globala komponenten som en factory
@@ -55,11 +54,10 @@ window.StoreActionTypes = StoreActionTypes;
             };
     }
 
-    // --- NY CENTRAL FUNKTION FÖR ATT UPPDATERA SIDTITELN ---
     function updatePageTitle(viewName, params = {}) {
         const t = get_t_fallback();
         const title_suffix = ` | ${t('app_title_suffix', { defaultValue: 'Granskningsverktyget' })}`;
-        let title_prefix = t('app_title'); // En säker fallback
+        let title_prefix = t('app_title');
         const current_state = getState();
 
         try {
@@ -79,7 +77,6 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'requirement_list':
                     title_prefix = t('requirement_list_title_suffix', { defaultValue: 'Kravlista' });
                     break;
-                // *** NYTT CASE FÖR DEN NYA VYN ***
                 case 'update_rulefile':
                     title_prefix = t('update_rulefile_title', {defaultValue: "Update Rule File"});
                     break;
@@ -94,12 +91,10 @@ window.StoreActionTypes = StoreActionTypes;
                     }
                     break;
                 default:
-                    // Använder den generella fallbacken
                     break;
             }
         } catch (e) {
             console.error("Error building page title:", e);
-            // Faller tillbaka till den säkra titeln
         }
         
         document.title = `${title_prefix}${title_suffix}`;
@@ -121,21 +116,24 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     async function init_global_components() {
-        if (!window.Translation || !window.Helpers || !window.NotificationComponent) {
+        if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
             console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
 
-        await top_action_bar_instance.init(
-            top_action_bar_container,
-            getState, dispatch, StoreActionTypes,
-            window.Translation, window.Helpers, window.NotificationComponent
-        );
-        await bottom_action_bar_instance.init(
-            bottom_action_bar_container,
-            getState, dispatch, StoreActionTypes,
-            window.Translation, window.Helpers, window.NotificationComponent
-        );
+        // *** KORRIGERING: Skicka med SaveAuditLogic som ett explicit beroende ***
+        const common_deps = {
+            getState: getState,
+            dispatch: dispatch,
+            StoreActionTypes: StoreActionTypes,
+            Translation: window.Translation,
+            Helpers: window.Helpers,
+            NotificationComponent: window.NotificationComponent,
+            SaveAuditLogic: window.SaveAuditLogic // Lägg till här
+        };
+
+        await top_action_bar_instance.init(top_action_bar_container, common_deps);
+        await bottom_action_bar_instance.init(bottom_action_bar_container, common_deps);
     }
     
     function set_initial_theme() {
@@ -148,7 +146,6 @@ window.StoreActionTypes = StoreActionTypes;
             document.documentElement.setAttribute('data-theme', initial_theme);
         }
     }
-
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
@@ -188,7 +185,7 @@ window.StoreActionTypes = StoreActionTypes;
         updatePageTitle(view_name_to_render, params_to_render);
 
         top_action_bar_instance.render();
-        if (view_name_to_render !== 'upload' && view_name_to_render !== 'update_rulefile') { // *** ÄNDRING HÄR ***
+        if (view_name_to_render !== 'upload') {
             bottom_action_bar_container.style.display = '';
             bottom_action_bar_instance.render();
         } else {
@@ -220,7 +217,6 @@ window.StoreActionTypes = StoreActionTypes;
             case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
-            // *** NYTT CASE FÖR DEN NYA VYN ***
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
@@ -335,8 +331,7 @@ window.StoreActionTypes = StoreActionTypes;
 
         subscribe((new_state) => { 
             top_action_bar_instance.render();
-            // *** ÄNDRING HÄR ***
-            if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'update_rulefile') {
+            if (current_view_name_rendered !== 'upload') {
                 bottom_action_bar_instance.render();
             }
 

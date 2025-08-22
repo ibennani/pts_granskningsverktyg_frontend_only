@@ -205,7 +205,7 @@
   "checks_short": "Checks",
   "requirements_audited_for_sample": "Reviewed requirements",
   "progress_bar_label": "Progress",
-  "overall_audit_progress_title": "Overall audit progress",
+  "overall_audit_progress_title": "Overall Audit Progress",
   "total_requirements_audited_label": "Total requirements reviewed",
   "audit_sample_short": "Review",
   "audit_next_incomplete_requirement": "Review next",
@@ -254,7 +254,6 @@
   "update_rulefile_warning_intro": "You are about to update the rule file for an ongoing audit. This is an advanced action with the following consequences:",
   "update_rulefile_warning_li1": "Results for requirements that are removed from the new rule file will be permanently deleted.",
   "update_rulefile_warning_li2": "Requirements that have been changed will be marked for re-review.",
-  "update_rulefile_warning_li3": "Samples with settings (like page type) that no longer exist will be marked as invalid and must be corrected.",
   "update_rulefile_recommendation": "Step 1: Save a backup",
   "update_rulefile_backup_text": "It is strongly recommended to save a backup of your current audit before proceeding.",
   "update_rulefile_backup_saved": "Backup saved.",
@@ -272,5 +271,9 @@
   "requirement_updated_needs_review": "This requirement has been updated since the last review. Please verify your assessment below.",
   "no_requirements_match_filter": "No requirements match the current filter.",
   "search_placeholder_default": "Search in requirement texts...",
-  "error_set_check_status_first": "Please set the main check status ('Complies'/'Does not comply') first."
+  "error_set_check_status_first": "Please set the main check status ('Complies'/'Does not comply') first.",
+  "update_rulefile_success": "The rule file was successfully updated.",
+  "update_rulefile_confirm_intro": "The new rule file has been analyzed. Please review the changes below before confirming.",
+  "update_rulefile_confirm_button": "Confirm and Apply Changes",
+  "sample_has_updated_reqs_tooltip": "This sample has updated requirements that need re-review."
 }
