@@ -1,3 +1,4 @@
+// js/components/UpdateRulefileViewComponent.js
 // Ta bort import-satsen
 // import { RulefileUpdaterLogic } from '../logic/rulefile_updater_logic.js';
 
@@ -205,14 +206,8 @@ export const UpdateRulefileViewComponent = (function () {
         });
         backup_button.addEventListener('click', handle_backup_click);
         
-        const cancel_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
-            text_content: t('cancel', {defaultValue: "Cancel"})
-        });
-        cancel_button.addEventListener('click', () => router_ref('audit_overview'));
-
         const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
-        actions_div.append(cancel_button, backup_button);
+        actions_div.append(backup_button);
         plate_element_ref.appendChild(actions_div);
     }
     
@@ -283,12 +278,13 @@ export const UpdateRulefileViewComponent = (function () {
 
         const cancel_button = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
-            text_content: t('cancel', {defaultValue: "Cancel"})
+            text_content: t('update_rulefile_continue_with_old', {defaultValue: "Continue with old rule file"})
         });
         cancel_button.addEventListener('click', () => router_ref('audit_overview'));
         
         const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
-        actions_div.append(cancel_button, confirm_button);
+        
+        actions_div.append(confirm_button, cancel_button);
         plate_element_ref.appendChild(actions_div);
     }
 

@@ -275,5 +275,6 @@
   "update_rulefile_success": "Regelfilen har uppdaterats.",
   "update_rulefile_confirm_intro": "Den nya regelfilen har analyserats. Granska ändringarna nedan innan du bekräftar.",
   "update_rulefile_confirm_button": "Bekräfta och genomför ändringar",
-  "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas."
+  "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas.",
+  "update_rulefile_continue_with_old": "Fortsätt med gammal regelfil"
 }

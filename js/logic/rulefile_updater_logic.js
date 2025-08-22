@@ -89,6 +89,33 @@
             return 0;
         });
     }
+
+    /**
+     * Normaliserar 'instructions'-fältet till en jämförbar sträng.
+     * Hanterar strängar, array av objekt, och null/undefined.
+     * @param {string|Array|undefined} instr - instructions-värdet.
+     * @returns {string} En normaliserad sträng.
+     */
+    function normalize_instructions(instr) {
+        if (!instr) {
+            return "";
+        }
+        if (typeof instr === 'string') {
+            return instr.trim();
+        }
+        if (Array.isArray(instr)) {
+            const text_content = instr
+                .map(item => (typeof item === 'object' && item.text) ? item.text : String(item))
+                .join('\n\n') // Sammanfoga med dubbla nyradstecken för att representera stycken
+                .trim();
+            
+            if (text_content === '---Instruktion saknas---') {
+                return "";
+            }
+            return text_content;
+        }
+        return "";
+    }
     
     /**
      * Jämför innehållet i ett gammalt och ett nytt krav fält-för-fält med specialregler.
@@ -97,55 +124,50 @@
      * @returns {boolean} - True om en relevant ändring har skett.
      */
     function has_requirement_content_changed(old_req, new_req) {
-        // Lista över fält som ska jämföras direkt
         const simple_fields_to_compare = [
-            'title', 'expectedObservation', 'exceptions', 'tips', 'commonErrors', 'contentType', 'metadata'
+            'title', 'expectedObservation', 'exceptions', 'tips', 
+            'commonErrors', 'contentType', 'metadata'
         ];
 
         for (const field of simple_fields_to_compare) {
-            if (!deep_equals(old_req[field], new_req[field])) {
-                return true; // Enkel skillnad hittad
-            }
+            if (!deep_equals(old_req[field], new_req[field])) return true;
         }
 
-        // Specialhantering för 'instructions'
-        const old_instructions_is_empty = !old_req.instructions || old_req.instructions.length === 0;
-        const new_instructions_is_placeholder = Array.isArray(new_req.instructions) && new_req.instructions.length === 1 &&
-            (new_req.instructions[0].text === '---Instruktion saknas---' || new_req.instructions[0].text === '');
-        
-        if (!((old_instructions_is_empty && new_instructions_is_placeholder) || (new_instructions_is_placeholder && old_instructions_is_empty))) {
-            // Om undantaget inte gäller, gör en ordningsokänslig jämförelse
-            if (!deep_equals(sort_by_id(old_req.instructions), sort_by_id(new_req.instructions))) {
-                return true;
-            }
-        }
+        const old_instructions_text = normalize_instructions(old_req.instructions);
+        const new_instructions_text = normalize_instructions(new_req.instructions);
+        if (old_instructions_text !== new_instructions_text) return true;
 
-        // Specialhantering för 'checks'
-        const old_checks_normalized = (old_req.checks || []).map(c => {
-            const copy = {...c};
-            delete copy.failureStatementTemplate;
-            return copy;
-        });
+        // *** KORRIGERING: Skapa en funktion för att normalisera checks-arrayen ***
+        const normalizeChecksArray = (checks) => {
+            if (!Array.isArray(checks)) return [];
+            return checks.map(c => {
+                const normalized_check = { ...c };
+                if (Array.isArray(normalized_check.passCriteria)) {
+                    normalized_check.passCriteria = normalized_check.passCriteria.map(pc => {
+                        const normalized_pc = { ...pc };
+                        delete normalized_pc.failureStatementTemplate; // Ta bort fältet
+                        return normalized_pc;
+                    });
+                }
+                if (Array.isArray(normalized_check.ifNo) && normalized_check.ifNo.length === 0) {
+                    delete normalized_check.ifNo;
+                }
+                return normalized_check;
+            });
+        };
 
-        const new_checks_normalized = (new_req.checks || []).map(c => {
-            const copy = {...c};
-            delete copy.failureStatementTemplate;
-            if (Array.isArray(copy.ifNo) && copy.ifNo.length === 0) {
-                delete copy.ifNo;
-            }
-            return copy;
-        });
+        const old_checks_normalized = normalizeChecksArray(old_req.checks);
+        const new_checks_normalized = normalizeChecksArray(new_req.checks);
         
         if (!deep_equals(sort_by_id(old_checks_normalized), sort_by_id(new_checks_normalized))) {
             return true;
         }
 
-        // Jämför andra listor som kan finnas, t.ex. 'examples'
         if (!deep_equals(sort_by_id(old_req.examples), sort_by_id(new_req.examples))) {
             return true;
         }
 
-        return false; // Inga relevanta ändringar hittades
+        return false;
     }
 
     /**
