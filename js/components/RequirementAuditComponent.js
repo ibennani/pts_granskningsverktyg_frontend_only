@@ -891,7 +891,22 @@ export const RequirementAuditComponent = (function () {
         examples_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         metadata_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         
-        plate_element_ref.append(expected_observation_section_ref, instructions_section_ref, tips_section_ref, exceptions_section_ref, common_errors_section_ref, examples_section_ref, metadata_section_ref);
+        // ============================
+        // === START PÅ KORRIGERING ===
+        // ============================
+        // Ordningen på variablerna i 'append' har ändrats så att 'tips' kommer efter 'examples'.
+        plate_element_ref.append(
+            expected_observation_section_ref, 
+            instructions_section_ref, 
+            exceptions_section_ref, 
+            common_errors_section_ref, 
+            examples_section_ref, 
+            tips_section_ref, 
+            metadata_section_ref
+        );
+        // ==========================
+        // === SLUT PÅ KORRIGERING ===
+        // ==========================
     
         top_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         plate_element_ref.appendChild(top_nav_buttons_container_ref);
