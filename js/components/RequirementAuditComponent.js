@@ -1,3 +1,4 @@
+// js/components/RequirementAuditComponent.js
 export const RequirementAuditComponent = (function () { 
 
     const CSS_PATH = 'css/components/requirement_audit_component.css';
@@ -412,6 +413,10 @@ export const RequirementAuditComponent = (function () {
             return;
         }
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
+        
+        // KORRIGERING: Ta bort needsReview-flaggan när en ändring görs
+        delete modified_result_for_dispatch.needsReview;
+
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
         const check_definition = current_requirement_object_from_store.checks.find(c => c.id === check_id);
     
@@ -457,6 +462,10 @@ export const RequirementAuditComponent = (function () {
             return;
         }
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
+        
+        // KORRIGERING: Ta bort needsReview-flaggan när en ändring görs
+        delete modified_result_for_dispatch.needsReview;
+
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
         if (check_result_to_modify.overallStatus === 'failed') {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('cannot_change_criteria_if_check_not_compliant'), 'warning');
@@ -627,6 +636,28 @@ export const RequirementAuditComponent = (function () {
             if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('all_requirements_handled_for_sample'), 'info');
         }
     }
+
+    function handle_confirm_reviewed_status() {
+        if (!current_requirement_result_for_view || !local_dispatch || !params_ref) return;
+
+        let modified_result = JSON.parse(JSON.stringify(current_requirement_result_for_view));
+        delete modified_result.needsReview;
+
+        if (Helpers_get_current_iso_datetime_utc) {
+            modified_result.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
+        }
+
+        local_dispatch({
+            type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+            payload: {
+                sampleId: params_ref.sampleId,
+                requirementId: params_ref.requirementId,
+                newRequirementResult: modified_result
+            }
+        });
+
+        router_ref('requirement_list', { sampleId: params_ref.sampleId });
+    }
     
     function render_checks_section(container_element) { 
         const t = get_t_internally();
@@ -762,6 +793,27 @@ export const RequirementAuditComponent = (function () {
         });
         back_to_list_btn.addEventListener('click', () => { save_focus_state(); router_ref('requirement_list', { sampleId: params_ref.sampleId }); });
         nav_group_left.appendChild(back_to_list_btn);
+
+        if (current_requirement_result_for_view?.needsReview === true) {
+            const current_status = current_requirement_result_for_view.status;
+            let button_text_key = 'confirm_status_and_return';
+            let button_class = 'button-secondary'; // Grå som standard
+            if (current_status === 'passed') {
+                button_text_key = 'confirm_status_passed';
+                button_class = 'button-success'; // Grön
+            } else if (current_status === 'failed') {
+                button_text_key = 'confirm_status_failed';
+                button_class = 'button-danger'; // Röd
+            }
+            
+            const confirm_reviewed_button = Helpers_create_element('button', {
+                class_name: ['button', button_class],
+                html_content: `<span>${t(button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check', ['currentColor'], 18) : '')
+            });
+            confirm_reviewed_button.addEventListener('click', handle_confirm_reviewed_status);
+            nav_group_left.appendChild(confirm_reviewed_button);
+        }
+
         const current_global_state_for_nav = local_getState();
         const current_index = get_current_requirement_index_in_ordered_list();
         if (current_global_state_for_nav && current_global_state_for_nav.auditStatus !== 'locked') {
@@ -869,16 +921,15 @@ export const RequirementAuditComponent = (function () {
             return;
         }
     
-        // *** NY LOGIK: Visa en informationsbanner om `needsReview` är true ***
+        if (NotificationComponent_clear_global_message && global_message_element_ref &&
+            !global_message_element_ref.classList.contains('message-error') &&
+            !global_message_element_ref.classList.contains('message-warning')) {
+            NotificationComponent_clear_global_message();
+        }
+    
         const needs_review = result_for_render?.needsReview === true;
         if (needs_review && NotificationComponent_show_global_message) {
-            // Vi använder global_message_area för denna banner
             NotificationComponent_show_global_message(t('requirement_updated_needs_review', { defaultValue: "This requirement has been updated since last review. Please verify your assessment." }), 'info');
-        } else if (NotificationComponent_clear_global_message && global_message_element_ref &&
-                   !global_message_element_ref.classList.contains('message-error') &&
-                   !global_message_element_ref.classList.contains('message-warning')) {
-            // Rensa bara om det inte är ett fel- eller varningsmeddelande
-            NotificationComponent_clear_global_message();
         }
     
         requirement_title_element_ref.textContent = req_for_render.title;

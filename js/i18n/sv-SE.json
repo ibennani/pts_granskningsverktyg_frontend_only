@@ -276,5 +276,8 @@
   "update_rulefile_confirm_intro": "Den nya regelfilen har analyserats. Granska ändringarna nedan innan du bekräftar.",
   "update_rulefile_confirm_button": "Bekräfta och genomför ändringar",
   "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas.",
-  "update_rulefile_continue_with_old": "Fortsätt med gammal regelfil"
+  "update_rulefile_continue_with_old": "Fortsätt med gammal regelfil",
+  "confirm_status_and_return": "Bekräfta status och återgå",
+  "confirm_status_failed": "Kravet förblir underkänt",
+  "confirm_status_passed": "Kravet förblir godkänt"
 }

@@ -6,7 +6,7 @@ export const RequirementListToolbarComponent = (function () {
     let container_ref;
     
     let on_change_callback;
-    let component_state; // Byt namn från initial_state för tydlighet
+    let component_state;
     let Translation_t;
     let Helpers_create_element;
     let Helpers_load_css;
@@ -16,7 +16,7 @@ export const RequirementListToolbarComponent = (function () {
     async function init(_container, _on_change_cb, _initial_state, _Translation, _Helpers) {
         container_ref = _container;
         on_change_callback = _on_change_cb;
-        component_state = _initial_state; // Lagra det aktuella state som skickas in
+        component_state = _initial_state;
         Translation_t = _Translation.t;
         Helpers_create_element = _Helpers.create_element;
         Helpers_load_css = _Helpers.load_css;
@@ -40,22 +40,31 @@ export const RequirementListToolbarComponent = (function () {
     }
 
     function handle_status_filter_change(event) {
-        const checkbox = event.target;
-        if (!checkbox || checkbox.type !== 'checkbox') return;
+        const filter_panel = event.target.closest('.status-filter-panel');
+        if (!filter_panel) return;
 
-        const status_key = checkbox.dataset.status;
-        const is_checked = checkbox.checked;
+        const all_checkbox = filter_panel.querySelector('input[data-status="all"]');
+        const status_checkboxes = filter_panel.querySelectorAll('input[data-status]:not([data-status="all"])');
+        
+        const new_status_filters = {};
 
-        const new_status_filters = { ...component_state.status };
-
-        if (status_key === 'all') {
-            new_status_filters.passed = is_checked;
-            new_status_filters.failed = is_checked;
-            new_status_filters.partially_audited = is_checked;
-            new_status_filters.not_audited = is_checked;
-            new_status_filters.updated = is_checked;
+        if (event.target === all_checkbox) {
+            // Om "Alla" ändras, uppdatera alla andra
+            const is_checked = all_checkbox.checked;
+            status_checkboxes.forEach(cb => {
+                cb.checked = is_checked;
+                new_status_filters[cb.dataset.status] = is_checked;
+            });
         } else {
-            new_status_filters[status_key] = is_checked;
+            // Om en individuell ändras, uppdatera den och "Alla"
+            let all_are_checked = true;
+            status_checkboxes.forEach(cb => {
+                new_status_filters[cb.dataset.status] = cb.checked;
+                if (!cb.checked) {
+                    all_are_checked = false;
+                }
+            });
+            all_checkbox.checked = all_are_checked;
         }
         
         if (on_change_callback) {
@@ -101,7 +110,6 @@ export const RequirementListToolbarComponent = (function () {
             console.error("ToolbarComponent: Cannot render, core dependencies missing.");
             return;
         }
-        // *** KORRIGERING: Kontrollera att component_state och component_state.status finns ***
         if (!component_state || !component_state.status) {
             console.error("ToolbarComponent: Cannot render, component_state or component_state.status is undefined. Check data passed from parent.");
             container_ref.innerHTML = `<p style="color:red;">Error rendering toolbar.</p>`;
@@ -121,7 +129,7 @@ export const RequirementListToolbarComponent = (function () {
         // Söksektion
         const search_group = Helpers_create_element('div', { class_name: 'toolbar-group search-group' });
         const search_label = Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t('search_in_help_texts_label') });
-        const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search', placeholder: t('search_placeholder_default') }, value: searchInputValue });
+        const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' }, value: searchInputValue });
         search_input.addEventListener('input', handle_search_input);
         search_group.append(search_label, search_input);
 

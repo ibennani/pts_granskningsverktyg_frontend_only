@@ -195,7 +195,6 @@ const SampleListComponent_internal = (function () {
             
             const info_div = Helpers_create_element('div', { class_name: 'sample-info' });
             
-            // *** NY LOGIK för att kolla om stickprovet har krav som behöver ses över ***
             let sample_needs_review = false;
             if (sample.requirementResults) {
                 sample_needs_review = Object.values(sample.requirementResults).some(res => res.needsReview === true);
@@ -224,30 +223,25 @@ const SampleListComponent_internal = (function () {
                 info_div.appendChild(url_p);
             }
 
-            const relevant_reqs_for_sample_list_info = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, sample);
-            const total_relevant_reqs_info = relevant_reqs_for_sample_list_info.length;
-            let audited_reqs_count_info = 0;
+            const relevant_reqs_for_this_sample = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, sample);
+            const total_relevant_reqs = relevant_reqs_for_this_sample.length;
+            let audited_reqs_count = 0;
 
-            relevant_reqs_for_sample_list_info.forEach(req_definition_from_list => {
-                const req_object_from_rulefile = current_global_state.ruleFileContent.requirements[req_definition_from_list.id] || current_global_state.ruleFileContent.requirements[req_definition_from_list.key];
-                const req_result_from_sample = sample.requirementResults ? sample.requirementResults[req_definition_from_list.id] || sample.requirementResults[req_definition_from_list.key] : null;
-                
-                if (req_object_from_rulefile) { 
-                    const req_status = AuditLogic_calculate_requirement_status(req_object_from_rulefile, req_result_from_sample);
-                    if (status === 'passed' || status === 'failed') {
-                        audited_reqs_count_info++;
-                    }
-                } else {
-                    console.warn(`[SampleListComponent] Could not find requirement definition for ID/key: ${req_definition_from_list.id || req_definition_from_list.key} in ruleFileContent.`);
+            relevant_reqs_for_this_sample.forEach(req_definition => {
+                const req_key = req_definition.key || req_definition.id;
+                const req_result = (sample.requirementResults || {})[req_key];
+                const req_status = AuditLogic_calculate_requirement_status(req_definition, req_result);
+                if (req_status === 'passed' || req_status === 'failed') {
+                    audited_reqs_count++;
                 }
             });
 
             const progress_p = Helpers_create_element('p');
-            progress_p.innerHTML = `<strong>${t('requirements_audited')}:</strong> ${audited_reqs_count_info} / ${total_relevant_reqs_info}`;
+            progress_p.innerHTML = `<strong>${t('requirements_audited')}:</strong> ${audited_reqs_count} / ${total_relevant_reqs}`;
             info_div.appendChild(progress_p);
             
             if (window.ProgressBarComponent && typeof window.ProgressBarComponent.create === 'function') {
-                const progress_bar = window.ProgressBarComponent.create(audited_reqs_count_info, total_relevant_reqs_info, {});
+                const progress_bar = window.ProgressBarComponent.create(audited_reqs_count, total_relevant_reqs, {});
                 info_div.appendChild(progress_bar);
             }
             if (sample.selectedContentTypes && sample.selectedContentTypes.length > 0 &&
@@ -270,8 +264,6 @@ const SampleListComponent_internal = (function () {
             const actions_wrapper_div = Helpers_create_element('div', { class_name: 'sample-actions-wrapper' });
             const main_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-main' });
             const delete_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-delete' });
-
-            const total_relevant_reqs = relevant_reqs_for_sample_list_info.length;
 
             if (total_relevant_reqs > 0) {
                 const view_reqs_button = Helpers_create_element('button', {

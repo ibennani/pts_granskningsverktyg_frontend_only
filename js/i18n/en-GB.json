@@ -276,5 +276,8 @@
   "update_rulefile_confirm_intro": "The new rule file has been analyzed. Please review the changes below before confirming.",
   "update_rulefile_confirm_button": "Confirm and Apply Changes",
   "sample_has_updated_reqs_tooltip": "This sample has updated requirements that need re-review.",
-  "update_rulefile_continue_with_old": "Continue with current rule file"
+  "update_rulefile_continue_with_old": "Continue with current rule file",
+  "confirm_status_and_return": "Confirm Status & Return",
+  "confirm_status_failed": "Requirement Remains Failed",
+  "confirm_status_passed": "Requirement Remains Passed"
 }
