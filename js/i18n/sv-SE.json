@@ -142,7 +142,7 @@
   "requirement_metadata_title": "Kravets metadata",
   "requirement_standard_reference_label": "Referensdokumentation: ",
   "requirement_standard_reference": "Standardreferens",
-  "requirement_tips": "Tips",
+  "requirement_tips": "Tips och goda råd",
   "requirements_audited": "Hanterade krav",
   "rule_file_invalid_json": "Den uppladdade filen är inte giltig JSON",
   "rule_file_loaded_successfully": "Regelfil inläst och validerad",
@@ -279,5 +279,6 @@
   "update_rulefile_continue_with_old": "Fortsätt med gammal regelfil",
   "confirm_status_and_return": "Bekräfta status och återgå",
   "confirm_status_failed": "Kravet förblir underkänt",
-  "confirm_status_passed": "Kravet förblir godkänt"
+  "confirm_status_passed": "Kravet förblir godkänt",
+  "requirement_examples": "Exempel"
 }

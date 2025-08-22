@@ -39,6 +39,7 @@ export const RequirementAuditComponent = (function () {
     let tips_section_ref = null;
     let exceptions_section_ref = null;
     let common_errors_section_ref = null;
+    let examples_section_ref = null;
     let metadata_section_ref = null;
     
     let ordered_requirement_keys_for_sample = [];
@@ -414,7 +415,6 @@ export const RequirementAuditComponent = (function () {
         }
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
         
-        // KORRIGERING: Ta bort needsReview-flaggan när en ändring görs
         delete modified_result_for_dispatch.needsReview;
 
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
@@ -463,7 +463,6 @@ export const RequirementAuditComponent = (function () {
         }
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
         
-        // KORRIGERING: Ta bort needsReview-flaggan när en ändring görs
         delete modified_result_for_dispatch.needsReview;
 
         let check_result_to_modify = modified_result_for_dispatch.checkResults[check_id];
@@ -521,6 +520,7 @@ export const RequirementAuditComponent = (function () {
     function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') {
         const t = get_t_internally();
         const has_content = content_data && ((typeof content_data === 'string' && content_data.trim() !== '') || (Array.isArray(content_data) && content_data.length > 0));
+        
         if (has_content) {
             if (!section_ref || !parent_element.contains(section_ref)) {
                  console.error("Internal logic error: section_ref is missing for render_audit_section_internal but content exists.");
@@ -534,25 +534,38 @@ export const RequirementAuditComponent = (function () {
             }
             h2_element.textContent = t(title_key);
     
-            let content_element = section_ref.querySelector('ul') || section_ref.querySelector('p');
-            const expected_tag = Array.isArray(content_data) ? 'UL' : 'P';
-            if (!content_element || content_element.tagName !== expected_tag) {
-                if(content_element) content_element.remove();
-                content_element = Helpers_create_element(expected_tag.toLowerCase());
+            const expected_tag = 'DIV';
+            let content_element = section_ref.querySelector('div.audit-section-content');
+            
+            if (!content_element) {
+                const old_p = section_ref.querySelector('p');
+                if(old_p) old_p.remove();
+                const old_ul = section_ref.querySelector('ul');
+                if(old_ul) old_ul.remove();
+
+                content_element = Helpers_create_element('div', { class_name: 'audit-section-content' });
                 section_ref.appendChild(content_element);
             }
     
             content_element.innerHTML = ''; 
-            if (Array.isArray(content_data)) {
-                content_data.forEach(item_obj => {
-                    const text_content = (typeof item_obj === 'object' && item_obj.text) ? item_obj.text : String(item_obj);
-                    const sanitized_html = Helpers_sanitize_and_linkify_html(text_content).replace(/\n/g, '<br>');
-                    content_element.appendChild(Helpers_create_element('li', { html_content: sanitized_html }));
-                });
+
+            const markdown_text = Array.isArray(content_data)
+                ? content_data.map(item => (typeof item === 'object' && item.text) ? item.text : String(item)).join('\n\n')
+                : String(content_data);
+
+            if (typeof marked !== 'undefined') {
+                const renderer = new marked.Renderer();
+                const originalLinkRenderer = renderer.link.bind(renderer);
+                renderer.link = (href, title, text) => {
+                    const link = originalLinkRenderer(href, title, text);
+                    return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
+                };
+                content_element.innerHTML = marked.parse(markdown_text, { breaks: true, gfm: true, renderer: renderer });
             } else {
-                const sanitized_html = Helpers_sanitize_and_linkify_html(String(content_data)).replace(/\n/g, '<br>');
-                content_element.innerHTML = sanitized_html;
+                console.warn("marked.js library not found. Rendering as plain text.");
+                content_element.innerHTML = Helpers_sanitize_and_linkify_html(markdown_text).replace(/\n/g, '<br>');
             }
+
         } else if (section_ref) {
             section_ref.setAttribute('hidden', 'true');
             section_ref.innerHTML = '';
@@ -797,13 +810,13 @@ export const RequirementAuditComponent = (function () {
         if (current_requirement_result_for_view?.needsReview === true) {
             const current_status = current_requirement_result_for_view.status;
             let button_text_key = 'confirm_status_and_return';
-            let button_class = 'button-secondary'; // Grå som standard
+            let button_class = 'button-secondary';
             if (current_status === 'passed') {
                 button_text_key = 'confirm_status_passed';
-                button_class = 'button-success'; // Grön
+                button_class = 'button-success';
             } else if (current_status === 'failed') {
                 button_text_key = 'confirm_status_failed';
-                button_class = 'button-danger'; // Röd
+                button_class = 'button-danger';
             }
             
             const confirm_reviewed_button = Helpers_create_element('button', {
@@ -875,8 +888,10 @@ export const RequirementAuditComponent = (function () {
         tips_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         exceptions_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         common_errors_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
+        examples_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         metadata_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
-        plate_element_ref.append(expected_observation_section_ref, instructions_section_ref, tips_section_ref, exceptions_section_ref, common_errors_section_ref, metadata_section_ref);
+        
+        plate_element_ref.append(expected_observation_section_ref, instructions_section_ref, tips_section_ref, exceptions_section_ref, common_errors_section_ref, examples_section_ref, metadata_section_ref);
     
         top_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         plate_element_ref.appendChild(top_nav_buttons_container_ref);
@@ -992,18 +1007,19 @@ export const RequirementAuditComponent = (function () {
         const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
         
-        expected_observation_section_ref = render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, expected_observation_section_ref, plate_element_ref, 'expected-observation-section');
+        expected_observation_section_ref = render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, expected_observation_section_ref, plate_element_ref);
         instructions_section_ref = render_audit_section_internal('requirement_instructions', req_for_render.instructions, instructions_section_ref, plate_element_ref);
-        
         tips_section_ref = render_audit_section_internal('requirement_tips', req_for_render.tips, tips_section_ref, plate_element_ref);
         exceptions_section_ref = render_audit_section_internal('requirement_exceptions', req_for_render.exceptions, exceptions_section_ref, plate_element_ref);
         common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref); 
+        examples_section_ref = render_audit_section_internal('requirement_examples', req_for_render.examples, examples_section_ref, plate_element_ref);
+
         if (req_for_render.metadata) { 
             if (!metadata_section_ref || !plate_element_ref.contains(metadata_section_ref)) {
                 metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
-                let insert_after_node = common_errors_section_ref;
+                let insert_after_node = examples_section_ref;
                 if (!insert_after_node || !plate_element_ref.contains(insert_after_node)) {
-                    const info_sections = [exceptions_section_ref, tips_section_ref, instructions_section_ref, expected_observation_section_ref];
+                    const info_sections = [common_errors_section_ref, exceptions_section_ref, tips_section_ref, instructions_section_ref, expected_observation_section_ref];
                     for (let i = 0; i < info_sections.length; i++) { if (info_sections[i] && plate_element_ref.contains(info_sections[i])) { insert_after_node = info_sections[i]; break; } }
                 }
                 if (insert_after_node && plate_element_ref.contains(insert_after_node)) { if (insert_after_node.nextSibling) plate_element_ref.insertBefore(metadata_section_ref, insert_after_node.nextSibling); else plate_element_ref.appendChild(metadata_section_ref); } 
@@ -1016,7 +1032,10 @@ export const RequirementAuditComponent = (function () {
             if(req_for_render.metadata.subCategory?.text) { const li = Helpers_create_element('li'); li.innerHTML = `<strong>${t('sub_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.subCategory.text)}`; metadata_list_ul.appendChild(li); }
             if (req_for_render.metadata.impact) { const impact_text = req_for_render.metadata.impact.isCritical ? t('critical') : t('impact_normal'); const li = Helpers_create_element('li'); li.innerHTML = `<strong>${t('impact')}:</strong> ${impact_text}`; metadata_list_ul.appendChild(li); }
             metadata_section_ref.appendChild(metadata_list_ul);
-        } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) { metadata_section_ref.remove(); metadata_section_ref = null; }
+        } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) {
+            metadata_section_ref.remove(); 
+            metadata_section_ref = null; 
+        }
         
         render_navigation_buttons(top_nav_buttons_container_ref);
         render_navigation_buttons(bottom_nav_buttons_container_ref);
@@ -1085,6 +1104,7 @@ export const RequirementAuditComponent = (function () {
         bottom_nav_buttons_container_ref = null; instructions_section_ref = null;
         expected_observation_section_ref = null; tips_section_ref = null;
         exceptions_section_ref = null; common_errors_section_ref = null;
+        examples_section_ref = null;
         metadata_section_ref = null;
         current_sample_object_from_store = null; 
         current_requirement_object_from_store = null; 

@@ -142,7 +142,7 @@
   "requirement_metadata_title": "Requirement metadata",
   "requirement_standard_reference_label": "Reference documentation: ",
   "requirement_standard_reference": "Standard reference",
-  "requirement_tips": "Tips",
+  "requirement_tips": "Tips and advice",
   "requirements_audited": "Reviewed requirements",
   "rule_file_invalid_json": "The uploaded file is not valid JSON",
   "rule_file_loaded_successfully": "Rule file successfully loaded and validated",
@@ -279,5 +279,6 @@
   "update_rulefile_continue_with_old": "Continue with current rule file",
   "confirm_status_and_return": "Confirm Status & Return",
   "confirm_status_failed": "Requirement Remains Failed",
-  "confirm_status_passed": "Requirement Remains Passed"
+  "confirm_status_passed": "Requirement Remains Passed",
+  "requirement_examples": "Example"
 }
