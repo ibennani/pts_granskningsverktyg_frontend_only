@@ -280,5 +280,17 @@
   "confirm_status_and_return": "Bekräfta status och återgå",
   "confirm_status_failed": "Kravet förblir underkänt",
   "confirm_status_passed": "Kravet förblir godkänt",
-  "requirement_examples": "Exempel"
+  "requirement_examples": "Exempel",
+  "excel_sheet_deficiencies": "Brister",
+  "excel_col_deficiency_id": "Brist-ID",
+  "excel_col_req_title": "Kravets titel",
+  "excel_col_reference": "Referens",
+  "excel_col_control": "Kontroll",
+  "excel_col_observation": "Observation",
+  "requirement_not_met_default_text": "Kravet är inte uppfyllt",
+  "excel_library_not_loaded": "Excel-biblioteket (ExcelJS) är inte laddat.",
+  "error_exporting_excel": "Fel vid export till Excel.",
+  "deficiency_prefix": "brist",
+  "requirement_examples": "Exempel",
+  "excel_sheet_deficiencies": "Brister"
 }

@@ -297,14 +297,17 @@ export const RequirementAuditComponent = (function () {
             }
             (check_definition.passCriteria || []).forEach(pc_definition => {
                 const pc_data = current_requirement_result_for_view.checkResults[check_definition.id].passCriteria[pc_definition.id];
+                // Uppgraderingslogik för gamla format
                 if (typeof pc_data === 'string' || pc_data === undefined || pc_data === null) {
                     current_requirement_result_for_view.checkResults[check_definition.id].passCriteria[pc_definition.id] = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
-                        observationDetail: ''
+                        observationDetail: '',
+                        timestamp: null // Sätt timestamp till null för gamla data
                     };
                 } else if (typeof pc_data === 'object') { 
                     if (pc_data.status === undefined) pc_data.status = 'not_audited';
                     if (pc_data.observationDetail === undefined) pc_data.observationDetail = '';
+                    if (pc_data.timestamp === undefined) pc_data.timestamp = null; // Lägg till om objektet finns men saknar timestamp
                 }
             });
         });
@@ -386,9 +389,11 @@ export const RequirementAuditComponent = (function () {
         }
         let modified_result_for_dispatch = JSON.parse(JSON.stringify(current_requirement_result_for_view));
         if (!modified_result_for_dispatch.checkResults[check_id].passCriteria[pc_id]) {
-            modified_result_for_dispatch.checkResults[check_id].passCriteria[pc_id] = { status: 'not_audited', observationDetail: '' };
+            modified_result_for_dispatch.checkResults[check_id].passCriteria[pc_id] = { status: 'not_audited', observationDetail: '', timestamp: null };
         }
         modified_result_for_dispatch.checkResults[check_id].passCriteria[pc_id].observationDetail = new_detail_text;
+        // Tidsstämpel för observation sätts inte här, bara vid statusändring.
+    
         if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
     
         if (!local_StoreActionTypes?.UPDATE_REQUIREMENT_RESULT) {
@@ -426,12 +431,16 @@ export const RequirementAuditComponent = (function () {
             check_result_to_modify.overallStatus = new_overall_status_for_check_button_click;
         }
     
+        // <<< NYTT: LÄGG TILL TIDSSTÄMPEL VID ÄNDRING >>>
+        check_result_to_modify.timestamp = Helpers_get_current_iso_datetime_utc();
+
         if (check_result_to_modify.overallStatus === 'failed' && check_definition?.passCriteria) {
             check_definition.passCriteria.forEach(pc_def => {
                  if(!check_result_to_modify.passCriteria[pc_def.id]) { 
-                    check_result_to_modify.passCriteria[pc_def.id] = { status: 'passed', observationDetail: '' };
+                    check_result_to_modify.passCriteria[pc_def.id] = { status: 'passed', observationDetail: '', timestamp: Helpers_get_current_iso_datetime_utc() };
                  } else { 
                     check_result_to_modify.passCriteria[pc_def.id].status = 'passed';
+                    check_result_to_modify.passCriteria[pc_def.id].timestamp = Helpers_get_current_iso_datetime_utc();
                  }
             });
         }
@@ -476,7 +485,7 @@ export const RequirementAuditComponent = (function () {
         }
         
         if (typeof check_result_to_modify.passCriteria[pc_id] !== 'object' || check_result_to_modify.passCriteria[pc_id] === null) {
-            check_result_to_modify.passCriteria[pc_id] = { status: 'not_audited', observationDetail: '' };
+            check_result_to_modify.passCriteria[pc_id] = { status: 'not_audited', observationDetail: '', timestamp: null };
         }
     
         const old_pc_status = check_result_to_modify.passCriteria[pc_id].status;
@@ -486,6 +495,9 @@ export const RequirementAuditComponent = (function () {
         } else {
             check_result_to_modify.passCriteria[pc_id].status = new_pc_status;
         }
+
+        // <<< NYTT: LÄGG TILL TIDSSTÄMPEL VID ÄNDRING >>>
+        check_result_to_modify.passCriteria[pc_id].timestamp = Helpers_get_current_iso_datetime_utc();
     
         if (check_result_to_modify.passCriteria[pc_id].status === 'failed' && 
             (!check_result_to_modify.passCriteria[pc_id].observationDetail || check_result_to_modify.passCriteria[pc_id].observationDetail.trim() === '')) {
@@ -534,14 +546,11 @@ export const RequirementAuditComponent = (function () {
             }
             h2_element.textContent = t(title_key);
     
-            const expected_tag = 'DIV';
             let content_element = section_ref.querySelector('div.audit-section-content');
             
             if (!content_element) {
-                const old_p = section_ref.querySelector('p');
-                if(old_p) old_p.remove();
-                const old_ul = section_ref.querySelector('ul');
-                if(old_ul) old_ul.remove();
+                const old_p = section_ref.querySelector('p'); if(old_p) old_p.remove();
+                const old_ul = section_ref.querySelector('ul'); if(old_ul) old_ul.remove();
 
                 content_element = Helpers_create_element('div', { class_name: 'audit-section-content' });
                 section_ref.appendChild(content_element);
@@ -562,7 +571,6 @@ export const RequirementAuditComponent = (function () {
                 };
                 content_element.innerHTML = marked.parse(markdown_text, { breaks: true, gfm: true, renderer: renderer });
             } else {
-                console.warn("marked.js library not found. Rendering as plain text.");
                 content_element.innerHTML = Helpers_sanitize_and_linkify_html(markdown_text).replace(/\n/g, '<br>');
             }
 
@@ -891,10 +899,6 @@ export const RequirementAuditComponent = (function () {
         examples_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         metadata_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
         
-        // ============================
-        // === START PÅ KORRIGERING ===
-        // ============================
-        // Ordningen på variablerna i 'append' har ändrats så att 'tips' kommer efter 'examples'.
         plate_element_ref.append(
             expected_observation_section_ref, 
             instructions_section_ref, 
@@ -904,9 +908,6 @@ export const RequirementAuditComponent = (function () {
             tips_section_ref, 
             metadata_section_ref
         );
-        // ==========================
-        // === SLUT PÅ KORRIGERING ===
-        // ==========================
     
         top_nav_buttons_container_ref = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         plate_element_ref.appendChild(top_nav_buttons_container_ref);
@@ -1135,4 +1136,4 @@ export const RequirementAuditComponent = (function () {
         destroy
     };
     
-    })();
+})();

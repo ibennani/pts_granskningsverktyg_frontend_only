@@ -280,5 +280,17 @@
   "confirm_status_and_return": "Confirm Status & Return",
   "confirm_status_failed": "Requirement Remains Failed",
   "confirm_status_passed": "Requirement Remains Passed",
-  "requirement_examples": "Example"
+  "requirement_examples": "Example",
+  "excel_sheet_deficiencies": "Deficiencies",
+  "excel_col_deficiency_id": "Deficiency ID",
+  "excel_col_req_title": "Requirement Title",
+  "excel_col_reference": "Reference",
+  "excel_col_control": "Control",
+  "excel_col_observation": "Observation",
+  "requirement_not_met_default_text": "The requirement is not met",
+  "excel_library_not_loaded": "Excel library (ExcelJS) is not loaded.",
+  "error_exporting_excel": "Error exporting to Excel.",
+  "deficiency_prefix": "deficiency",
+  "requirement_examples": "Example",
+  "excel_sheet_deficiencies": "Deficiencies"
 }
