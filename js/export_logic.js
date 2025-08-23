@@ -15,11 +15,20 @@
         }
     }
     
-    function escape_html_internal(unsafe_string) {
-        if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
-            return window.Helpers.escape_html(unsafe_string);
+    function escape_for_csv(str) {
+        if (str === null || str === undefined) {
+            return '';
         }
-        return String(unsafe_string);
+        let result = String(str);
+        // Ersätt citattecken med dubbla citattecken
+        result = result.replace(/"/g, '""');
+        // Ta bort nyradstecken för att hålla varje post på en rad
+        result = result.replace(/(\r\n|\n|\r)/gm, " ");
+        // Omslut fältet med citattecken om det innehåller kommatecken, semikolon eller citattecken
+        if (/[",;]/.test(result)) {
+            result = `"${result}"`;
+        }
+        return result;
     }
     
     function calculate_requirement_status_internal(requirement_object, requirement_result_object) {
@@ -37,8 +46,10 @@
         return pc ? pc.requirement : pc_id;
     }
 
+    // ========================================================================
+    // === NY, OMSKRIVEN FUNKTION FÖR CSV-EXPORT ===
+    // ========================================================================
     function export_to_csv(current_audit) {
-        // Denna funktion är oförändrad
         const t = get_t_internal();
         if (!current_audit) {
             show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -46,16 +57,20 @@
         }
         
         let csv_content_array = [];
-        csv_content_array.push([
+        
+        // Steg 1: Definiera rubrikerna
+        const headers = [
             t('excel_col_deficiency_id', {defaultValue: "Brist-ID"}),
-            t('excel_col_sample_name'),
-            t('excel_col_sample_url'),
-            t('Krav-ID (internt)'),
-            t('Kravets Titel'),
-            t('excel_col_control'),
-            t('excel_col_observation')
-        ].join(';'));
+            t('excel_col_req_title', {defaultValue: "Kravets titel"}),
+            t('excel_col_reference', {defaultValue: "Referens"}),
+            t('excel_col_sample_name', {defaultValue: "Sidans namn"}),
+            t('excel_col_sample_url', {defaultValue: "Sidans URL"}),
+            t('excel_col_control', {defaultValue: "Kontroll"}),
+            t('excel_col_observation', {defaultValue: "Observation"})
+        ];
+        csv_content_array.push(headers.join(';'));
 
+        // Steg 2: Samla in data för brister (samma logik som för Excel)
         (current_audit.samples || []).forEach(sample => {
             const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
             all_reqs.forEach(req_definition => {
@@ -82,13 +97,13 @@
                             }
 
                             const row_values = [
-                                `"${pc_obj.deficiencyId}"`,
-                                `"${(sample.description || '').replace(/"/g, '""')}"`,
-                                `"${(sample.url || '').replace(/"/g, '""')}"`,
-                                `"${(req_definition.id || '').replace(/"/g, '""')}"`,
-                                `"${(req_definition.title || '').replace(/"/g, '""')}"`,
-                                `"${controlText.replace(/"/g, '""').replace(/\n/g, ' ')}"`,
-                                `"${finalObservation.replace(/"/g, '""').replace(/\n/g, ' ')}"`
+                                escape_for_csv(pc_obj.deficiencyId),
+                                escape_for_csv(req_definition.title),
+                                escape_for_csv(req_definition.standardReference?.text || ''),
+                                escape_for_csv(sample.description),
+                                escape_for_csv(sample.url),
+                                escape_for_csv(controlText),
+                                escape_for_csv(finalObservation)
                             ];
                             csv_content_array.push(row_values.join(';'));
                         }
@@ -97,11 +112,13 @@
             });
         });
 
+        // Steg 3: Skapa och ladda ner filen
         const csv_string = csv_content_array.join('\n');
         const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv_string], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
+        // Uppdaterat filnamn
         const filename = `granskningsrapport_brister_${(current_audit.auditMetadata.actorName || 'export').replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
         link.setAttribute("download", filename);
         document.body.appendChild(link);
@@ -112,6 +129,7 @@
     }
 
     async function export_to_excel(current_audit) {
+        // Denna funktion är oförändrad från föregående svar
         const t = get_t_internal();
         if (!current_audit) {
             show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -129,10 +147,8 @@
             workbook.creator = 'PTS Granskningsverktyg';
             workbook.created = new Date();
 
-            // --- Flik 1: Allmän Information (UPPDATERAD LOGIK) ---
+            // Flik 1: Allmän Information
             const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
-            
-            // Steg 1: Skapa datan som en lista av listor (array of arrays)
             const general_info_data = [
                 [t('case_number'), current_audit.auditMetadata.caseNumber || ''],
                 [t('actor_name'), current_audit.auditMetadata.actorName || ''],
@@ -144,22 +160,15 @@
                 [t('start_time'), current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime) : ''],
                 [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime) : '']
             ];
-
-            // Steg 2: Hämta värdetalet och lägg till det sist i datan
             const vardetalValue = current_audit.auditCalculations?.currentVardetal;
             const displayVardetal = (vardetalValue !== null && vardetalValue !== undefined) ? vardetalValue : '---';
             const vardetalString = `${displayVardetal}/500`;
             general_info_data.push([t('overall_vardetal_label'), vardetalString]);
-            
-            // Steg 3: Lägg till raderna i arket (utan rubriker)
             generalSheet.addRows(general_info_data);
-
-            // Steg 4: Sätt kolumnbredder manuellt
             generalSheet.getColumn(1).width = 30;
             generalSheet.getColumn(2).width = 70;
 
-
-            // --- Flik 2: Brister (Oförändrad från förra versionen) ---
+            // Flik 2: Brister
             const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
             deficienciesSheet.columns = [
                 { header: t('excel_col_deficiency_id'), key: 'id', width: 20 },
@@ -178,11 +187,9 @@
                     const req_key = req_definition.key || req_definition.id;
                     const result = (sample.requirementResults || {})[req_key];
                     if (!result || !result.checkResults) return;
-
                     Object.keys(result.checkResults).forEach(check_id => {
                         const check_res = result.checkResults[check_id];
                         if (!check_res || !check_res.passCriteria) return;
-
                         Object.keys(check_res.passCriteria).forEach(pc_id => {
                             const pc_obj = check_res.passCriteria[pc_id];
                             if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
