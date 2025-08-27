@@ -84,9 +84,7 @@ function root_reducer(current_state, action) {
                     saveFileVersion: APP_STATE_VERSION
                 };
                 
-                // <<< START: ROBUST UPPGRADERINGSLOGIK FÖR GAMLA FILER >>>
-                
-                // Steg 1: Konvertera gamla dataformat (strängar) till nya (objekt)
+                // Konvertera gamla dataformat (strängar) till nya (objekt)
                 (loaded_state.samples || []).forEach(sample => {
                     Object.values(sample.requirementResults || {}).forEach(reqResult => {
                         Object.values(reqResult.checkResults || {}).forEach(checkResult => {
@@ -94,11 +92,9 @@ function root_reducer(current_state, action) {
                                 Object.keys(checkResult.passCriteria).forEach(pcId => {
                                     const pcValue = checkResult.passCriteria[pcId];
                                     if (typeof pcValue === 'string') {
-                                        // Detta är det gamla formatet, konvertera det!
                                         checkResult.passCriteria[pcId] = {
                                             status: pcValue,
                                             observationDetail: '',
-                                            // Använd granskningens starttid som fallback för tidsstämpel
                                             timestamp: loaded_state.startTime || null 
                                         };
                                     }
@@ -108,15 +104,12 @@ function root_reducer(current_state, action) {
                     });
                 });
 
-                // Steg 2: Initiera räknare om den saknas
                 if (!loaded_state.deficiencyCounter) {
                     loaded_state.deficiencyCounter = 1;
                 }
 
-                // Steg 3: Kör nu ID-tilldelningen på den konverterade datan
-                return window.AuditLogic.updateDeficiencyIds(loaded_state);
-                
-                // <<< SLUT: ROBUST UPPGRADERINGSLOGIK FÖR GAMLA FILER >>>
+                // Kör inkrementell uppdatering för att säkerställa konsistens
+                return window.AuditLogic.updateIncrementalDeficiencyIds(loaded_state);
             }
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
@@ -138,7 +131,8 @@ function root_reducer(current_state, action) {
         
         case ActionTypes.DELETE_SAMPLE:
             new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
-            return window.AuditLogic.updateDeficiencyIds(new_state);
+            // Kör inkrementell uppdatering för att ta bort eventuella ID:n från den raderade sampel
+            return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.UPDATE_REQUIREMENT_RESULT:
             const { sampleId, requirementId, newRequirementResult } = action.payload;
@@ -152,19 +146,34 @@ function root_reducer(current_state, action) {
                         : sample
                 )
             };
-            return window.AuditLogic.updateDeficiencyIds(new_state);
+            // Kör inkrementell uppdatering för att tilldela/ta bort ID vid behov
+            return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.SET_AUDIT_STATUS:
             const newStatus = action.payload.status;
             let timeUpdate = {};
-            if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
-                timeUpdate.startTime = get_current_iso_datetime_utc_internal();
-            } else if (newStatus === 'locked') {
-                timeUpdate.endTime = current_state.endTime || get_current_iso_datetime_utc_internal();
-            } else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
+            let state_before_status_change = current_state;
+
+            // KÄRNLOGIK FÖR NY ID-HANTERING
+            if (newStatus === 'locked' && current_state.auditStatus === 'in_progress') {
+                // Om deficiencyCounter är 1, har vi aldrig låst och numrerat förut.
+                // Detta är första låsningen!
+                if (current_state.deficiencyCounter === 1) {
+                    console.log("[State.js] First lock detected. Assigning sorted deficiency IDs.");
+                    state_before_status_change = window.AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
+                }
+                timeUpdate.endTime = state_before_status_change.endTime || get_current_iso_datetime_utc_internal();
+            } 
+            // Vid upplåsning
+            else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
                 timeUpdate.endTime = null;
+            } 
+            // Vid allra första start av granskningen
+            else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
+                timeUpdate.startTime = get_current_iso_datetime_utc_internal();
             }
-            return { ...current_state, auditStatus: newStatus, ...timeUpdate };
+
+            return { ...state_before_status_change, auditStatus: newStatus, ...timeUpdate };
 
         case ActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
             if (!action.payload || !action.payload.ruleFileContent || !action.payload.samples) {
@@ -314,7 +323,7 @@ if (sessionStorage.getItem(APP_STATE_KEY) === null) {
 }
 
 // Kör ID-uppdatering direkt vid laddning för att säkerställa att gamla sparfiler får ID:n
-internal_state = window.AuditLogic.updateDeficiencyIds(internal_state);
+internal_state = window.AuditLogic.updateIncrementalDeficiencyIds(internal_state);
 saveStateToSessionStorage(internal_state);
 
 

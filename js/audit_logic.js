@@ -14,34 +14,102 @@
         return `${t('deficiency_prefix', {defaultValue: "brist"})} ${String(number).padStart(4, '0')}`;
     }
 
-    // --- NY CENTRAL FUNKTION: Hanterar tilldelning och borttagning av ID:n i realtid ---
-    function updateDeficiencyIds(auditState) {
-        if (!auditState) return auditState;
-
+    // --- NY FUNKTION: Tilldelar ID:n första gången granskningen låses ---
+    function assignSortedDeficiencyIdsOnLock(auditState) {
+        const t = get_t_func();
+        console.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
         const newState = JSON.parse(JSON.stringify(auditState));
-        // Starta räknaren från där den slutade, eller från 1 om den inte finns
-        let nextId = newState.deficiencyCounter || 1;
 
-        // Loopa igenom alla resultat för att hantera ID:n
+        // Steg 1: Rensa eventuella preliminära ID:n och återställ räknaren
+        newState.deficiencyCounter = 1;
         (newState.samples || []).forEach(sample => {
             Object.values(sample.requirementResults || {}).forEach(reqResult => {
                 Object.values(reqResult.checkResults || {}).forEach(checkResult => {
                     Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
-                        // FALL 1: Kriteriet är underkänt men har inget ID än
+                        delete pcResult.deficiencyId;
+                    });
+                });
+            });
+        });
+
+        // Steg 2: Samla alla underkända kriterier i en lista för sortering
+        const failedCriteria = [];
+        (newState.samples || []).forEach(sample => {
+            Object.keys(sample.requirementResults || {}).forEach(reqKey => {
+                const reqResult = sample.requirementResults[reqKey];
+                const reqDef = newState.ruleFileContent.requirements[reqKey];
+                if (!reqDef || !reqResult) return;
+
+                Object.keys(reqResult.checkResults || {}).forEach(checkKey => {
+                    const checkResult = reqResult.checkResults[checkKey];
+                    const checkDef = reqDef.checks.find(c => c.id === checkKey);
+                    if (!checkDef || !checkResult) return;
+
+                    Object.keys(checkResult.passCriteria || {}).forEach(pcKey => {
+                        const pcResult = checkResult.passCriteria[pcKey];
+                        const pcDef = checkDef.passCriteria.find(pc => pc.id === pcKey);
+                        // Hitta den ursprungliga referensen i state-trädet för att kunna uppdatera den
+                        const originalPcResultRef = newState.samples.find(s => s.id === sample.id)
+                            ?.requirementResults[reqKey]
+                            ?.checkResults[checkKey]
+                            ?.passCriteria[pcKey];
+
+                        if (pcResult.status === 'failed' && pcDef && originalPcResultRef) {
+                            failedCriteria.push({
+                                sampleDescription: sample.description,
+                                reqRefText: reqDef.standardReference?.text || reqDef.title,
+                                pcRequirementText: pcDef.requirement,
+                                resultObjectToUpdate: originalPcResultRef // Direkt referens till objektet som ska ändras
+                            });
+                        }
+                    });
+                });
+            });
+        });
+
+        // Steg 3: Sortera listan enligt specifikation
+        failedCriteria.sort((a, b) => {
+            const reqCompare = a.reqRefText.localeCompare(b.reqRefText, undefined, { numeric: true });
+            if (reqCompare !== 0) return reqCompare;
+            const sampleCompare = a.sampleDescription.localeCompare(b.sampleDescription);
+            if (sampleCompare !== 0) return sampleCompare;
+            return a.pcRequirementText.localeCompare(b.pcRequirementText);
+        });
+
+        // Steg 4: Loopa igenom den sorterade listan och tilldela nya, sekventiella ID:n
+        let counter = 1;
+        failedCriteria.forEach(item => {
+            item.resultObjectToUpdate.deficiencyId = formatDeficiencyId(counter);
+            counter++;
+        });
+        newState.deficiencyCounter = counter; // Spara nästa tillgängliga nummer
+
+        return newState;
+    }
+    
+    // --- UPPDATERAD FUNKTION: Hanterar nu endast inkrementella ändringar ---
+    function updateIncrementalDeficiencyIds(auditState) {
+        if (!auditState) return auditState;
+        console.log("[AuditLogic] Running updateIncrementalDeficiencyIds...");
+
+        const newState = JSON.parse(JSON.stringify(auditState));
+        let nextId = newState.deficiencyCounter || 1;
+
+        (newState.samples || []).forEach(sample => {
+            Object.values(sample.requirementResults || {}).forEach(reqResult => {
+                Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                    Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
                         if (pcResult.status === 'failed' && !pcResult.deficiencyId) {
                             pcResult.deficiencyId = formatDeficiencyId(nextId);
-                            nextId++; // Räkna upp för nästa
-                        }
-                        // FALL 2: Kriteriet är INTE underkänt men HAR ett ID (dvs. har blivit rättat)
-                        else if (pcResult.status !== 'failed' && pcResult.deficiencyId) {
-                            delete pcResult.deficiencyId; // Ta bort ID:t
+                            nextId++;
+                        } else if (pcResult.status !== 'failed' && pcResult.deficiencyId) {
+                            delete pcResult.deficiencyId;
                         }
                     });
                 });
             });
         });
         
-        // Spara den nya, uppdaterade räknaren
         newState.deficiencyCounter = nextId;
         return newState;
     }
@@ -137,7 +205,8 @@
         get_ordered_relevant_requirement_keys,
         calculate_overall_audit_progress,
         find_first_incomplete_requirement_key_for_sample,
-        updateDeficiencyIds // Den enda ID-hanteringsfunktionen som nu behövs
+        assignSortedDeficiencyIdsOnLock: assignSortedDeficiencyIdsOnLock,
+        updateIncrementalDeficiencyIds: updateIncrementalDeficiencyIds
     };
 
     window.AuditLogic = public_api;
