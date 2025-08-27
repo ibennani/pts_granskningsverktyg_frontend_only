@@ -292,5 +292,6 @@
   "error_exporting_excel": "Fel vid export till Excel.",
   "deficiency_prefix": "brist",
   "requirement_examples": "Exempel",
-  "excel_sheet_deficiencies": "Brister"
+  "excel_sheet_deficiencies": "Brister",
+  "case_handler": "Handläggare"
 }

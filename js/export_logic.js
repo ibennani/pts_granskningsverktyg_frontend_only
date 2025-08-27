@@ -129,7 +129,6 @@
     }
 
     async function export_to_excel(current_audit) {
-        // Denna funktion är oförändrad från föregående svar
         const t = get_t_internal();
         if (!current_audit) {
             show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -153,6 +152,7 @@
                 [t('case_number'), current_audit.auditMetadata.caseNumber || ''],
                 [t('actor_name'), current_audit.auditMetadata.actorName || ''],
                 [t('actor_link'), current_audit.auditMetadata.actorLink || ''],
+                [t('case_handler'), ''], // NY RAD
                 [t('auditor_name'), current_audit.auditMetadata.auditorName || ''],
                 [t('rule_file_title'), current_audit.ruleFileContent.metadata.title || ''],
                 [t('version_rulefile'), current_audit.ruleFileContent.metadata.version || ''],
@@ -202,12 +202,23 @@
                                     finalObservation = t('requirement_not_met_default_text');
                                 }
                                 
+                                // SKAPA KLICKBARA LÄNKAR
+                                const reference_obj = { text: req_definition.standardReference?.text || '' };
+                                if (req_definition.standardReference?.url) {
+                                    reference_obj.hyperlink = window.Helpers.add_protocol_if_missing(req_definition.standardReference.url);
+                                }
+
+                                const url_obj = { text: sample.url || '' };
+                                if (sample.url) {
+                                    url_obj.hyperlink = window.Helpers.add_protocol_if_missing(sample.url);
+                                }
+
                                 deficiencies_data.push({
                                     id: pc_obj.deficiencyId,
                                     reqTitle: req_definition.title,
-                                    reference: req_definition.standardReference?.text || '',
+                                    reference: reference_obj, // Använd objektet här
                                     sampleName: sample.description,
-                                    sampleUrl: sample.url,
+                                    sampleUrl: url_obj, // Använd objektet här
                                     control: get_pass_criterion_text(req_definition, check_id, pc_id),
                                     observation: finalObservation
                                 });
@@ -233,6 +244,11 @@
                     row.alignment = { vertical: 'top', wrapText: true };
                 }
             });
+
+            // Sätt stilar för hyperlänkar
+            deficienciesSheet.getColumn('reference').font = { color: { argb: 'FF0000FF' }, underline: true };
+            deficienciesSheet.getColumn('sampleUrl').font = { color: { argb: 'FF0000FF' }, underline: true };
+
 
             deficienciesSheet.autoFilter = { from: 'A1', to: { row: 1, column: deficienciesSheet.columns.length } };
 

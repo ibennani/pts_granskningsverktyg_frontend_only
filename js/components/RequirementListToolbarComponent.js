@@ -17,7 +17,21 @@ export const RequirementListToolbarComponent = (function () {
         container_ref = _container;
         on_change_callback = _on_change_cb;
         component_state = _initial_state;
-        Translation_t = _Translation.t;
+        
+        // ===== HÄR ÄR FIXEN =====
+        // Denna kod hanterar nu båda sätten som översättningsfunktionen kan skickas in på.
+        if (typeof _Translation?.t === 'function') {
+            Translation_t = _Translation.t;
+        } else if (typeof _Translation === 'function') {
+            // Detta är en fallback om någon skickar in t-funktionen direkt
+            Translation_t = _Translation;
+        } else {
+            console.error("[ToolbarComponent] Translation function ('t') was not provided correctly during init.");
+            // Skapa en säker fallback-funktion så att appen inte kraschar
+            Translation_t = (key, rep) => (rep && rep.defaultValue ? rep.defaultValue : `**${key}**`);
+        }
+        // ========================
+
         Helpers_create_element = _Helpers.create_element;
         Helpers_load_css = _Helpers.load_css;
 

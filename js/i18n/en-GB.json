@@ -292,5 +292,6 @@
   "error_exporting_excel": "Error exporting to Excel.",
   "deficiency_prefix": "deficiency",
   "requirement_examples": "Example",
-  "excel_sheet_deficiencies": "Deficiencies"
+  "excel_sheet_deficiencies": "Deficiencies",
+  "case_handler": "Case handler"
 }

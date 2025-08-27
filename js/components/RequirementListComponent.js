@@ -170,6 +170,7 @@ export const RequirementListComponent = (function () {
             status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
         };
 
+        // Initierar verktygsraden EN GÅNG
         await toolbar_component_instance.init(
             toolbar_container_element,
             handle_toolbar_change,
@@ -177,7 +178,6 @@ export const RequirementListComponent = (function () {
             { t: Translation_t },
             { create_element: Helpers_create_element, load_css: Helpers_load_css }
         );
-        toolbar_component_instance.render();
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
         content_div_for_delegation.addEventListener('click', handle_requirement_list_click);
@@ -189,18 +189,24 @@ export const RequirementListComponent = (function () {
         app_container_ref.appendChild(plate_element_ref);
         is_dom_initialized = true;
 
+        // Anropa populate för att fylla i det dynamiska innehållet direkt efter den initiala renderingen
         _populate_dynamic_content();
     }
 
     function _populate_dynamic_content() {
         const t = get_t_internally();
         const current_global_state = local_getState();
-        const filter_settings = current_global_state.uiSettings?.requirementListFilter;
+        
+        // ===== HÄR ÄR FIXEN FÖR DET TOMMA FILTEROBJEKTET =====
+        const filter_settings = current_global_state.uiSettings?.requirementListFilter || {
+            searchText: '',
+            sortBy: 'default',
+            status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+        };
+        // =========================================================
 
-        if (!filter_settings) {
-            console.error("RequirementListComponent: uiSettings.requirementListFilter is missing from the state. Cannot populate content.");
-            content_div_for_delegation.innerHTML = `<p>${t('error_loading_data_for_view', {viewName: 'RequirementList_UISettings'})}</p>`;
-            return;
+        if (toolbar_component_instance) {
+             toolbar_component_instance.render(); // Se till att verktygsraden alltid är synkad
         }
 
         const current_sample_object = current_global_state.samples.find(s => s.id === params_ref.sampleId);
@@ -244,7 +250,6 @@ export const RequirementListComponent = (function () {
             header_div.appendChild(window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {}));
         }
 
-        // KORRIGERING: Ny, renare filterlogik
         const search_term = filter_settings.searchText.toLowerCase();
         const active_status_filters = Object.keys(filter_settings.status).filter(key => filter_settings.status[key]);
 
@@ -253,12 +258,10 @@ export const RequirementListComponent = (function () {
             const needs_review = result?.needsReview === true;
             let display_status = needs_review ? 'updated' : AuditLogic_calculate_requirement_status(req, result);
             
-            // Kolla om kravets status matchar något av de aktiva filtren
             if (!active_status_filters.includes(display_status)) {
                 return false;
             }
 
-            // Sökfilter (fortsätter som tidigare)
             if (search_term) {
                 const searchable_content = [
                     req.title,
@@ -276,7 +279,6 @@ export const RequirementListComponent = (function () {
             return true;
         });
 
-        // Sorteringslogik (oförändrad)
         const sorted_requirements = [...filtered_requirements];
         switch(filter_settings.sortBy) {
             case 'title_asc': sorted_requirements.sort((a, b) => a.title.localeCompare(b.title)); break;
@@ -293,7 +295,6 @@ export const RequirementListComponent = (function () {
                 break;
         }
 
-        // Renderingslogik (oförändrad)
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
             content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter', {defaultValue: "No requirements match the current filter."}) }));
@@ -335,27 +336,12 @@ export const RequirementListComponent = (function () {
             return;
         }
         
-        const current_state_for_render = local_getState();
-        const current_ui_settings = current_state_for_render.uiSettings?.requirementListFilter;
-
         if (!is_dom_initialized) {
             await _initialRender();
         } else {
-            if (current_ui_settings && toolbar_component_instance) {
-                await toolbar_component_instance.init(
-                    plate_element_ref.querySelector('#requirement-list-toolbar-container'),
-                    handle_toolbar_change,
-                    current_ui_settings,
-                    { t: Translation_t },
-                    { create_element: Helpers_create_element, load_css: Helpers_load_css }
-                );
-                toolbar_component_instance.render();
-            } else {
-                 console.error("RequirementListComponent: Could not find uiSettings or toolbar_component_instance during re-render.");
-            }
+            // Om DOM redan finns, uppdatera bara det dynamiska innehållet
+            _populate_dynamic_content();
         }
-        
-        _populate_dynamic_content();
     }
 
     function create_requirement_list_item(req, sample) {
