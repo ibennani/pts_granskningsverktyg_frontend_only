@@ -1,6 +1,5 @@
 // js/main.js
 
-// Importer för vyer som hanteras direkt av main.js router
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { MetadataViewComponent } from './components/MetadataViewComponent.js';
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
@@ -9,11 +8,10 @@ import { RequirementListComponent } from './components/RequirementListComponent.
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
 import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js';
 
-// Importera den nya globala komponenten som en factory
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
-// Importera från den nya storen
-import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState } from './state.js'; 
+// NYTT: Importera de nya funktionerna från state.js
+import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorage, clearAutosavedState } from './state.js'; 
 window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
@@ -43,51 +41,43 @@ window.StoreActionTypes = StoreActionTypes;
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
-            : (key, replacements) => {
-                let str = replacements && replacements.defaultValue ? replacements.defaultValue : `**${key}**`;
-                if (replacements && !replacements.defaultValue) {
-                    for (const rKey in replacements) {
-                        str += ` (${rKey}: ${replacements[rKey]})`;
-                    }
-                }
-                return str + " (Main t not found)";
-            };
+            : (key, replacements) => `**${key}**`;
     }
 
     function updatePageTitle(viewName, params = {}) {
         const t = get_t_fallback();
-        const title_suffix = ` | ${t('app_title_suffix', { defaultValue: 'Granskningsverktyget' })}`;
+        const title_suffix = ` | ${t('app_title_suffix')}`;
         let title_prefix = t('app_title');
         const current_state = getState();
 
         try {
             switch (viewName) {
                 case 'upload':
-                    title_prefix = t('start_or_load_audit_title', { defaultValue: 'Starta eller ladda granskning' });
+                    title_prefix = t('start_or_load_audit_title');
                     break;
                 case 'metadata':
-                    title_prefix = t('enter_metadata_title', { defaultValue: 'Ange metadata' });
+                    title_prefix = t('enter_metadata_title');
                     break;
                 case 'sample_management':
-                    title_prefix = t('manage_samples_title', { defaultValue: 'Hantera stickprov' });
+                    title_prefix = t('manage_samples_title');
                     break;
                 case 'audit_overview':
                     title_prefix = t('audit_overview_title');
                     break;
                 case 'requirement_list':
-                    title_prefix = t('requirement_list_title_suffix', { defaultValue: 'Kravlista' });
+                    title_prefix = t('requirement_list_title_suffix');
                     break;
                 case 'update_rulefile':
-                    title_prefix = t('update_rulefile_title', {defaultValue: "Update Rule File"});
+                    title_prefix = t('update_rulefile_title');
                     break;
                 case 'requirement_audit':
                     const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
                     const requirementTitle = requirement?.title;
-                    const prefix = (current_state?.auditStatus === 'locked') ? t('view_prefix', { defaultValue: 'Visa' }) : t('edit_prefix', { defaultValue: 'Redigera' });
+                    const prefix = (current_state?.auditStatus === 'locked') ? t('view_prefix') : t('edit_prefix');
                     if (requirementTitle) {
                         title_prefix = `${prefix} ${requirementTitle}`;
                     } else {
-                        title_prefix = t('audit_requirement_title', { defaultValue: 'Granska krav' });
+                        title_prefix = t('audit_requirement_title');
                     }
                     break;
                 default:
@@ -120,8 +110,7 @@ window.StoreActionTypes = StoreActionTypes;
             console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
-
-        // *** KORRIGERING: Skicka med SaveAuditLogic som ett explicit beroende ***
+        
         const common_deps = {
             getState: getState,
             dispatch: dispatch,
@@ -129,7 +118,7 @@ window.StoreActionTypes = StoreActionTypes;
             Translation: window.Translation,
             Helpers: window.Helpers,
             NotificationComponent: window.NotificationComponent,
-            SaveAuditLogic: window.SaveAuditLogic // Lägg till här
+            SaveAuditLogic: window.SaveAuditLogic
         };
 
         await top_action_bar_instance.init(top_action_bar_container, common_deps);
@@ -220,7 +209,7 @@ window.StoreActionTypes = StoreActionTypes;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
-                app_container.innerHTML = `<h1>${t("error_loading_view_details", {viewName: ""})}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
+                app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
                 set_focus_to_h1();
                 return;
         }
@@ -247,7 +236,7 @@ window.StoreActionTypes = StoreActionTypes;
         } catch (error) {
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
             const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
-            if(app_container) app_container.innerHTML = `<h1>${t("error_loading_view_details", {viewName: ""})}</h1><p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
+            if(app_container) app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
             set_focus_to_h1();
         }
     }
@@ -298,14 +287,36 @@ window.StoreActionTypes = StoreActionTypes;
             return;
         }
         
-        // *** NY KOD: Kör initState efter att globala script har laddats ***
         if (typeof initState === 'function') {
             initState();
         } else {
             console.error("[Main.js] CRITICAL: initState function from state.js is not available!");
-            // Hantera felet, kanske visa ett felmeddelande
         }
-        // *** SLUT PÅ NY KOD ***
+        
+        // --- NYTT: Logik för att hantera autosave vid start ---
+        const autosaved_state = loadStateFromLocalStorage();
+        if (autosaved_state) {
+            const t = get_t_fallback();
+            const actor_name = autosaved_state.auditMetadata?.actorName || 'Okänd';
+            const last_update = autosaved_state.samples?.[0]?.requirementResults?.[Object.keys(autosaved_state.samples[0].requirementResults)[0]]?.lastStatusUpdate;
+            const formatted_time = last_update ? window.Helpers.format_iso_to_local_datetime(last_update) : 'okänd tid';
+            
+            if (confirm(t('confirm_restore_autosave', { actorName: actor_name, timestamp: formatted_time }))) {
+                dispatch({
+                    type: StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+                    payload: autosaved_state
+                });
+                clearAutosavedState(); 
+                if (window.NotificationComponent) {
+                    window.NotificationComponent.show_global_message(t('autosave_restored_successfully'), 'success');
+                }
+                // Tvinga navigation till översikten efter återställning
+                navigate_and_set_hash('audit_overview');
+            } else {
+                clearAutosavedState(); 
+            }
+        }
+        // --- SLUT PÅ NYTT ---
 
         document.title = get_t_fallback()('app_title');
 
@@ -335,7 +346,12 @@ window.StoreActionTypes = StoreActionTypes;
         if (window.NotificationComponent && typeof NotificationComponent.clear_global_message === 'function') {
             NotificationComponent.clear_global_message();
         }
-        handle_hash_change();
+        
+        // Se till att hash-ändringen körs EFTER att en eventuell autosave har hanterats
+        if (!autosaved_state) {
+            handle_hash_change();
+        }
+
         update_app_chrome_texts(); 
 
         subscribe((new_state) => { 

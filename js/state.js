@@ -1,6 +1,7 @@
 // js/state.js
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
+const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave'; // NY NYCKEL
 const APP_STATE_VERSION = '2.0.1';
 
 export const ActionTypes = {
@@ -59,6 +60,7 @@ const initial_state = {
 
 let internal_state = { ...initial_state };
 let listeners = [];
+let autosaveDebounceTimer = null; // NY TIMER
 
 function get_current_iso_datetime_utc_internal() {
     return new Date().toISOString();
@@ -69,6 +71,8 @@ function root_reducer(current_state, action) {
 
     switch (action.type) {
         case ActionTypes.INITIALIZE_NEW_AUDIT:
+            // NYTT: Rensa gammal autosave när en ny granskning startas
+            clearAutosavedState();
             return {
                 ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
@@ -170,7 +174,6 @@ function root_reducer(current_state, action) {
                 console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload.');
                 return current_state;
             }
-            // *** KORRIGERING: Räkna om värdetalsdata vid regelfilsbyte ***
             const new_precalculated_data = window.VardetalCalculator.precalculate_rule_data(action.payload.ruleFileContent);
             return {
                 ...action.payload,
@@ -226,6 +229,20 @@ function root_reducer(current_state, action) {
     }
 }
 
+// NY FUNKTION för att spara till localStorage
+function saveStateToLocalStorage(state_to_save) {
+    if (!state_to_save || state_to_save.auditStatus === 'not_started') {
+        // Spara inte om inget finns eller om granskningen inte ens startat
+        return;
+    }
+    try {
+        const serializedState = JSON.stringify(state_to_save);
+        localStorage.setItem(APP_AUTOSAVE_KEY, serializedState);
+    } catch (e) {
+        console.error("[State.js] Could not save state to localStorage:", e);
+    }
+}
+
 function dispatch(action) {
     if (!action || typeof action.type !== 'string') {
         console.error('[State.js] Invalid action dispatched. Action must be an object with a "type" property.', action);
@@ -238,6 +255,13 @@ function dispatch(action) {
         if (new_state !== previous_state_for_comparison) {
             internal_state = new_state;
             saveStateToSessionStorage(internal_state);
+
+            // NYTT: Debounced autosave till localStorage
+            clearTimeout(autosaveDebounceTimer);
+            autosaveDebounceTimer = setTimeout(() => {
+                saveStateToLocalStorage(internal_state);
+            }, 1500); // Spara 1.5 sekunder efter senaste ändring
+
             notify_listeners(); 
         }
     } catch (error) {
@@ -310,6 +334,26 @@ function saveStateToSessionStorage(state_to_save) {
     }
 }
 
+// NYA EXPORTERADE FUNKTIONER
+function loadStateFromLocalStorage() {
+    const serializedState = localStorage.getItem(APP_AUTOSAVE_KEY);
+    if (serializedState === null) return null;
+    try {
+        const storedState = JSON.parse(serializedState);
+        if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
+            return storedState;
+        }
+    } catch (e) {
+        return null;
+    }
+    return null;
+}
+
+function clearAutosavedState() {
+    localStorage.removeItem(APP_AUTOSAVE_KEY);
+    console.log("[State.js] Autosaved state cleared from localStorage.");
+}
+
 function initState() {
     internal_state = loadStateFromSessionStorage();
     if (window.AuditLogic && typeof window.AuditLogic.updateIncrementalDeficiencyIds === 'function') {
@@ -320,5 +364,13 @@ function initState() {
     }
 }
 
-
-export { dispatch, getState, subscribe, initState, ActionTypes as StoreActionTypes, initial_state as StoreInitialState };
+export { 
+    dispatch, 
+    getState, 
+    subscribe, 
+    initState, 
+    ActionTypes as StoreActionTypes, 
+    initial_state as StoreInitialState,
+    loadStateFromLocalStorage, // NY
+    clearAutosavedState      // NY
+};
