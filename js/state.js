@@ -1,7 +1,7 @@
 // js/state.js
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
-const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave'; // NY NYCKEL
+const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave';
 const APP_STATE_VERSION = '2.0.1';
 
 export const ActionTypes = {
@@ -60,7 +60,7 @@ const initial_state = {
 
 let internal_state = { ...initial_state };
 let listeners = [];
-let autosaveDebounceTimer = null; // NY TIMER
+let autosaveDebounceTimer = null;
 
 function get_current_iso_datetime_utc_internal() {
     return new Date().toISOString();
@@ -71,7 +71,6 @@ function root_reducer(current_state, action) {
 
     switch (action.type) {
         case ActionTypes.INITIALIZE_NEW_AUDIT:
-            // NYTT: Rensa gammal autosave när en ny granskning startas
             clearAutosavedState();
             return {
                 ...initial_state,
@@ -82,13 +81,27 @@ function root_reducer(current_state, action) {
 
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
             if (action.payload && typeof action.payload === 'object') {
-                const loaded_state = {
-                    ...JSON.parse(JSON.stringify(initial_state)),
-                    ...action.payload,
-                    saveFileVersion: APP_STATE_VERSION
-                };
+                // --- KORRIGERING BÖRJAR HÄR: Robust sammanslagning ---
+                const loaded_data = action.payload;
                 
-                (loaded_state.samples || []).forEach(sample => {
+                // Skapa en djup kopia av standardinställningarna för att undvika referensproblem
+                const new_state_base = JSON.parse(JSON.stringify(initial_state));
+
+                // Slå ihop det laddade tillståndet över standardinställningarna.
+                // Detta bevarar nya nycklar (som uiSettings) om de saknas i den gamla filen.
+                const merged_state = {
+                    ...new_state_base,
+                    ...loaded_data,
+                    // Se till att uiSettings också slås ihop på en djupare nivå
+                    uiSettings: {
+                        ...new_state_base.uiSettings,
+                        ...(loaded_data.uiSettings || {})
+                    },
+                    saveFileVersion: APP_STATE_VERSION // Tvinga alltid aktuell version
+                };
+
+                // Migrera gamla dataformat för passCriteria
+                (merged_state.samples || []).forEach(sample => {
                     Object.values(sample.requirementResults || {}).forEach(reqResult => {
                         Object.values(reqResult.checkResults || {}).forEach(checkResult => {
                             if (checkResult.passCriteria) {
@@ -98,7 +111,7 @@ function root_reducer(current_state, action) {
                                         checkResult.passCriteria[pcId] = {
                                             status: pcValue,
                                             observationDetail: '',
-                                            timestamp: loaded_state.startTime || null 
+                                            timestamp: merged_state.startTime || null 
                                         };
                                     }
                                 });
@@ -107,11 +120,12 @@ function root_reducer(current_state, action) {
                     });
                 });
 
-                if (!loaded_state.deficiencyCounter) {
-                    loaded_state.deficiencyCounter = 1;
+                if (!merged_state.deficiencyCounter) {
+                    merged_state.deficiencyCounter = 1;
                 }
-
-                return window.AuditLogic.updateIncrementalDeficiencyIds(loaded_state);
+                
+                return window.AuditLogic.updateIncrementalDeficiencyIds(merged_state);
+                // --- KORRIGERING SLUTAR HÄR ---
             }
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
@@ -229,10 +243,8 @@ function root_reducer(current_state, action) {
     }
 }
 
-// NY FUNKTION för att spara till localStorage
 function saveStateToLocalStorage(state_to_save) {
     if (!state_to_save || state_to_save.auditStatus === 'not_started') {
-        // Spara inte om inget finns eller om granskningen inte ens startat
         return;
     }
     try {
@@ -256,11 +268,10 @@ function dispatch(action) {
             internal_state = new_state;
             saveStateToSessionStorage(internal_state);
 
-            // NYTT: Debounced autosave till localStorage
             clearTimeout(autosaveDebounceTimer);
             autosaveDebounceTimer = setTimeout(() => {
                 saveStateToLocalStorage(internal_state);
-            }, 1500); // Spara 1.5 sekunder efter senaste ändring
+            }, 1500);
 
             notify_listeners(); 
         }
@@ -334,7 +345,6 @@ function saveStateToSessionStorage(state_to_save) {
     }
 }
 
-// NYA EXPORTERADE FUNKTIONER
 function loadStateFromLocalStorage() {
     const serializedState = localStorage.getItem(APP_AUTOSAVE_KEY);
     if (serializedState === null) return null;
@@ -371,6 +381,6 @@ export {
     initState, 
     ActionTypes as StoreActionTypes, 
     initial_state as StoreInitialState,
-    loadStateFromLocalStorage, // NY
-    clearAutosavedState      // NY
+    loadStateFromLocalStorage,
+    clearAutosavedState
 };
