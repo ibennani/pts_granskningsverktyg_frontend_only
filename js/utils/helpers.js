@@ -30,7 +30,7 @@
             const date = new Date(iso_string);
             const t_func = (typeof window.Translation?.t === 'function')
                 ? window.Translation.t
-                : (key) => `**${key}** (t not found)`;
+                : (key) => `**${key}**`;
 
             if (isNaN(date.getTime())) return t_func('invalid_date_format');
 
@@ -42,7 +42,7 @@
             console.error("Error formatting date:", iso_string, e);
             const t_func = (typeof window.Translation?.t === 'function')
                 ? window.Translation.t
-                : (key) => `**${key}** (t not found)`;
+                : (key) => `**${key}**`;
 
             return t_func('date_formatting_error');
         }
@@ -53,11 +53,6 @@
     }
 
     function escape_html(unsafe_input) {
-        // MODIFIED: This is the final, robust fix.
-        // It converts any input to a string, then specifically checks for the
-        // meaningless "[object Object]" string. If found, it returns nothing.
-        // Otherwise, it escapes the valid string, ensuring HTML code like <h1>
-        // is displayed as text instead of disappearing.
         const safe_string = String(unsafe_input || '');
 
         if (safe_string === '[object Object]') {
@@ -117,7 +112,6 @@
         const second_color = colors[1] || fill_color; 
         let svg_path = '';
 
-        // Bas-ikoner (Material Icons stil)
         const base_paths = {
             'arrow_back': `<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>`,
             'arrow_forward': `<path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>`,
@@ -209,37 +203,28 @@
     }
 
     function natural_sort(a, b) {
-        // Regular expression to split strings into segments of numbers and non-numbers
         const re = /(\d+)/g;
-        // Split both strings into arrays of parts
         const a_parts = String(a).split(re);
         const b_parts = String(b).split(re);
-        // Determine the length of the longer array
         const len = Math.max(a_parts.length, b_parts.length);
 
-        // Iterate through the parts of both strings
         for (let i = 0; i < len; i++) {
-            // Get parts, or an empty string if one array is shorter
             const a_part = a_parts[i] || '';
             const b_part = b_parts[i] || '';
             
-            // Try to parse parts as integers
             const a_num = parseInt(a_part, 10);
             const b_num = parseInt(b_part, 10);
 
-            // If both parts are numbers, compare them numerically
             if (!isNaN(a_num) && !isNaN(b_num)) {
                 if (a_num < b_num) return -1;
                 if (a_num > b_num) return 1;
-            } else { // Otherwise, compare them as strings
+            } else {
                 if (a_part < b_part) return -1;
                 if (a_part > b_part) return 1;
             }
         }
-        // If all parts are equal, the strings are considered equal
         return 0;
     }
-
 
     window.Helpers = {
         generate_uuid_v4,
