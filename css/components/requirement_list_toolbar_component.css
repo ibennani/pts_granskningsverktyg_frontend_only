@@ -39,7 +39,8 @@
     min-width: 180px;
 }
 
-/* Stil för statusfilter-knapp och panel */
+/* --- NY STYLING FÖR FILTERPANEL OCH ANIMATION --- */
+
 .status-filter-group {
     position: relative;
 }
@@ -57,9 +58,21 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     z-index: 100;
     margin-top: 0.25rem;
+    
+    /* Animationsregler */
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0.3s;
+    visibility: hidden; /* Dölj från DOM helt när den är stängd */
 }
-.status-filter-panel[hidden] {
-    display: none;
+
+.status-filter-panel.is-visible {
+    max-height: 500px; /* Ett tillräckligt högt värde för att allt innehåll ska rymmas */
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
 }
 
 .status-filter-panel .form-check {
@@ -73,6 +86,8 @@
     border-top: 1px solid var(--border-color);
     margin: 0.75rem 0;
 }
+
+/* --- SLUT PÅ NY STYLING --- */
 
 
 /* Justera input-kontroller inuti verktygsraden */

@@ -19,7 +19,6 @@ export const RequirementListToolbarComponent = (function () {
     let handle_panel_keydown_ref = null;
     let close_on_outside_click_ref = null;
     
-    // NYTT: Flagga för att säkerställa att DOM bara byggs en gång
     let is_dom_built = false;
 
     async function init(_container, _on_change_cb, _initial_state, _Translation, _Helpers) {
@@ -31,7 +30,7 @@ export const RequirementListToolbarComponent = (function () {
         Helpers_create_element = _Helpers.create_element;
         Helpers_load_css = _Helpers.load_css;
 
-        is_dom_built = false; // Återställ vid varje init
+        is_dom_built = false;
 
         if (Helpers_load_css && CSS_PATH) {
             try {
@@ -75,13 +74,12 @@ export const RequirementListToolbarComponent = (function () {
     function handle_sort_change(event) {
         update_and_notify({ sortBy: event.target.value });
     }
+    
+    // --- NY OCH FÖRBÄTTRAD LOGIK FÖR ATT HANTERA PANELEN ---
 
-    function close_filter_panel() {
-        if (filter_panel_ref && filter_button_ref && !filter_panel_ref.hasAttribute('hidden')) {
-            filter_panel_ref.setAttribute('hidden', 'true');
-            filter_panel_ref.setAttribute('aria-hidden', 'true');
-            filter_button_ref.removeAttribute('hidden');
-            filter_button_ref.setAttribute('aria-hidden', 'false');
+    function close_filter_panel(focus_button = true) {
+        if (filter_panel_ref && filter_panel_ref.classList.contains('is-visible')) {
+            filter_panel_ref.classList.remove('is-visible');
             
             if (handle_panel_keydown_ref) {
                 document.removeEventListener('keydown', handle_panel_keydown_ref);
@@ -91,6 +89,35 @@ export const RequirementListToolbarComponent = (function () {
                 document.removeEventListener('click', close_on_outside_click_ref);
                 close_on_outside_click_ref = null;
             }
+            if (focus_button && filter_button_ref) {
+                filter_button_ref.focus();
+            }
+        }
+    }
+
+    function open_filter_panel() {
+        if (filter_panel_ref && !filter_panel_ref.classList.contains('is-visible')) {
+            filter_panel_ref.classList.add('is-visible');
+            const first_checkbox = filter_panel_ref.querySelector('input[type="checkbox"]');
+            first_checkbox?.focus();
+            
+            handle_panel_keydown_ref = (e) => handle_panel_keydown(e);
+            close_on_outside_click_ref = (e) => {
+                if (!filter_panel_ref.contains(e.target) && !filter_button_ref.contains(e.target)) {
+                    close_filter_panel();
+                }
+            };
+            document.addEventListener('keydown', handle_panel_keydown_ref);
+            document.addEventListener('click', close_on_outside_click_ref, { capture: true });
+        }
+    }
+
+    function toggle_filter_panel(event) {
+        event.stopPropagation();
+        if (filter_panel_ref?.classList.contains('is-visible')) {
+            close_filter_panel();
+        } else {
+            open_filter_panel();
         }
     }
 
@@ -98,7 +125,6 @@ export const RequirementListToolbarComponent = (function () {
         if (event.key === 'Escape') {
             event.preventDefault();
             close_filter_panel();
-            filter_button_ref?.focus();
             return;
         }
 
@@ -110,41 +136,13 @@ export const RequirementListToolbarComponent = (function () {
             const last_element = focusable_elements[focusable_elements.length - 1];
 
             if (event.shiftKey && document.activeElement === first_element) {
-                event.preventDefault();
-                close_filter_panel();
-                filter_button_ref?.focus();
+                close_filter_panel(false); 
             } else if (!event.shiftKey && document.activeElement === last_element) {
-                event.preventDefault();
-                close_filter_panel();
-                filter_button_ref?.focus();
+                close_filter_panel(false);
             }
         }
     }
 
-    function open_filter_panel(event) {
-        event.stopPropagation();
-        if (filter_panel_ref && filter_button_ref) {
-            filter_button_ref.setAttribute('hidden', 'true');
-            filter_button_ref.setAttribute('aria-hidden', 'true');
-            filter_panel_ref.removeAttribute('hidden');
-            filter_panel_ref.setAttribute('aria-hidden', 'false');
-
-            const first_checkbox = filter_panel_ref.querySelector('input[type="checkbox"]');
-            first_checkbox?.focus();
-            
-            handle_panel_keydown_ref = (e) => handle_panel_keydown(e);
-            close_on_outside_click_ref = (e) => {
-                if (!filter_panel_ref.contains(e.target)) {
-                    close_filter_panel();
-                    filter_button_ref?.focus();
-                }
-            };
-            document.addEventListener('keydown', handle_panel_keydown_ref);
-            document.addEventListener('click', close_on_outside_click_ref);
-        }
-    }
-    
-    // --- BYGGER HELA VERKTYGSFÄLTET EN GÅNG ---
     function initial_build() {
         container_ref.innerHTML = '';
         const t = Translation_t;
@@ -159,7 +157,7 @@ export const RequirementListToolbarComponent = (function () {
         const filter_group = Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
         filter_group.innerHTML = `<label>${t('filter_by_status_label')}</label>`;
         filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
-        filter_button_ref.addEventListener('click', open_filter_panel);
+        filter_button_ref.addEventListener('click', toggle_filter_panel);
         filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
         filter_panel_ref.addEventListener('change', handle_status_filter_change);
         filter_group.append(filter_button_ref, filter_panel_ref);
@@ -172,10 +170,9 @@ export const RequirementListToolbarComponent = (function () {
 
         toolbar.append(search_group, filter_group, sort_group);
         container_ref.appendChild(toolbar);
-        is_dom_built = true; // Markera att DOM är byggd
+        is_dom_built = true;
     }
     
-    // --- UPPDATERAR ENBART VÄRDEN I DEN BEFINTLIGA DOM:en ---
     function update_values() {
         const t = Translation_t;
         
@@ -199,10 +196,8 @@ export const RequirementListToolbarComponent = (function () {
             return;
         }
 
-        // Steg 1: Bygg DOM-strukturen om den inte redan finns
         if (!is_dom_built) {
             initial_build();
-            // Fyll panelen och dropdown med innehåll första gången
             const t = Translation_t;
             filter_panel_ref.innerHTML = `
                 <div class="form-check all-check">
@@ -238,10 +233,8 @@ export const RequirementListToolbarComponent = (function () {
                 <option value="title_desc">${t('sort_option_title_desc')}</option>
                 <option value="status">${t('sort_option_status')}</option>
             `;
-            close_filter_panel(); // Dölj som standard
         }
 
-        // Steg 2: Uppdatera alltid värdena
         update_values();
     }
 
