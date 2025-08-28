@@ -184,6 +184,10 @@
        Regular: 400
        Solid: 900
     */
+    /* === ÄNDRING BÖRJAR HÄR === */
+    /* Ökar färgmättnad och ljusstyrka för alla statusikoner */
+    filter: saturate(180%) brightness(115%);
+    /* === ÄNDRING SLUTAR HÄR === */
 }
 
 /* Specifika ikoner och färger */
