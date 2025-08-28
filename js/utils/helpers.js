@@ -52,14 +52,20 @@
         return new Date().toISOString();
     }
 
-    function escape_html(unsafe_string) {
-        if (typeof unsafe_string !== 'string') {
-            if (unsafe_string !== null && unsafe_string !== undefined) {
-                console.warn(`[Helpers.escape_html] Expected string but got ${typeof unsafe_string}:`, unsafe_string);
-            }
-            return unsafe_string;
+    function escape_html(unsafe_input) {
+        // MODIFIED: This is the final, robust fix.
+        // It converts any input to a string, then specifically checks for the
+        // meaningless "[object Object]" string. If found, it returns nothing.
+        // Otherwise, it escapes the valid string, ensuring HTML code like <h1>
+        // is displayed as text instead of disappearing.
+        const safe_string = String(unsafe_input || '');
+
+        if (safe_string === '[object Object]') {
+            console.warn(`[Helpers.escape_html] Received an object that could not be converted to a meaningful string. Input was:`, unsafe_input);
+            return '';
         }
-        return unsafe_string
+        
+        return safe_string
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -140,7 +146,6 @@
             'cancel': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>`,
             'check': `<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>`,
             'close': `<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>`,
-            // *** NY IKON ***
             'update': `<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>`
         };
 

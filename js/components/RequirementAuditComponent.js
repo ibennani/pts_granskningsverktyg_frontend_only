@@ -48,6 +48,38 @@ export const RequirementAuditComponent = (function () {
     let debounceTimerComments; 
     
     let last_focused_element_info = null;
+
+    /**
+     * Helper to remove common leading whitespace from multiline strings.
+     * This fixes markdown rendering for indented code blocks in JSON files.
+     * @param {string} text - The text to de-indent.
+     * @returns {string} The de-indented text.
+     */
+    function _dedent(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+
+        const lines = text.split('\n');
+        
+        // Find the minimum indentation of non-empty lines
+        let minIndent = null;
+        for (const line of lines) {
+            if (line.trim() !== '') {
+                const indent = line.match(/^\s*/)[0].length;
+                if (minIndent === null || indent < minIndent) {
+                    minIndent = indent;
+                }
+            }
+        }
+
+        if (minIndent === null || minIndent === 0) {
+            return text;
+        }
+
+        // Remove the minimum indentation from all lines
+        return lines.map(line => line.slice(minIndent)).join('\n');
+    }
     
     function get_t_internally() { 
         if (Translation_t) return Translation_t;
@@ -546,13 +578,13 @@ export const RequirementAuditComponent = (function () {
             }
             h2_element.textContent = t(title_key);
     
-            let content_element = section_ref.querySelector('div.audit-section-content');
+            let content_element = section_ref.querySelector('.audit-section-content');
             
             if (!content_element) {
                 const old_p = section_ref.querySelector('p'); if(old_p) old_p.remove();
                 const old_ul = section_ref.querySelector('ul'); if(old_ul) old_ul.remove();
 
-                content_element = Helpers_create_element('div', { class_name: 'audit-section-content' });
+                content_element = Helpers_create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
                 section_ref.appendChild(content_element);
             }
     
@@ -562,16 +594,33 @@ export const RequirementAuditComponent = (function () {
                 ? content_data.map(item => (typeof item === 'object' && item.text) ? item.text : String(item)).join('\n\n')
                 : String(content_data);
 
-            if (typeof marked !== 'undefined') {
+            const dedented_text = _dedent(markdown_text);
+
+            if (typeof marked !== 'undefined' && typeof Helpers_escape_html === 'function') {
                 const renderer = new marked.Renderer();
+                
                 const originalLinkRenderer = renderer.link.bind(renderer);
                 renderer.link = (href, title, text) => {
                     const link = originalLinkRenderer(href, title, text);
                     return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
                 };
-                content_element.innerHTML = marked.parse(markdown_text, { breaks: true, gfm: true, renderer: renderer });
+
+                // MODIFIED: This is the final, correct fix for escaping HTML.
+                renderer.html = (html_token) => {
+                    // This logic correctly extracts the text content from the token
+                    // regardless of whether marked.js passes a string or an object,
+                    // preventing both raw HTML rendering and the "[object Object]" bug.
+                    const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                        ? html_token.text
+                        : String(html_token || '');
+                    
+                    return Helpers_escape_html(text_to_escape);
+                };
+                
+                content_element.innerHTML = marked.parse(dedented_text, { breaks: true, gfm: true, renderer: renderer });
             } else {
-                content_element.innerHTML = Helpers_sanitize_and_linkify_html(markdown_text).replace(/\n/g, '<br>');
+                const escaped_text = Helpers_escape_html(dedented_text);
+                content_element.innerHTML = escaped_text.replace(/\n/g, '<br>');
             }
 
         } else if (section_ref) {

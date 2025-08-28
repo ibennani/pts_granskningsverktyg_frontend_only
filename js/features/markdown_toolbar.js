@@ -67,7 +67,7 @@
 
         const toolbar = createToolbar(textarea, wasPreviewVisible);
         const previewDiv = document.createElement('div');
-        previewDiv.className = 'md-preview';
+        previewDiv.className = 'md-preview markdown-content';
         previewDiv.style.display = wasPreviewVisible ? 'block' : 'none';
 
         textarea.parentNode.insertBefore(wrapper, textarea);
@@ -296,6 +296,17 @@
             const link = originalLinkRenderer(href, title, text);
             return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
         };
+
+        // MODIFIED: This is the final, correct fix for escaping HTML.
+        if (window.Helpers && window.Helpers.escape_html) {
+            renderer.html = (html_token) => {
+                const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                    ? html_token.text
+                    : String(html_token || '');
+                
+                return window.Helpers.escape_html(text_to_escape);
+            };
+        }
 
         try {
             previewDiv.innerHTML = marked.parse(markdownText, { breaks: true, gfm: true, renderer: renderer });
