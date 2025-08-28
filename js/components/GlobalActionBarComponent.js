@@ -48,23 +48,25 @@ export const GlobalActionBarComponentFactory = function () {
         if (!container_ref) return;
         container_ref.innerHTML = '';
 
-        // Hämta funktioner från beroendeobjektet för enklare åtkomst
         const { getState, Translation, Helpers } = dependencies;
         const t = Translation.t;
 
         const current_state = getState();
-        const show_save_button = current_state && current_state.samples && current_state.samples.length > 0;
+        // Spara-knappen ska bara visas om det finns en pågående granskning
+        const show_save_button = current_state && current_state.ruleFileContent;
 
         const bar_element = Helpers.create_element('div', { class_name: 'global-action-bar' });
 
-        const left_group = Helpers.create_element('div', { class_name: 'action-bar-group left' });
+        // --- KORRIGERING HÄR: Skicka klasser som en array ---
+        const left_group = Helpers.create_element('div', { class_name: ['action-bar-group', 'left'] });
         if (show_save_button && save_audit_button_component_instance) {
             save_audit_button_component_instance.render();
             left_group.appendChild(save_audit_button_container_element);
         }
         bar_element.appendChild(left_group);
 
-        const right_group = Helpers.create_element('div', { class_name: 'action-bar-group right' });
+        // --- KORRIGERING HÄR: Skicka klasser som en array ---
+        const right_group = Helpers.create_element('div', { class_name: ['action-bar-group', 'right'] });
         
         const language_selector_container = Helpers.create_element('div', { class_name: 'language-selector-container' });
         const language_label = Helpers.create_element('label', {

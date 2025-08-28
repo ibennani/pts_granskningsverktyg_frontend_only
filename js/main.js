@@ -7,14 +7,14 @@ import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
 import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js';
+import { RestoreSessionViewComponent } from './components/RestoreSessionViewComponent.js'; 
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
-// NYTT: Importera de nya funktionerna från state.js
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorage, clearAutosavedState } from './state.js'; 
 window.getState = getState;
 window.dispatch = dispatch;
-window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
+window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState };
 window.StoreActionTypes = StoreActionTypes;
 
 
@@ -69,6 +69,9 @@ window.StoreActionTypes = StoreActionTypes;
                     break;
                 case 'update_rulefile':
                     title_prefix = t('update_rulefile_title');
+                    break;
+                case 'restore_session':
+                    title_prefix = t('restore_session_title');
                     break;
                 case 'requirement_audit':
                     const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
@@ -174,7 +177,7 @@ window.StoreActionTypes = StoreActionTypes;
         updatePageTitle(view_name_to_render, params_to_render);
 
         top_action_bar_instance.render();
-        if (view_name_to_render !== 'upload') {
+        if (view_name_to_render !== 'upload' && view_name_to_render !== 'restore_session') {
             bottom_action_bar_container.style.display = '';
             bottom_action_bar_instance.render();
         } else {
@@ -207,6 +210,7 @@ window.StoreActionTypes = StoreActionTypes;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
+            case 'restore_session': ComponentClass = RestoreSessionViewComponent; break;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
@@ -221,15 +225,25 @@ window.StoreActionTypes = StoreActionTypes;
                 throw new Error("Component is invalid or missing required methods.");
             }
 
-            await current_view_component_instance.init(
-                app_container, 
-                navigate_and_set_hash, 
-                params_to_render,
-                getState, 
-                dispatch,
-                StoreActionTypes,
-                subscribe
-            );
+            if (view_name_to_render === 'restore_session') {
+                await current_view_component_instance.init(
+                    app_container, 
+                    params_to_render.on_restore, 
+                    params_to_render.on_discard, 
+                    params_to_render.autosaved_state
+                );
+            } else {
+                await current_view_component_instance.init(
+                    app_container, 
+                    navigate_and_set_hash, 
+                    params_to_render,
+                    getState, 
+                    dispatch,
+                    StoreActionTypes,
+                    subscribe
+                );
+            }
+            
             current_view_component_instance.render();
             set_focus_to_h1(); 
 
@@ -293,31 +307,6 @@ window.StoreActionTypes = StoreActionTypes;
             console.error("[Main.js] CRITICAL: initState function from state.js is not available!");
         }
         
-        // --- NYTT: Logik för att hantera autosave vid start ---
-        const autosaved_state = loadStateFromLocalStorage();
-        if (autosaved_state) {
-            const t = get_t_fallback();
-            const actor_name = autosaved_state.auditMetadata?.actorName || 'Okänd';
-            const last_update = autosaved_state.samples?.[0]?.requirementResults?.[Object.keys(autosaved_state.samples[0].requirementResults)[0]]?.lastStatusUpdate;
-            const formatted_time = last_update ? window.Helpers.format_iso_to_local_datetime(last_update) : 'okänd tid';
-            
-            if (confirm(t('confirm_restore_autosave', { actorName: actor_name, timestamp: formatted_time }))) {
-                dispatch({
-                    type: StoreActionTypes.LOAD_AUDIT_FROM_FILE,
-                    payload: autosaved_state
-                });
-                clearAutosavedState(); 
-                if (window.NotificationComponent) {
-                    window.NotificationComponent.show_global_message(t('autosave_restored_successfully'), 'success');
-                }
-                // Tvinga navigation till översikten efter återställning
-                navigate_and_set_hash('audit_overview');
-            } else {
-                clearAutosavedState(); 
-            }
-        }
-        // --- SLUT PÅ NYTT ---
-
         document.title = get_t_fallback()('app_title');
 
         if (window.NotificationComponent && typeof window.NotificationComponent.init === 'function') {
@@ -347,8 +336,22 @@ window.StoreActionTypes = StoreActionTypes;
             NotificationComponent.clear_global_message();
         }
         
-        // Se till att hash-ändringen körs EFTER att en eventuell autosave har hanterats
-        if (!autosaved_state) {
+        const autosaved_state = loadStateFromLocalStorage();
+        if (autosaved_state) {
+            const on_restore = () => {
+                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_state });
+                clearAutosavedState(); 
+                if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
+                navigate_and_set_hash('audit_overview');
+            };
+            const on_discard = () => {
+                clearAutosavedState();
+                handle_hash_change();
+            };
+            
+            render_view('restore_session', { autosaved_state, on_restore, on_discard });
+
+        } else {
             handle_hash_change();
         }
 
@@ -356,7 +359,7 @@ window.StoreActionTypes = StoreActionTypes;
 
         subscribe((new_state) => { 
             top_action_bar_instance.render();
-            if (current_view_name_rendered !== 'upload') {
+            if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'restore_session') {
                 bottom_action_bar_instance.render();
             }
 

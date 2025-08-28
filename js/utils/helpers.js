@@ -28,23 +28,62 @@
         if (!iso_string) return '';
         try {
             const date = new Date(iso_string);
-            const t_func = (typeof window.Translation?.t === 'function')
-                ? window.Translation.t
-                : (key) => `**${key}**`;
-
+            const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
             if (isNaN(date.getTime())) return t_func('invalid_date_format');
-
             return date.toLocaleString('sv-SE', {
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
         } catch (e) {
             console.error("Error formatting date:", iso_string, e);
-            const t_func = (typeof window.Translation?.t === 'function')
-                ? window.Translation.t
-                : (key) => `**${key}**`;
-
+            const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
             return t_func('date_formatting_error');
+        }
+    }
+
+    // --- HELT OMbyggd DATUMFORMATERARE ---
+    function format_iso_to_relative_time(iso_string) {
+        if (!iso_string) return '';
+        const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key, rep) => rep.defaultValue;
+        
+        try {
+            const date = new Date(iso_string);
+            if (isNaN(date.getTime())) return t('invalid_date_format');
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            
+            const diffTime = today - targetDay;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            const timeString = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            const weekday = t(`weekday_long_${date.getDay()}`);
+            const day = date.getDate();
+            const month = t(`month_long_${date.getMonth()}`);
+            const year = date.getFullYear();
+            
+            let final_string;
+
+            if (diffDays === 0) {
+                final_string = t('relative_time_format_today', { weekday, day, month, time: timeString });
+            } else if (diffDays === 1) {
+                final_string = t('relative_time_format_yesterday', { weekday, day, month, time: timeString });
+            } else if (diffDays === 2 && !t('relative_time_prefix_day_before_yesterday', {defaultValue: '**'}).startsWith('**')) {
+                final_string = t('relative_time_format_day_before_yesterday', { weekday, day, month, time: timeString });
+            } else if (diffDays < 7) {
+                final_string = t('relative_time_format_this_week', { weekday, day, month, time: timeString });
+            } else if (now.getFullYear() === date.getFullYear()) {
+                final_string = t('relative_time_format_this_year', { weekday, day, month, time: timeString });
+            } else {
+                final_string = t('relative_time_format_previous_year', { weekday, day, month, year, time: timeString });
+            }
+            
+            return final_string;
+
+        } catch (e) {
+            console.error("Error formatting relative date:", iso_string, e);
+            return t('date_formatting_error');
         }
     }
 
@@ -54,18 +93,13 @@
 
     function escape_html(unsafe_input) {
         const safe_string = String(unsafe_input || '');
-
         if (safe_string === '[object Object]') {
             console.warn(`[Helpers.escape_html] Received an object that could not be converted to a meaningful string. Input was:`, unsafe_input);
             return '';
         }
-        
         return safe_string
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
     function create_element(tag_name, options = {}) {
@@ -75,49 +109,31 @@
             classes.filter(Boolean).forEach(c => element.classList.add(c));
         }
         if (options.id) element.id = options.id;
-        if (options.hasOwnProperty('value')) {
-            const tag = tag_name.toLowerCase();
-            if (['input', 'textarea', 'select', 'option'].includes(tag)) {
-                element.value = options.value;
-                if (tag === 'option') element.setAttribute('value', options.value);
-            } else {
-                element.setAttribute('value', options.value);
-            }
-        }
+        if (options.hasOwnProperty('value')) element.value = options.value;
         if (options.text_content) element.textContent = options.text_content;
         if (options.html_content) element.innerHTML = options.html_content;
-
         if (options.attributes) {
             for (const attr in options.attributes) {
-                if (attr === 'value' && options.hasOwnProperty('value')) continue;
                 element.setAttribute(attr, options.attributes[attr]);
             }
         }
-
         if (options.event_listeners) {
             for (const type in options.event_listeners) {
                 element.addEventListener(type, options.event_listeners[type]);
             }
         }
-
         if (options.children) {
             options.children.forEach(child => { if (child) element.appendChild(child); });
         }
-
         return element;
     }
 
     function get_icon_svg(icon_name, colors = [], size = 24) {
         const fill_color = colors[0] || 'currentColor';
-        const second_color = colors[1] || fill_color; 
         let svg_path = '';
-
         const base_paths = {
             'arrow_back': `<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>`,
             'arrow_forward': `<path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>`,
-            'arrow_back_ios': `<path d="M11.67 3.87L9.9 2.1 0 12l9.9 9.9 1.77-1.77L3.54 12z"/>`,
-            'arrow_forward_ios': `<path d="M6.23 20.23L8 22l10-10L8 2l-1.77 1.77L14.46 12z"/>`,
-            'arrow_forward_alt': `<path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z"/>`,
             'list': `<path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>`,
             'add': `<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>`,
             'save': `<path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>`,
@@ -135,7 +151,6 @@
             'audit_sample': `<path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>`,
             'thumb_up': `<path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/>`,
             'thumb_down': `<path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79-.44-1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/>`,
-            'check_circle_green_yellow': `<path fill="${fill_color}" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>`,
             'check_circle': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>`,
             'cancel': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>`,
             'check': `<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>`,
@@ -144,12 +159,7 @@
         };
 
         svg_path = base_paths[icon_name];
-
-        if (!svg_path) {
-            console.warn(`[Helpers.get_icon_svg] Unknown icon "${icon_name}". Using default placeholder (question mark).`);
-            svg_path = `<circle cx="12" cy="12" r="9" stroke-width="1.5" stroke="${fill_color}" fill="none"/><text x="12" y="17" font-size="12" text-anchor="middle" fill="${fill_color}">?</text>`;
-        }
-
+        if (!svg_path) return '';
         return `<svg xmlns="http://www.w3.org/2000/svg" height="${size}" width="${size}" viewBox="0 0 24 24" fill="${fill_color}" aria-hidden="true">${svg_path}</svg>`;
     }
 
@@ -158,45 +168,26 @@
         return /^(?:f|ht)tps?:\/\//i.test(url_string) ? url_string : `https://${url_string}`;
     }
 
-    function _perform_resize(textarea) {
-        if (!textarea || typeof textarea.scrollHeight === 'undefined') return;
-
-        const computed_style = window.getComputedStyle(textarea);
-        const line_height = parseFloat(computed_style.lineHeight) || (parseFloat(computed_style.fontSize) * 1.6); // Fallback
-        
-        textarea.style.height = 'auto'; 
-        
-        const required_height = textarea.scrollHeight + line_height;
-
-        textarea.style.height = `${required_height}px`;
-    }
-
     function init_auto_resize_for_textarea(textarea_element) {
         if (!textarea_element || textarea_element.tagName.toLowerCase() !== 'textarea') return;
-        
-        textarea_element.addEventListener('input', () => _perform_resize(textarea_element));
-        
-        setTimeout(() => _perform_resize(textarea_element), 0);
+        const _perform_resize = () => {
+            textarea_element.style.height = 'auto';
+            textarea_element.style.height = `${textarea_element.scrollHeight}px`;
+        };
+        textarea_element.addEventListener('input', _perform_resize);
+        setTimeout(_perform_resize, 0);
     }
-
+    
     function sanitize_and_linkify_html(raw_html_string) {
-        if (typeof raw_html_string !== 'string' || !raw_html_string) {
-            return '';
-        }
-        
+        if (typeof raw_html_string !== 'string' || !raw_html_string) return '';
         const template = document.createElement('template');
         template.innerHTML = raw_html_string;
         const content = template.content;
-
-        const elements_to_remove = content.querySelectorAll('script, style, iframe, object, embed');
-        elements_to_remove.forEach(el => el.remove());
-
-        const links = content.querySelectorAll('a');
-        links.forEach(link => {
+        content.querySelectorAll('script, style, iframe, object, embed').forEach(el => el.remove());
+        content.querySelectorAll('a').forEach(link => {
             link.setAttribute('target', '_blank');
             link.setAttribute('rel', 'noopener noreferrer');
         });
-
         const temp_div = document.createElement('div');
         temp_div.appendChild(content);
         return temp_div.innerHTML;
@@ -207,14 +198,11 @@
         const a_parts = String(a).split(re);
         const b_parts = String(b).split(re);
         const len = Math.max(a_parts.length, b_parts.length);
-
         for (let i = 0; i < len; i++) {
             const a_part = a_parts[i] || '';
             const b_part = b_parts[i] || '';
-            
             const a_num = parseInt(a_part, 10);
             const b_num = parseInt(b_part, 10);
-
             if (!isNaN(a_num) && !isNaN(b_num)) {
                 if (a_num < b_num) return -1;
                 if (a_num > b_num) return 1;
@@ -230,6 +218,7 @@
         generate_uuid_v4,
         load_css,
         format_iso_to_local_datetime,
+        format_iso_to_relative_time,
         get_current_iso_datetime_utc,
         escape_html,
         create_element,

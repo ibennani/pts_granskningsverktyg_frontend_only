@@ -2,29 +2,19 @@
 (function () { // IIFE start
     'use-strict';
 
-    // Funktioner som denna logikfil behöver.
-    // De kommer att skickas som argument till save_audit_to_json_file
-    // eller så kan de hämtas från window om de är globala och du föredrar det.
-    // För tydlighetens skull, låt oss anta att de skickas in.
+    function _generate_filename(audit_data, t_func) {
+        const now = new Date();
+        const time_str = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+        const datetime_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${time_str}`;
+        
+        let actor_name_part = 'granskning';
 
-// Ny, uppdaterad kod
-function _generate_filename(audit_data, t_func) {
-    const now = new Date();
-    // LÄGG TILL: Timme, minut och sekund, med noll-utfyllnad (padStart)
-    const time_str = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
-    
-    // Kombinera datum och tid
-    const datetime_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${time_str}`;
-    
-    let actor_name_part = 'granskning'; // Fallback
-
-    if (audit_data && audit_data.auditMetadata && audit_data.auditMetadata.actorName) {
-        actor_name_part = audit_data.auditMetadata.actorName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'granskning';
+        if (audit_data && audit_data.auditMetadata && audit_data.auditMetadata.actorName) {
+            actor_name_part = audit_data.auditMetadata.actorName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'granskning';
+        }
+        
+        return `tillganglighetsgranskning_${actor_name_part}_${datetime_str}.json`;
     }
-    
-    // Använd den nya datetime_str i filnamnet
-    return `tillganglighetsgranskning_${actor_name_part}_${datetime_str}.json`;
-}
 
     function save_audit_to_json_file(current_audit_data, t_func, show_notification_func) {
         if (!current_audit_data) {
@@ -46,11 +36,16 @@ function _generate_filename(audit_data, t_func) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
+        // --- NYTT: Rensa autosave efter en lyckad manuell sparning ---
+        if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
+            window.Store.clearAutosavedState();
+        }
+        // --- SLUT PÅ NYTT ---
+
         if (show_notification_func) show_notification_func(t_func('audit_saved_as_file', { filename: filename }), 'success');
         console.log(`[SaveAuditLogic] Audit saved as ${filename}`);
     }
 
-    // Exponera den offentliga API:n
     window.SaveAuditLogic = {
         save_audit_to_json_file
     };
