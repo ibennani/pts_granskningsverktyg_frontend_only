@@ -84,7 +84,6 @@ function root_reducer(current_state, action) {
                     saveFileVersion: APP_STATE_VERSION
                 };
                 
-                // Konvertera gamla dataformat (strängar) till nya (objekt)
                 (loaded_state.samples || []).forEach(sample => {
                     Object.values(sample.requirementResults || {}).forEach(reqResult => {
                         Object.values(reqResult.checkResults || {}).forEach(checkResult => {
@@ -108,7 +107,6 @@ function root_reducer(current_state, action) {
                     loaded_state.deficiencyCounter = 1;
                 }
 
-                // Kör inkrementell uppdatering för att säkerställa konsistens
                 return window.AuditLogic.updateIncrementalDeficiencyIds(loaded_state);
             }
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
@@ -131,7 +129,6 @@ function root_reducer(current_state, action) {
         
         case ActionTypes.DELETE_SAMPLE:
             new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
-            // Kör inkrementell uppdatering för att ta bort eventuella ID:n från den raderade sampel
             return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.UPDATE_REQUIREMENT_RESULT:
@@ -146,7 +143,6 @@ function root_reducer(current_state, action) {
                         : sample
                 )
             };
-            // Kör inkrementell uppdatering för att tilldela/ta bort ID vid behov
             return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.SET_AUDIT_STATUS:
@@ -154,21 +150,15 @@ function root_reducer(current_state, action) {
             let timeUpdate = {};
             let state_before_status_change = current_state;
 
-            // KÄRNLOGIK FÖR NY ID-HANTERING
             if (newStatus === 'locked' && current_state.auditStatus === 'in_progress') {
-                // Om deficiencyCounter är 1, har vi aldrig låst och numrerat förut.
-                // Detta är första låsningen!
                 if (current_state.deficiencyCounter === 1) {
-                    console.log("[State.js] First lock detected. Assigning sorted deficiency IDs.");
                     state_before_status_change = window.AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
                 }
                 timeUpdate.endTime = state_before_status_change.endTime || get_current_iso_datetime_utc_internal();
             } 
-            // Vid upplåsning
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
                 timeUpdate.endTime = null;
             } 
-            // Vid allra första start av granskningen
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
                 timeUpdate.startTime = get_current_iso_datetime_utc_internal();
             }
@@ -180,6 +170,7 @@ function root_reducer(current_state, action) {
                 console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload.');
                 return current_state;
             }
+            // *** KORRIGERING: Räkna om värdetalsdata vid regelfilsbyte ***
             const new_precalculated_data = window.VardetalCalculator.precalculate_rule_data(action.payload.ruleFileContent);
             return {
                 ...action.payload,
@@ -247,7 +238,7 @@ function dispatch(action) {
         if (new_state !== previous_state_for_comparison) {
             internal_state = new_state;
             saveStateToSessionStorage(internal_state);
-            notify_listeners();
+            notify_listeners(); 
         }
     } catch (error) {
         console.error('[State.js] Error in dispatch or reducer:', error, 'Action:', action);
@@ -271,13 +262,15 @@ function subscribe(listener_function) {
 
 function notify_listeners() {
     const currentSnapshot = getState();
-    listeners.forEach(listener => {
-        try {
-            listener(currentSnapshot);
-        } catch (error) {
-            console.error('[State.js] Error in listener function:', error);
-        }
-    });
+    setTimeout(() => {
+        listeners.forEach(listener => {
+            try {
+                listener(currentSnapshot);
+            } catch (error) {
+                console.error('[State.js] Error in listener function:', error);
+            }
+        });
+    }, 0);
 }
 
 function loadStateFromSessionStorage() {
@@ -317,7 +310,6 @@ function saveStateToSessionStorage(state_to_save) {
     }
 }
 
-// NY FUNKTION som anropas från main.js
 function initState() {
     internal_state = loadStateFromSessionStorage();
     if (window.AuditLogic && typeof window.AuditLogic.updateIncrementalDeficiencyIds === 'function') {

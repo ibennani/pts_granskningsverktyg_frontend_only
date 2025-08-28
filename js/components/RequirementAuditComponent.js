@@ -48,35 +48,17 @@ export const RequirementAuditComponent = (function () {
     
     let last_focused_element_info = null;
 
-    /**
-     * Helper to remove common leading whitespace from multiline strings.
-     * This fixes markdown rendering for indented code blocks in JSON files.
-     * @param {string} text - The text to de-indent.
-     * @returns {string} The de-indented text.
-     */
     function _dedent(text) {
-        if (!text || typeof text !== 'string') {
-            return text;
-        }
-
+        if (!text || typeof text !== 'string') return text;
         const lines = text.split('\n');
-        
-        // Find the minimum indentation of non-empty lines
         let minIndent = null;
         for (const line of lines) {
             if (line.trim() !== '') {
                 const indent = line.match(/^\s*/)[0].length;
-                if (minIndent === null || indent < minIndent) {
-                    minIndent = indent;
-                }
+                if (minIndent === null || indent < minIndent) minIndent = indent;
             }
         }
-
-        if (minIndent === null || minIndent === 0) {
-            return text;
-        }
-
-        // Remove the minimum indentation from all lines
+        if (minIndent === null || minIndent === 0) return text;
         return lines.map(line => line.slice(minIndent)).join('\n');
     }
     
@@ -328,17 +310,16 @@ export const RequirementAuditComponent = (function () {
             }
             (check_definition.passCriteria || []).forEach(pc_definition => {
                 const pc_data = current_requirement_result_for_view.checkResults[check_definition.id].passCriteria[pc_definition.id];
-                // Uppgraderingslogik för gamla format
                 if (typeof pc_data === 'string' || pc_data === undefined || pc_data === null) {
                     current_requirement_result_for_view.checkResults[check_definition.id].passCriteria[pc_definition.id] = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
                         observationDetail: '',
-                        timestamp: null // Sätt timestamp till null för gamla data
+                        timestamp: null
                     };
                 } else if (typeof pc_data === 'object') { 
                     if (pc_data.status === undefined) pc_data.status = 'not_audited';
                     if (pc_data.observationDetail === undefined) pc_data.observationDetail = '';
-                    if (pc_data.timestamp === undefined) pc_data.timestamp = null; // Lägg till om objektet finns men saknar timestamp
+                    if (pc_data.timestamp === undefined) pc_data.timestamp = null;
                 }
             });
         });
@@ -351,7 +332,6 @@ export const RequirementAuditComponent = (function () {
         }
     
         if (AuditLogic_get_ordered_relevant_requirement_keys) {
-            // ANROPAS NU MED 'default' FÖR ATT FÅ STANDARDSORTERINGEN
             ordered_requirement_keys_for_sample = AuditLogic_get_ordered_relevant_requirement_keys(current_global_state.ruleFileContent, current_sample_object_from_store, 'default');
         } else {
             ordered_requirement_keys_for_sample = [];
@@ -424,7 +404,6 @@ export const RequirementAuditComponent = (function () {
             modified_result_for_dispatch.checkResults[check_id].passCriteria[pc_id] = { status: 'not_audited', observationDetail: '', timestamp: null };
         }
         modified_result_for_dispatch.checkResults[check_id].passCriteria[pc_id].observationDetail = new_detail_text;
-        // Tidsstämpel för observation sätts inte här, bara vid statusändring.
     
         if (Helpers_get_current_iso_datetime_utc) modified_result_for_dispatch.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
     
@@ -463,7 +442,6 @@ export const RequirementAuditComponent = (function () {
             check_result_to_modify.overallStatus = new_overall_status_for_check_button_click;
         }
     
-        // <<< NYTT: LÄGG TILL TIDSSTÄMPEL VID ÄNDRING >>>
         check_result_to_modify.timestamp = Helpers_get_current_iso_datetime_utc();
 
         if (check_result_to_modify.overallStatus === 'failed' && check_definition?.passCriteria) {
@@ -512,7 +490,7 @@ export const RequirementAuditComponent = (function () {
             return;
         }
         if (check_result_to_modify.overallStatus === 'not_audited') {
-            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_set_check_status_first', {defaultValue: "Please set the main check status first."}), 'warning');
+            if (NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('error_set_check_status_first'), 'warning');
             return;
         }
         
@@ -528,7 +506,6 @@ export const RequirementAuditComponent = (function () {
             check_result_to_modify.passCriteria[pc_id].status = new_pc_status;
         }
 
-        // <<< NYTT: LÄGG TILL TIDSSTÄMPEL VID ÄNDRING >>>
         check_result_to_modify.passCriteria[pc_id].timestamp = Helpers_get_current_iso_datetime_utc();
     
         if (check_result_to_modify.passCriteria[pc_id].status === 'failed' && 
@@ -605,11 +582,7 @@ export const RequirementAuditComponent = (function () {
                     return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
                 };
 
-                // MODIFIED: This is the final, correct fix for escaping HTML.
                 renderer.html = (html_token) => {
-                    // This logic correctly extracts the text content from the token
-                    // regardless of whether marked.js passes a string or an object,
-                    // preventing both raw HTML rendering and the "[object Object]" bug.
                     const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                         ? html_token.text
                         : String(html_token || '');
@@ -852,6 +825,7 @@ export const RequirementAuditComponent = (function () {
             }
         });
     }
+
     function render_navigation_buttons(nav_container_element) { 
         const t = get_t_internally();
         nav_container_element.innerHTML = ''; 
@@ -937,7 +911,6 @@ export const RequirementAuditComponent = (function () {
         audited_page_link_element_ref = Helpers_create_element('p', { class_name: 'audited-page-link' });
         requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display' });
 
-        // KORRIGERAD ORDNING
         header_div_ref.append(requirement_title_element_ref, standard_reference_element_ref, audited_page_link_element_ref, requirement_status_display_element);
         plate_element_ref.appendChild(header_div_ref);
     
@@ -1010,18 +983,17 @@ export const RequirementAuditComponent = (function () {
     
         const needs_review = result_for_render?.needsReview === true;
         if (needs_review && NotificationComponent_show_global_message) {
-            NotificationComponent_show_global_message(t('requirement_updated_needs_review', { defaultValue: "This requirement has been updated since last review. Please verify your assessment." }), 'info');
+            NotificationComponent_show_global_message(t('requirement_updated_needs_review'), 'info');
         }
     
         requirement_title_element_ref.textContent = req_for_render.title;
     
-        // *** KORRIGERAD LOGIK FÖR REFERENS OCH GRANSKAD SIDA ***
         standard_reference_element_ref.innerHTML = '';
         const ref_text = req_for_render.standardReference?.text;
         if (ref_text && ref_text.trim() !== '') {
             standard_reference_element_ref.removeAttribute('hidden');
             const label_strong = Helpers_create_element('strong', { 
-                text_content: t('requirement_standard_reference_label', { defaultValue: "Referensdokumentation:" }) 
+                text_content: t('requirement_standard_reference_label')
             });
             standard_reference_element_ref.appendChild(label_strong);
             standard_reference_element_ref.appendChild(document.createTextNode(' '));
@@ -1044,7 +1016,7 @@ export const RequirementAuditComponent = (function () {
         const context_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
         
         const label_strong_audit = Helpers_create_element('strong', {
-            text_content: t('audited_page_label', { defaultValue: "Du granskar:" })
+            text_content: t('audited_page_label')
         });
         audited_page_link_element_ref.appendChild(label_strong_audit);
         audited_page_link_element_ref.appendChild(document.createTextNode(' '));
@@ -1059,10 +1031,9 @@ export const RequirementAuditComponent = (function () {
             audited_page_link_element_ref.appendChild(document.createTextNode(context_text));
         }
         audited_page_link_element_ref.removeAttribute('hidden');
-        // *** SLUT PÅ KORRIGERAD LOGIK ***
-    
+        
         const overall_status_key = result_for_render?.status || 'not_audited';
-        const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
+        const overall_status_text = t(`audit_status_${overall_status_key}`);
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
         
         expected_observation_section_ref = render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, expected_observation_section_ref, plate_element_ref);
@@ -1072,7 +1043,6 @@ export const RequirementAuditComponent = (function () {
         common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref); 
         examples_section_ref = render_audit_section_internal('requirement_examples', req_for_render.examples, examples_section_ref, plate_element_ref);
 
-        // ÄNDRING BÖRJAR HÄR: Hela metadata-sektionen byts ut mot innehållstyper för stickprovet.
         if (current_sample_object_from_store?.selectedContentTypes?.length > 0) {
             if (!metadata_section_ref || !plate_element_ref.contains(metadata_section_ref)) {
                 metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
@@ -1083,13 +1053,12 @@ export const RequirementAuditComponent = (function () {
             metadata_section_ref.innerHTML = ''; 
             metadata_section_ref.removeAttribute('hidden');
 
-            // Använder den befintliga nyckeln 'content_types'
             metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('content_types') }));
             
             const all_content_types_defs = current_global_state_for_render.ruleFileContent?.metadata?.contentTypes || [];
             const content_types_map = new Map(all_content_types_defs.map(ct => [ct.id, ct.text]));
             
-            const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' }); // Återanvänder befintlig klass
+            const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
             
             current_sample_object_from_store.selectedContentTypes.forEach(ct_id => {
                 const ct_text = content_types_map.get(ct_id) || ct_id;
@@ -1102,11 +1071,9 @@ export const RequirementAuditComponent = (function () {
             }
 
         } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) {
-            // Dölj sektionen om inga innehållstyper är valda
             metadata_section_ref.setAttribute('hidden', 'true');
             metadata_section_ref.innerHTML = ''; 
         }
-        // ÄNDRING SLUTAR HÄR
         
         render_navigation_buttons(top_nav_buttons_container_ref);
         render_navigation_buttons(bottom_nav_buttons_container_ref);

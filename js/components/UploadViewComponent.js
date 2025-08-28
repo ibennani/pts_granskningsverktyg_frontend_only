@@ -23,15 +23,7 @@ const UploadViewComponent_internal = (function () {
     function get_t_func() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
-            : (key, replacements) => {
-                let str = replacements && replacements.defaultValue ? replacements.defaultValue : `**${key}**`;
-                if (replacements && !replacements.defaultValue) {
-                    for (const rKey in replacements) {
-                        str += ` (${rKey}: ${replacements[rKey]})`;
-                    }
-                }
-                return str + " (UploadView t not found)";
-            };
+            : (key, replacements) => `**${key}**`;
     }
 
     function handle_rule_file_select(event) {
@@ -40,7 +32,7 @@ const UploadViewComponent_internal = (function () {
         if (file) {
             if (file.type !== "application/json") {
                 if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
-                if (rule_file_input_element) rule_file_input_element.value = ''; // Rensa input
+                if (rule_file_input_element) rule_file_input_element.value = '';
                 return;
             }
             const reader = new FileReader();
@@ -57,20 +49,15 @@ const UploadViewComponent_internal = (function () {
                             payload: { ruleFileContent: json_content }
                         });
 
+                        // NYTT: Förberäkna värdetalsdata för den nya regelfilen
                         if (VardetalCalculator_precalculate_rule_data_func) {
-                            // Anropa precalculate med det faktiska innehållet i den *nya* regelfilen
                             const precalculated_data = VardetalCalculator_precalculate_rule_data_func(json_content);
                             if (precalculated_data && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
                                 local_dispatch({
                                     type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
                                     payload: precalculated_data 
                                 });
-                                console.log("[UploadViewComponent] Dispatched SET_PRECALCULATED_RULE_DATA after new rule file.");
-                            } else {
-                                console.warn("[UploadViewComponent] Failed to get precalculated_data or dispatch SET_PRECALCULATED_RULE_DATA for new rule file.");
                             }
-                        } else {
-                            console.warn("[UploadViewComponent] VardetalCalculator.precalculate_rule_data not available after new rule file load.");
                         }
                         
                         router_ref('metadata');
@@ -81,12 +68,12 @@ const UploadViewComponent_internal = (function () {
                     console.error("Fel vid parsning av JSON från regelfil:", error);
                     if (window.NotificationComponent) NotificationComponent.show_global_message(t('rule_file_invalid_json'), 'error');
                 } finally {
-                    if (rule_file_input_element) rule_file_input_element.value = ''; // Rensa alltid input
+                    if (rule_file_input_element) rule_file_input_element.value = '';
                 }
             };
             reader.onerror = function() {
                 if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
-                if (rule_file_input_element) rule_file_input_element.value = ''; // Rensa input
+                if (rule_file_input_element) rule_file_input_element.value = '';
             };
             reader.readAsText(file);
         }
@@ -98,7 +85,7 @@ const UploadViewComponent_internal = (function () {
         if (file) {
             if (file.type !== "application/json") {
                 if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
-                if (saved_audit_input_element) saved_audit_input_element.value = ''; // Rensa input
+                if (saved_audit_input_element) saved_audit_input_element.value = '';
                 return;
             }
             const reader = new FileReader();
@@ -113,7 +100,7 @@ const UploadViewComponent_internal = (function () {
                             payload: file_content_object
                         });
 
-                        // Hämta det nyligen laddade state för att få det korrekta ruleFileContent
+                        // NYTT: Förberäkna värdetalsdata för den inbäddade regelfilen
                         const new_loaded_state = local_getState(); 
                         if (new_loaded_state && new_loaded_state.ruleFileContent && VardetalCalculator_precalculate_rule_data_func) {
                             const precalculated_data = VardetalCalculator_precalculate_rule_data_func(new_loaded_state.ruleFileContent);
@@ -122,12 +109,7 @@ const UploadViewComponent_internal = (function () {
                                     type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
                                     payload: precalculated_data
                                 });
-                                console.log("[UploadViewComponent] Dispatched SET_PRECALCULATED_RULE_DATA after loading saved audit.");
-                            } else {
-                                console.warn("[UploadViewComponent] Failed to get precalculated_data or dispatch SET_PRECALCULATED_RULE_DATA for loaded audit.");
                             }
-                        } else {
-                             console.warn("[UploadViewComponent] VardetalCalculator.precalculate_rule_data not available or ruleFileContent missing after loading saved audit.");
                         }
 
                         if (window.NotificationComponent) NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
@@ -140,12 +122,12 @@ const UploadViewComponent_internal = (function () {
                     console.error("Fel vid parsning av JSON från sparad granskningsfil:", error);
                     if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
                 } finally {
-                     if (saved_audit_input_element) saved_audit_input_element.value = ''; // Rensa alltid input
+                     if (saved_audit_input_element) saved_audit_input_element.value = '';
                 }
             };
             reader.onerror = function() {
                 if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
-                if (saved_audit_input_element) saved_audit_input_element.value = ''; // Rensa input
+                if (saved_audit_input_element) saved_audit_input_element.value = '';
             };
             reader.readAsText(file);
         }
@@ -162,7 +144,7 @@ const UploadViewComponent_internal = (function () {
         if (!local_StoreActionTypes || 
             !local_StoreActionTypes.INITIALIZE_NEW_AUDIT || 
             !local_StoreActionTypes.LOAD_AUDIT_FROM_FILE ||
-            !local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) { // Kontrollera den nya också
+            !local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
             console.error("[UploadViewComponent] CRITICAL: Core StoreActionTypes missing for init.");
             local_StoreActionTypes = { 
                 INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT_ERROR_UPLOAD',
@@ -208,7 +190,7 @@ const UploadViewComponent_internal = (function () {
         if (global_message_element_ref) {
             app_container_ref.appendChild(global_message_element_ref);
             if (window.NotificationComponent && typeof window.NotificationComponent.clear_global_message === 'function' &&
-                global_message_element_ref && // Extra säkerhetskoll
+                global_message_element_ref &&
                 !global_message_element_ref.classList.contains('message-error') &&
                 !global_message_element_ref.classList.contains('message-warning')) {
                 NotificationComponent.clear_global_message();
@@ -269,7 +251,6 @@ const UploadViewComponent_internal = (function () {
         local_StoreActionTypes = null;
         VardetalCalculator_precalculate_rule_data_func = null;
         global_message_element_ref = null;
-        // app_container_ref och router_ref är referenser som inte ska nollställas här, de ägs av main.js
     }
 
     return {
