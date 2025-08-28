@@ -375,19 +375,14 @@ export const RequirementListComponent = (function () {
         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-row' });
         const title_h_container = Helpers_create_element('h4', { class_name: 'requirement-title-container' });
         
-        // *** ÄNDRING HÄR: Bygg den nya länktexten ***
-        let link_text = req.title;
-        const ref_text = req.metadata?.standardReference?.text;
-        if (ref_text && ref_text.trim() !== '') {
-            link_text += ` (${ref_text})`;
-        }
-        // *** SLUT PÅ ÄNDRING ***
-
+        // ÄNDRING BÖRJAR HÄR: Tar bort referenstexten från titeln för en renare länk.
         const title_button = Helpers_create_element('button', {
             class_name: 'list-title-button',
-            text_content: link_text, // Använd den nya texten
+            text_content: req.title, // Visar nu BARA titeln.
             attributes: { 'data-requirement-id': req.key }
         });
+        // ÄNDRING SLUTAR HÄR
+
         title_h_container.appendChild(title_button);
         title_row_div.appendChild(title_h_container);
         li.appendChild(title_row_div);
@@ -430,18 +425,30 @@ export const RequirementListComponent = (function () {
             text_content: `(${audited_checks_count}/${total_checks_count} ${t('checks_short')})`
         }));
         
-        // Denna länk kan vara redundant nu, men vi behåller den för tydlighetens skull
-        // om länktexten blir för lång och klipps av.
-        if (req.metadata?.standardReference?.text) {
-            const ref_text_only = req.metadata.standardReference.text;
+        // ÄNDRING BÖRJAR HÄR: Korrigerad logik för att visa referens i detaljraden.
+        const ref_text = req.standardReference?.text;
+        if (ref_text && ref_text.trim() !== '') {
             let ref_element;
-            if (req.metadata.standardReference.url) {
-                ref_element = Helpers_create_element('a', { class_name: 'list-reference-link', text_content: ref_text_only, attributes: { href: req.metadata.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } });
+            if (req.standardReference.url) {
+                const safe_url = Helpers_add_protocol_if_missing(req.standardReference.url);
+                ref_element = Helpers_create_element('a', { 
+                    class_name: 'list-reference-link', 
+                    text_content: ref_text, 
+                    attributes: { 
+                        href: safe_url, 
+                        target: '_blank', 
+                        rel: 'noopener noreferrer' 
+                    } 
+                });
             } else {
-                ref_element = Helpers_create_element('span', { class_name: 'list-reference-text', text_content: ref_text_only });
+                ref_element = Helpers_create_element('span', { 
+                    class_name: 'list-reference-text', 
+                    text_content: ref_text 
+                });
             }
             details_row_div.appendChild(ref_element);
         }
+        // ÄNDRING SLUTAR HÄR
         
         li.appendChild(details_row_div);
         return li;
