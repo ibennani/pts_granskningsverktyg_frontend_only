@@ -13,7 +13,7 @@ import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComp
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
 // Importera från den nya storen
-import { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState } from './state.js'; 
+import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState } from './state.js'; 
 window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
@@ -298,6 +298,15 @@ window.StoreActionTypes = StoreActionTypes;
             return;
         }
         
+        // *** NY KOD: Kör initState efter att globala script har laddats ***
+        if (typeof initState === 'function') {
+            initState();
+        } else {
+            console.error("[Main.js] CRITICAL: initState function from state.js is not available!");
+            // Hantera felet, kanske visa ett felmeddelande
+        }
+        // *** SLUT PÅ NY KOD ***
+
         document.title = get_t_fallback()('app_title');
 
         if (window.NotificationComponent && typeof window.NotificationComponent.init === 'function') {

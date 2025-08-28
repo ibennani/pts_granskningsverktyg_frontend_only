@@ -24,7 +24,6 @@ export const RequirementAuditComponent = (function () {
     let plate_element_ref = null;
     let header_div_ref = null;
     let requirement_title_element_ref = null;
-    let sample_context_text_element_ref = null; 
     let standard_reference_element_ref = null;
     let audited_page_link_element_ref = null;
     let requirement_status_display_element = null;
@@ -352,7 +351,8 @@ export const RequirementAuditComponent = (function () {
         }
     
         if (AuditLogic_get_ordered_relevant_requirement_keys) {
-            ordered_requirement_keys_for_sample = AuditLogic_get_ordered_relevant_requirement_keys(current_global_state.ruleFileContent, current_sample_object_from_store);
+            // ANROPAS NU MED 'default' FÖR ATT FÅ STANDARDSORTERINGEN
+            ordered_requirement_keys_for_sample = AuditLogic_get_ordered_relevant_requirement_keys(current_global_state.ruleFileContent, current_sample_object_from_store, 'default');
         } else {
             ordered_requirement_keys_for_sample = [];
         }
@@ -932,12 +932,13 @@ export const RequirementAuditComponent = (function () {
         }
     
         header_div_ref = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
-        sample_context_text_element_ref = Helpers_create_element('p', { style: 'font-weight: 500; color: var(--text-color-muted); margin-bottom: 0.3rem; margin-top: 0;' });
         requirement_title_element_ref = Helpers_create_element('h1');
         standard_reference_element_ref = Helpers_create_element('p', { class_name: 'standard-reference' });
         audited_page_link_element_ref = Helpers_create_element('p', { class_name: 'audited-page-link' });
         requirement_status_display_element = Helpers_create_element('p', { class_name: 'overall-requirement-status-display' });
-        header_div_ref.append(sample_context_text_element_ref, requirement_title_element_ref, standard_reference_element_ref, audited_page_link_element_ref, requirement_status_display_element);
+
+        // KORRIGERAD ORDNING
+        header_div_ref.append(requirement_title_element_ref, standard_reference_element_ref, audited_page_link_element_ref, requirement_status_display_element);
         plate_element_ref.appendChild(header_div_ref);
     
         expected_observation_section_ref = Helpers_create_element('div', {class_name: 'audit-section'});
@@ -1014,59 +1015,50 @@ export const RequirementAuditComponent = (function () {
     
         requirement_title_element_ref.textContent = req_for_render.title;
     
-        if (sample_context_text_element_ref) {
-            const actor_name = current_global_state_for_render.auditMetadata?.actorName || '';
-            const sample_description = current_sample_object_from_store?.description || '';
-            let context_text = sample_description;
-    
-            if (actor_name.trim() !== '') {
-                context_text = `${actor_name.trim()}: ${sample_description}`;
-            }
-    
-            sample_context_text_element_ref.textContent = context_text;
-        }
-    
+        // *** KORRIGERAD LOGIK FÖR REFERENS OCH GRANSKAD SIDA ***
         standard_reference_element_ref.innerHTML = '';
-        if (req_for_render.standardReference?.text) {
+        if (req_for_render.metadata?.standardReference?.text) {
+            standard_reference_element_ref.removeAttribute('hidden');
             const label_strong = Helpers_create_element('strong', { 
-                text_content: t('requirement_standard_reference_label', { defaultValue: "Reference:" }) 
+                text_content: t('requirement_standard_reference_label', { defaultValue: "Referensdokumentation:" }) 
             });
             standard_reference_element_ref.appendChild(label_strong);
             standard_reference_element_ref.appendChild(document.createTextNode(' '));
-            if (req_for_render.standardReference.url) { 
+            if (req_for_render.metadata.standardReference.url) { 
                 const link = Helpers_create_element('a', { 
-                    text_content: req_for_render.standardReference.text, 
-                    attributes: { href: req_for_render.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
+                    text_content: req_for_render.metadata.standardReference.text, 
+                    attributes: { href: req_for_render.metadata.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
                 });
                 standard_reference_element_ref.appendChild(link); 
             } else { 
-                standard_reference_element_ref.appendChild(document.createTextNode(req_for_render.standardReference.text));
+                standard_reference_element_ref.appendChild(document.createTextNode(req_for_render.metadata.standardReference.text));
             }
+        } else {
+            standard_reference_element_ref.setAttribute('hidden', 'true');
         }
     
         audited_page_link_element_ref.innerHTML = '';
+        const actor_name = current_global_state_for_render.auditMetadata?.actorName || '';
+        const sample_description = current_sample_object_from_store?.description || '';
+        const context_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
+        
+        const label_strong_audit = Helpers_create_element('strong', {
+            text_content: t('audited_page_label', { defaultValue: "Du granskar:" })
+        });
+        audited_page_link_element_ref.appendChild(label_strong_audit);
+        audited_page_link_element_ref.appendChild(document.createTextNode(' '));
         if (current_sample_object_from_store.url) {
-            const label_strong = Helpers_create_element('strong', {
-                text_content: t('audited_page_label', { defaultValue: "Granskad sida:" })
-            });
-            audited_page_link_element_ref.appendChild(label_strong);
-            audited_page_link_element_ref.appendChild(document.createTextNode(' '));
-        
-            const actor_name = current_global_state_for_render.auditMetadata?.actorName || '';
-            const sample_description = current_sample_object_from_store?.description || '';
-            const context_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
-        
             const safe_url = Helpers_add_protocol_if_missing(current_sample_object_from_store.url);
             const link = Helpers_create_element('a', {
                 text_content: context_text,
                 attributes: { href: safe_url, target: '_blank', rel: 'noopener noreferrer' }
             });
             audited_page_link_element_ref.appendChild(link);
-            audited_page_link_element_ref.removeAttribute('hidden');
         } else {
-            audited_page_link_element_ref.setAttribute('hidden', 'true');
+            audited_page_link_element_ref.appendChild(document.createTextNode(context_text));
         }
-    
+        audited_page_link_element_ref.removeAttribute('hidden');
+        // *** SLUT PÅ KORRIGERAD LOGIK ***
     
         const overall_status_key = result_for_render?.status || 'not_audited';
         const overall_status_text = t(`audit_status_${overall_status_key}`, {defaultValue: overall_status_key});
@@ -1079,27 +1071,42 @@ export const RequirementAuditComponent = (function () {
         common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref); 
         examples_section_ref = render_audit_section_internal('requirement_examples', req_for_render.examples, examples_section_ref, plate_element_ref);
 
-        if (req_for_render.metadata) { 
+        // *** ÅTERSTÄLLD METADATA-SEKTION ***
+        if (req_for_render.metadata && (req_for_render.metadata.mainCategory || req_for_render.metadata.subCategory || req_for_render.metadata.impact)) { 
             if (!metadata_section_ref || !plate_element_ref.contains(metadata_section_ref)) {
                 metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
-                let insert_after_node = examples_section_ref;
-                if (!insert_after_node || !plate_element_ref.contains(insert_after_node)) {
-                    const info_sections = [common_errors_section_ref, exceptions_section_ref, tips_section_ref, instructions_section_ref, expected_observation_section_ref];
-                    for (let i = 0; i < info_sections.length; i++) { if (info_sections[i] && plate_element_ref.contains(info_sections[i])) { insert_after_node = info_sections[i]; break; } }
-                }
-                if (insert_after_node && plate_element_ref.contains(insert_after_node)) { if (insert_after_node.nextSibling) plate_element_ref.insertBefore(metadata_section_ref, insert_after_node.nextSibling); else plate_element_ref.appendChild(metadata_section_ref); } 
-                else { const insert_before_main_content = top_nav_buttons_container_ref || checks_ui_container_element; if (insert_before_main_content && plate_element_ref.contains(insert_before_main_content)) plate_element_ref.insertBefore(metadata_section_ref, insert_before_main_content); else plate_element_ref.appendChild(metadata_section_ref); }
+                const last_info_section = examples_section_ref || common_errors_section_ref || exceptions_section_ref || tips_section_ref || instructions_section_ref || expected_observation_section_ref;
+                if(last_info_section) last_info_section.after(metadata_section_ref);
+                else header_div_ref.after(metadata_section_ref);
             }
             metadata_section_ref.innerHTML = ''; 
+            metadata_section_ref.removeAttribute('hidden');
             metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
             const metadata_list_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
-            if(req_for_render.metadata.mainCategory?.text) { const li = Helpers_create_element('li'); li.innerHTML = `<strong>${t('main_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.mainCategory.text)}`; metadata_list_ul.appendChild(li); }
-            if(req_for_render.metadata.subCategory?.text) { const li = Helpers_create_element('li'); li.innerHTML = `<strong>${t('sub_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.subCategory.text)}`; metadata_list_ul.appendChild(li); }
-            if (req_for_render.metadata.impact) { const impact_text = req_for_render.metadata.impact.isCritical ? t('critical') : t('impact_normal'); const li = Helpers_create_element('li'); li.innerHTML = `<strong>${t('impact')}:</strong> ${impact_text}`; metadata_list_ul.appendChild(li); }
-            metadata_section_ref.appendChild(metadata_list_ul);
+            if(req_for_render.metadata.mainCategory?.text) { 
+                const li = Helpers_create_element('li'); 
+                li.innerHTML = `<strong>${t('main_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.mainCategory.text)}`; 
+                metadata_list_ul.appendChild(li); 
+            }
+            if(req_for_render.metadata.subCategory?.text) { 
+                const li = Helpers_create_element('li'); 
+                li.innerHTML = `<strong>${t('sub_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.subCategory.text)}`; 
+                metadata_list_ul.appendChild(li); 
+            }
+            if (req_for_render.metadata.impact) { 
+                const impact_text = req_for_render.metadata.impact.isCritical ? t('critical') : t('impact_normal'); 
+                const li = Helpers_create_element('li'); 
+                li.innerHTML = `<strong>${t('impact')}:</strong> ${impact_text}`; 
+                metadata_list_ul.appendChild(li); 
+            }
+            if (metadata_list_ul.hasChildNodes()) {
+                metadata_section_ref.appendChild(metadata_list_ul);
+            } else {
+                metadata_section_ref.setAttribute('hidden', 'true');
+            }
         } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) {
-            metadata_section_ref.remove(); 
-            metadata_section_ref = null; 
+            metadata_section_ref.setAttribute('hidden', 'true');
+            metadata_section_ref.innerHTML = ''; 
         }
         
         render_navigation_buttons(top_nav_buttons_container_ref);
@@ -1159,7 +1166,6 @@ export const RequirementAuditComponent = (function () {
             checks_ui_container_element.removeEventListener('click', handle_checks_container_click);
         }
         plate_element_ref = null; header_div_ref = null; requirement_title_element_ref = null;
-        sample_context_text_element_ref = null;
         standard_reference_element_ref = null; 
         audited_page_link_element_ref = null;
         requirement_status_display_element = null;

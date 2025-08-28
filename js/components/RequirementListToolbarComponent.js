@@ -192,11 +192,11 @@ export const RequirementListToolbarComponent = (function () {
         const sort_label = Helpers_create_element('label', { attributes: { for: 'req-list-sort' }, text_content: t('sort_by_label') });
         const sort_select = Helpers_create_element('select', { id: 'req-list-sort', class_name: 'form-control' });
         const sort_options = {
-            'default': t('sort_option_default'),
+            'default': t('sort_option_ref_asc_natural', {defaultValue: "Reference (1, 2, 10...)"}),
+            'ref_desc': t('sort_option_ref_desc_natural', {defaultValue: "Reference (10, 2, 1...)"}),
+            'category': t('sort_option_category', {defaultValue: "Category"}),
             'title_asc': t('sort_option_title_asc'),
             'title_desc': t('sort_option_title_desc'),
-            'ref_asc': t('sort_option_ref_asc'),
-            'ref_desc': t('sort_option_ref_desc'),
             'status': t('sort_option_status')
         };
         for (const [value, text] of Object.entries(sort_options)) {

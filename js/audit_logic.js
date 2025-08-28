@@ -157,20 +157,49 @@
         return all_reqs.filter(req => req.contentType?.some(ct => sample.selectedContentTypes.includes(ct)));
     }
 
-    function get_ordered_relevant_requirement_keys(rule_file_content, sample_object) {
+    function get_ordered_relevant_requirement_keys(rule_file_content, sample_object, sort_option = 'default') {
         const t = get_t_func();
         const relevant_reqs = get_relevant_requirements_for_sample(rule_file_content, sample_object);
-        relevant_reqs.sort((a, b) => {
-            const main_a = a.metadata?.mainCategory?.text || t('uncategorized');
-            const main_b = b.metadata?.mainCategory?.text || t('uncategorized');
-            if (main_a !== main_b) return main_a.localeCompare(main_b);
-            const sub_a = a.metadata?.subCategory?.text || t('other_requirements');
-            const sub_b = b.metadata?.subCategory?.text || t('other_requirements');
-            if (sub_a !== sub_b) return sub_a.localeCompare(sub_b);
-            return (a.title || '').localeCompare(b.title || '');
-        });
+
+        if (sort_option === 'default') {
+            // Ny standardsortering: Referenstext, sedan titel.
+            relevant_reqs.sort((a, b) => {
+                const ref_a = a.metadata?.standardReference?.text || null;
+                const ref_b = b.metadata?.standardReference?.text || null;
+                const title_a = a.title || '';
+                const title_b = b.title || '';
+
+                if (ref_a && ref_b) {
+                    // Båda har referens, sortera naturligt
+                    return window.Helpers.natural_sort(ref_a, ref_b);
+                }
+                if (ref_a && !ref_b) {
+                    // a har referens, b saknar -> a kommer först
+                    return -1;
+                }
+                if (!ref_a && ref_b) {
+                    // a saknar referens, b har -> b kommer först
+                    return 1;
+                }
+                // Båda saknar referens, sortera på titel
+                return title_a.localeCompare(title_b);
+            });
+        } else if (sort_option === 'category') {
+            // Gamla "default"-sorteringen, nu ett eget alternativ
+            relevant_reqs.sort((a, b) => {
+                const main_a = a.metadata?.mainCategory?.text || t('uncategorized');
+                const main_b = b.metadata?.mainCategory?.text || t('uncategorized');
+                if (main_a !== main_b) return main_a.localeCompare(main_b);
+                const sub_a = a.metadata?.subCategory?.text || t('other_requirements');
+                const sub_b = b.metadata?.subCategory?.text || t('other_requirements');
+                if (sub_a !== sub_b) return sub_a.localeCompare(sub_b);
+                return (a.title || '').localeCompare(b.title || '');
+            });
+        }
+        
         return relevant_reqs.map(req => req.key || req.id);
     }
+
 
     function calculate_overall_audit_progress(current_audit_data) {
         if (!current_audit_data?.samples || !current_audit_data.ruleFileContent?.requirements) return { audited: 0, total: 0 };
@@ -188,7 +217,8 @@
 
     function find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object) {
         if (!sample_object || !rule_file_content?.requirements) return null;
-        const ordered_keys = get_ordered_relevant_requirement_keys(rule_file_content, sample_object);
+        // ANVÄND ALLTID DEN NYA STANDARDSORTERINGEN FÖR NAVIGERING
+        const ordered_keys = get_ordered_relevant_requirement_keys(rule_file_content, sample_object, 'default');
         for (const req_key of ordered_keys) {
             const req_def = rule_file_content.requirements[req_key];
             if (!req_def) continue;

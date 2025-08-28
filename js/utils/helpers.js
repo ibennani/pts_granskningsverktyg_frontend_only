@@ -208,6 +208,39 @@
         return temp_div.innerHTML;
     }
 
+    function natural_sort(a, b) {
+        // Regular expression to split strings into segments of numbers and non-numbers
+        const re = /(\d+)/g;
+        // Split both strings into arrays of parts
+        const a_parts = String(a).split(re);
+        const b_parts = String(b).split(re);
+        // Determine the length of the longer array
+        const len = Math.max(a_parts.length, b_parts.length);
+
+        // Iterate through the parts of both strings
+        for (let i = 0; i < len; i++) {
+            // Get parts, or an empty string if one array is shorter
+            const a_part = a_parts[i] || '';
+            const b_part = b_parts[i] || '';
+            
+            // Try to parse parts as integers
+            const a_num = parseInt(a_part, 10);
+            const b_num = parseInt(b_part, 10);
+
+            // If both parts are numbers, compare them numerically
+            if (!isNaN(a_num) && !isNaN(b_num)) {
+                if (a_num < b_num) return -1;
+                if (a_num > b_num) return 1;
+            } else { // Otherwise, compare them as strings
+                if (a_part < b_part) return -1;
+                if (a_part > b_part) return 1;
+            }
+        }
+        // If all parts are equal, the strings are considered equal
+        return 0;
+    }
+
+
     window.Helpers = {
         generate_uuid_v4,
         load_css,
@@ -218,6 +251,7 @@
         get_icon_svg,
         add_protocol_if_missing,
         init_auto_resize_for_textarea,
-        sanitize_and_linkify_html
+        sanitize_and_linkify_html,
+        natural_sort
     };
 })();

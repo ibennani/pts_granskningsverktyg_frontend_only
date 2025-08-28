@@ -293,5 +293,8 @@
   "deficiency_prefix": "brist",
   "requirement_examples": "Exempel",
   "excel_sheet_deficiencies": "Brister",
-  "case_handler": "Handläggare"
+  "case_handler": "Handläggare",
+  "sort_option_ref_asc_natural": "Referens (stigande)",
+  "sort_option_ref_desc_natural": "Referens (fallande)",
+  "sort_option_category": "Kategori"
 }

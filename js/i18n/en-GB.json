@@ -293,5 +293,8 @@
   "deficiency_prefix": "deficiency",
   "requirement_examples": "Example",
   "excel_sheet_deficiencies": "Deficiencies",
-  "case_handler": "Case handler"
+  "case_handler": "Case handler",
+  "sort_option_ref_asc_natural": "Reference (ascending, 1, 2, 10...)",
+  "sort_option_ref_desc_natural": "Reference (descending, 10, 2, 1...)",
+  "sort_option_category": "Category"
 }

@@ -317,14 +317,16 @@ function saveStateToSessionStorage(state_to_save) {
     }
 }
 
-internal_state = loadStateFromSessionStorage();
-if (sessionStorage.getItem(APP_STATE_KEY) === null) {
-    saveStateToSessionStorage(internal_state);
+// NY FUNKTION som anropas från main.js
+function initState() {
+    internal_state = loadStateFromSessionStorage();
+    if (window.AuditLogic && typeof window.AuditLogic.updateIncrementalDeficiencyIds === 'function') {
+        internal_state = window.AuditLogic.updateIncrementalDeficiencyIds(internal_state);
+        saveStateToSessionStorage(internal_state);
+    } else {
+        console.error("[State.js] AuditLogic not available during initState. State may be inconsistent.");
+    }
 }
 
-// Kör ID-uppdatering direkt vid laddning för att säkerställa att gamla sparfiler får ID:n
-internal_state = window.AuditLogic.updateIncrementalDeficiencyIds(internal_state);
-saveStateToSessionStorage(internal_state);
 
-
-export { dispatch, getState, subscribe, ActionTypes as StoreActionTypes, initial_state as StoreInitialState };
+export { dispatch, getState, subscribe, initState, ActionTypes as StoreActionTypes, initial_state as StoreInitialState };
