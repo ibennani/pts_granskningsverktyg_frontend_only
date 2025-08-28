@@ -1072,8 +1072,8 @@ export const RequirementAuditComponent = (function () {
         common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref); 
         examples_section_ref = render_audit_section_internal('requirement_examples', req_for_render.examples, examples_section_ref, plate_element_ref);
 
-        // *** ÅTERSTÄLLD METADATA-SEKTION ***
-        if (req_for_render.metadata && (req_for_render.metadata.mainCategory || req_for_render.metadata.subCategory || req_for_render.metadata.impact)) { 
+        // ÄNDRING BÖRJAR HÄR: Hela metadata-sektionen byts ut mot innehållstyper för stickprovet.
+        if (current_sample_object_from_store?.selectedContentTypes?.length > 0) {
             if (!metadata_section_ref || !plate_element_ref.contains(metadata_section_ref)) {
                 metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
                 const last_info_section = examples_section_ref || common_errors_section_ref || exceptions_section_ref || tips_section_ref || instructions_section_ref || expected_observation_section_ref;
@@ -1082,33 +1082,31 @@ export const RequirementAuditComponent = (function () {
             }
             metadata_section_ref.innerHTML = ''; 
             metadata_section_ref.removeAttribute('hidden');
-            metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
-            const metadata_list_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
-            if(req_for_render.metadata.mainCategory?.text) { 
-                const li = Helpers_create_element('li'); 
-                li.innerHTML = `<strong>${t('main_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.mainCategory.text)}`; 
-                metadata_list_ul.appendChild(li); 
+
+            // Använder den befintliga nyckeln 'content_types'
+            metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('content_types') }));
+            
+            const all_content_types_defs = current_global_state_for_render.ruleFileContent?.metadata?.contentTypes || [];
+            const content_types_map = new Map(all_content_types_defs.map(ct => [ct.id, ct.text]));
+            
+            const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' }); // Återanvänder befintlig klass
+            
+            current_sample_object_from_store.selectedContentTypes.forEach(ct_id => {
+                const ct_text = content_types_map.get(ct_id) || ct_id;
+                const li = Helpers_create_element('li', { text_content: ct_text });
+                content_types_ul.appendChild(li);
+            });
+            
+            if (content_types_ul.hasChildNodes()) {
+                metadata_section_ref.appendChild(content_types_ul);
             }
-            if(req_for_render.metadata.subCategory?.text) { 
-                const li = Helpers_create_element('li'); 
-                li.innerHTML = `<strong>${t('sub_category')}:</strong> ${Helpers_escape_html(req_for_render.metadata.subCategory.text)}`; 
-                metadata_list_ul.appendChild(li); 
-            }
-            if (req_for_render.metadata.impact) { 
-                const impact_text = req_for_render.metadata.impact.isCritical ? t('critical') : t('impact_normal'); 
-                const li = Helpers_create_element('li'); 
-                li.innerHTML = `<strong>${t('impact')}:</strong> ${impact_text}`; 
-                metadata_list_ul.appendChild(li); 
-            }
-            if (metadata_list_ul.hasChildNodes()) {
-                metadata_section_ref.appendChild(metadata_list_ul);
-            } else {
-                metadata_section_ref.setAttribute('hidden', 'true');
-            }
+
         } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) {
+            // Dölj sektionen om inga innehållstyper är valda
             metadata_section_ref.setAttribute('hidden', 'true');
             metadata_section_ref.innerHTML = ''; 
         }
+        // ÄNDRING SLUTAR HÄR
         
         render_navigation_buttons(top_nav_buttons_container_ref);
         render_navigation_buttons(bottom_nav_buttons_container_ref);
