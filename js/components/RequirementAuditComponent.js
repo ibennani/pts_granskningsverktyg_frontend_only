@@ -1017,21 +1017,22 @@ export const RequirementAuditComponent = (function () {
     
         // *** KORRIGERAD LOGIK FÖR REFERENS OCH GRANSKAD SIDA ***
         standard_reference_element_ref.innerHTML = '';
-        if (req_for_render.metadata?.standardReference?.text) {
+        const ref_text = req_for_render.standardReference?.text;
+        if (ref_text && ref_text.trim() !== '') {
             standard_reference_element_ref.removeAttribute('hidden');
             const label_strong = Helpers_create_element('strong', { 
                 text_content: t('requirement_standard_reference_label', { defaultValue: "Referensdokumentation:" }) 
             });
             standard_reference_element_ref.appendChild(label_strong);
             standard_reference_element_ref.appendChild(document.createTextNode(' '));
-            if (req_for_render.metadata.standardReference.url) { 
+            if (req_for_render.standardReference.url) { 
                 const link = Helpers_create_element('a', { 
-                    text_content: req_for_render.metadata.standardReference.text, 
-                    attributes: { href: req_for_render.metadata.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
+                    text_content: req_for_render.standardReference.text, 
+                    attributes: { href: req_for_render.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
                 });
                 standard_reference_element_ref.appendChild(link); 
             } else { 
-                standard_reference_element_ref.appendChild(document.createTextNode(req_for_render.metadata.standardReference.text));
+                standard_reference_element_ref.appendChild(document.createTextNode(req_for_render.standardReference.text));
             }
         } else {
             standard_reference_element_ref.setAttribute('hidden', 'true');
