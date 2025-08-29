@@ -289,9 +289,8 @@ window.StoreActionTypes = StoreActionTypes;
     }
     
     async function start_normal_session() {
-        initState(); // Laddar från sessionStorage (eller skapar nytt state)
-        
-        await init_global_components(); // Initierar knappar etc.
+        // Initiera globala komponenter eftersom en session nu är aktiv
+        await init_global_components(); 
 
         // Initiera alla system som är beroende av state
         if (window.ScoreManager?.init) {
@@ -301,8 +300,34 @@ window.StoreActionTypes = StoreActionTypes;
             window.MarkdownToolbar.init();
         }
 
+        // Sätt upp alla nödvändiga event listeners för sessionen
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
+
+        // Sista-chansen-sparning när fliken stängs
+        window.addEventListener('beforeunload', () => {
+            const current_state = getState();
+            if (window.Store && typeof window.Store.forceSaveStateToLocalStorage === 'function') {
+                window.Store.forceSaveStateToLocalStorage(current_state);
+            }
+        });
+        
+        // Prenumerera på state-ändringar för att uppdatera UI
+        subscribe((new_state) => { 
+            top_action_bar_instance.render();
+            if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'restore_session') {
+                bottom_action_bar_instance.render();
+            }
+            updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
+            
+            // Rendera om den aktiva vyn vid varje state-ändring
+            const hash = window.location.hash.substring(1);
+            const [view_name_from_hash,] = hash.split('?');
+            if (current_view_name_rendered === view_name_from_hash && 
+                current_view_component_instance && typeof current_view_component_instance.render === 'function') {
+                current_view_component_instance.render();
+            }
+        });
 
         // Rensa eventuella gamla meddelanden och kör igång routern
         if (window.NotificationComponent?.clear_global_message) {
@@ -310,73 +335,60 @@ window.StoreActionTypes = StoreActionTypes;
         }
         handle_hash_change(); 
         update_app_chrome_texts();
-
-        // **NY LOGIK: Säkerställ att den sista versionen av state sparas när fliken stängs.**
-        // Denna lyssnare säkerställer en sista sparning om fliken stängs.
-        window.addEventListener('beforeunload', () => {
-            const current_state = getState();
-            // Anropar direkt den underliggande spara-funktionen från state.js
-            // utan en debounce-timer för att garantera att det sker.
-            if (window.Store && typeof window.Store.forceSaveStateToLocalStorage === 'function') {
-                window.Store.forceSaveStateToLocalStorage(current_state);
-            }
-        });
-    }
+    } 
 
     async function init_app() { 
         set_initial_theme();
-        
         await window.Translation.ensure_initial_load();
         
-        // --- NY STARTLOGIK ---
-        // Steg 1: Kontrollera för en autosparad session FÖRST.
-        const autosaved_payload = loadStateFromLocalStorage();
+        initState();
+        const active_session_state = getState();
 
-        if (autosaved_payload) {
-            // Om en backup finns, visa återställningsvyn omedelbart.
-            const on_restore = () => {
-                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
-                clearAutosavedState(); 
-                if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
-                
-                // Navigera till den sparade positionen
-                if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
-                    window.location.hash = autosaved_payload.lastKnownHash;
-                } else {
-                    navigate_and_set_hash('audit_overview');
-                }
-            };
-            const on_discard = () => {
-                clearAutosavedState();
-                // Kör den normala startsekvensen efter att backupen är raderad
-                start_normal_session(); 
-            };
-            
-            // Rendera återställningsvyn och vänta på användarens val
-            render_view('restore_session', { 
-                autosaved_state: autosaved_payload.auditState,
-                on_restore, 
-                on_discard 
-            });
-            
-            // Kör globala komponenter som inte är beroende av state
-            await init_global_components();
-            update_app_chrome_texts();
-
-        } else {
-            // Om ingen backup finns, kör den normala startsekvensen direkt.
+        if (active_session_state && active_session_state.ruleFileContent) {
+            console.log("[Main.js] Active session found in sessionStorage. Starting normally.");
             await start_normal_session();
-        }
-        // --- SLUT PÅ NY STARTLOGIK ---
+        } else {
+            const autosaved_payload = loadStateFromLocalStorage();
+            if (autosaved_payload) {
+                console.log("[Main.js] No active session, but found backup in localStorage. Prompting user.");
+                
+                const on_restore = () => {
+                    // Steg 1: Ladda in datan
+                    dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
+                    clearAutosavedState(); 
+                    if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
+                    
+                    // Steg 2: Sätt hashen för att byta URL
+                    if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
+                        window.location.hash = autosaved_payload.lastKnownHash;
+                    } else {
+                        // Sätt en default-hash om ingen sparades
+                        window.location.hash = '#audit_overview';
+                    }
 
-        // Flyttade prenumerationen hit för att den ska gälla oavsett startmetod
-        subscribe((new_state) => { 
-            top_action_bar_instance.render();
-            if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'restore_session') {
-                bottom_action_bar_instance.render();
+                    // **KORRIGERING:** Tvinga en omladdning av vyn EFTER att hashen har satts.
+                    // Detta säkerställer att vyn renderas med det nyligen inlästa state:t.
+                    handle_hash_change();
+                };
+
+                const on_discard = () => {
+                    clearAutosavedState();
+                    navigate_and_set_hash('upload');
+                };
+                
+                await init_global_components();
+                update_app_chrome_texts();
+                render_view('restore_session', { 
+                    autosaved_state: autosaved_payload.auditState,
+                    on_restore, 
+                    on_discard 
+                });
+
+            } else {
+                console.log("[Main.js] No active session, no backup. Starting fresh.");
+                await start_normal_session();
             }
-            updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
-        });
+        }
     }
 
     if (document.readyState === 'loading') {

@@ -231,10 +231,18 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
                 if (NotificationComponent_show_global_message) NotificationComponent_show_global_message("Internal error: Action type for start audit is missing.", "error");
                 return;
             }
+            
+            // 1. Ändra status i state (detta gör du redan)
             local_dispatch({
                 type: local_StoreActionTypes.SET_AUDIT_STATUS,
                 payload: { status: 'in_progress' } 
             });
+
+            // 2. **HÄR ÄR DEN SAKNADE DELEN:** Navigera explicit till nästa vy
+            if (router_ref) {
+                router_ref('audit_overview');
+            }
+
         } else if (current_global_state.auditStatus !== 'not_started') {
             if(NotificationComponent_show_global_message) NotificationComponent_show_global_message(t('audit_already_started_or_locked'), "info");
         } else {
@@ -298,14 +306,13 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         }
         app_container_ref.classList.add(ACTIVE_VIEW_MARKER_CLASS);
 
-
         if (global_message_element_ref && !plate_element.contains(global_message_element_ref)) {
             plate_element.insertBefore(global_message_element_ref, plate_element.firstChild);
         }
         
         if (current_global_state.auditStatus !== 'not_started') {
             if (NotificationComponent_show_global_message) {
-                const previous_status_is_not_started = (current_global_state.samples.length > 0 && current_global_state.startTime !== null && current_global_state.endTime === null); // Enkel heuristik
+                const previous_status_is_not_started = (current_global_state.samples.length > 0 && current_global_state.startTime !== null && current_global_state.endTime === null);
                 if (previous_status_is_not_started && current_global_state.auditStatus === 'in_progress') {
                     NotificationComponent_show_global_message(t('audit_started_successfully'), "success");
                 } else {
@@ -325,15 +332,14 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
 
         plate_element.appendChild(Helpers_create_element('h1', { text_content: t('sample_management_title') }));
 
-        intro_text_element = plate_element.querySelector('.view-intro-text'); // Försök återanvända
+        intro_text_element = plate_element.querySelector('.view-intro-text');
         if (!intro_text_element) {
             intro_text_element = Helpers_create_element('p', {
                 class_name: 'view-intro-text',
                 text_content: t('add_samples_intro_message')
             });
         }
-        // Lägg alltid till (eller lägg till igen om den togs bort av plate_element.innerHTML = '')
-        // efter H1 om H1 finns, annars först.
+        
         const h1_in_plate = plate_element.querySelector('h1');
         if (h1_in_plate && h1_in_plate.nextSibling) {
             plate_element.insertBefore(intro_text_element, h1_in_plate.nextSibling);
@@ -346,7 +352,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         let top_actions_div = plate_element.querySelector('.sample-management-actions');
         if (!top_actions_div) {
             top_actions_div = Helpers_create_element('div', { class_name: 'sample-management-actions' });
-            plate_element.appendChild(top_actions_div); // Eller infoga på rätt plats
+            plate_element.appendChild(top_actions_div);
         } else {
             top_actions_div.innerHTML = '';
         }
@@ -366,6 +372,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
             plate_element.appendChild(sample_list_container_element);
         }
         
+        // --- **HÄR ÄR DEN SAKNADE LOGIKEN** ---
         const bottom_actions_div_id = 'smv-bottom-actions';
         let bottom_actions_div = plate_element.querySelector(`#${bottom_actions_div_id}`);
         if (bottom_actions_div) bottom_actions_div.remove(); 
@@ -383,7 +390,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
             start_audit_button_ref = Helpers_create_element('button', {
                 id: 'start-audit-main-btn',
                 class_name: ['button', 'button-success'],
-                html_content: `<span>${t('start_audit')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle_green_yellow', ['var(--button-success-text)', 'var(--button-success-hover-bg)'], 18) : '')
+                html_content: `<span>${t('start_audit')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle', ['currentColor'], 18) : '') // Använder en annan ikon för tydlighet
             });
             start_audit_button_ref.addEventListener('click', handle_start_audit);
             right_group_bottom.appendChild(start_audit_button_ref);
@@ -396,6 +403,7 @@ const SampleManagementViewComponent_internal = (function () { // Start på IIFE,
         if (left_group_bottom.hasChildNodes() || right_group_bottom.hasChildNodes()){
             plate_element.appendChild(bottom_actions_div);
         }
+        // --- SLUT PÅ SAKNAD LOGIK ---
         
         let should_form_be_visible_initially = is_form_visible; 
         if (!current_global_state.samples || current_global_state.samples.length === 0) {
