@@ -71,7 +71,6 @@ function root_reducer(current_state, action) {
 
     switch (action.type) {
         case ActionTypes.INITIALIZE_NEW_AUDIT:
-            clearAutosavedState();
             return {
                 ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
@@ -248,10 +247,37 @@ function saveStateToLocalStorage(state_to_save) {
         return;
     }
     try {
-        const serializedState = JSON.stringify(state_to_save);
+        // **NY LOGIK:** Skapa ett nytt objekt som innehåller både state och hash
+        const autosave_payload = {
+            auditState: state_to_save,
+            lastKnownHash: window.location.hash
+        };
+        const serializedState = JSON.stringify(autosave_payload);
         localStorage.setItem(APP_AUTOSAVE_KEY, serializedState);
     } catch (e) {
         console.error("[State.js] Could not save state to localStorage:", e);
+    }
+}
+
+function forceSaveStateToLocalStorage(state_to_save) {
+    // Denna funktion är till för att anropas synkront, t.ex. från beforeunload.
+    // Den använder INTE en debounce-timer.
+    if (!state_to_save || state_to_save.auditStatus === 'not_started') {
+        return;
+    }
+    try {
+        const autosave_payload = {
+            auditState: state_to_save,
+            lastKnownHash: window.location.hash
+        };
+        const serializedState = JSON.stringify(autosave_payload);
+        // Använd setItem, som är en synkron operation.
+        localStorage.setItem(APP_AUTOSAVE_KEY, serializedState);
+        console.log("[State.js] State forcefully saved to localStorage on page exit.");
+    } catch (e) {
+        // Vi kan inte göra så mycket här eftersom sidan är på väg att stängas,
+        // men vi loggar felet.
+        console.error("[State.js] Could not perform final save to localStorage:", e);
     }
 }
 
@@ -349,9 +375,21 @@ function loadStateFromLocalStorage() {
     const serializedState = localStorage.getItem(APP_AUTOSAVE_KEY);
     if (serializedState === null) return null;
     try {
-        const storedState = JSON.parse(serializedState);
-        if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
-            return storedState;
+        const storedPayload = JSON.parse(serializedState);
+        
+        // **NY LOGIK:** Kontrollera om det är det nya formatet med auditState
+        if (storedPayload && storedPayload.auditState && storedPayload.lastKnownHash) {
+            const storedState = storedPayload.auditState;
+            if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
+                // Returnera hela payloaden så main.js kan komma åt både state och hash
+                return storedPayload; 
+            }
+        } else {
+            // Fallback för att kunna läsa det gamla formatet (om det skulle finnas kvar)
+            const storedState = storedPayload;
+            if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
+                return { auditState: storedState, lastKnownHash: '#audit_overview' }; // Default till översikten
+            }
         }
     } catch (e) {
         return null;
@@ -382,5 +420,6 @@ export {
     ActionTypes as StoreActionTypes, 
     initial_state as StoreInitialState,
     loadStateFromLocalStorage,
-    clearAutosavedState
+    clearAutosavedState,
+    forceSaveStateToLocalStorage
 };

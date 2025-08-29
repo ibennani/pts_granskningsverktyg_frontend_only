@@ -42,6 +42,11 @@ const UploadViewComponent_internal = (function () {
                     const validation_result = window.ValidationLogic.validate_rule_file_json(json_content);
 
                     if (validation_result.isValid) {
+                        // **NY RAD:** Rensa gammal backup när en ny granskning explicit startas.
+                        if(window.Store && typeof window.Store.clearAutosavedState === 'function') {
+                            window.Store.clearAutosavedState();
+                        }
+                        
                         if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'success');
                         
                         local_dispatch({
@@ -49,7 +54,6 @@ const UploadViewComponent_internal = (function () {
                             payload: { ruleFileContent: json_content }
                         });
 
-                        // NYTT: Förberäkna värdetalsdata för den nya regelfilen
                         if (VardetalCalculator_precalculate_rule_data_func) {
                             const precalculated_data = VardetalCalculator_precalculate_rule_data_func(json_content);
                             if (precalculated_data && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
@@ -70,10 +74,6 @@ const UploadViewComponent_internal = (function () {
                 } finally {
                     if (rule_file_input_element) rule_file_input_element.value = '';
                 }
-            };
-            reader.onerror = function() {
-                if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_file_read_error'), 'error');
-                if (rule_file_input_element) rule_file_input_element.value = '';
             };
             reader.readAsText(file);
         }

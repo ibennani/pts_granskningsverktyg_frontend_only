@@ -11,10 +11,10 @@ import { RestoreSessionViewComponent } from './components/RestoreSessionViewComp
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
-import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorage, clearAutosavedState } from './state.js'; 
+import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorage, clearAutosavedState, forceSaveStateToLocalStorage } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
-window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState };
+window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState, forceSaveStateToLocalStorage };
 window.StoreActionTypes = StoreActionTypes;
 
 
@@ -288,94 +288,94 @@ window.StoreActionTypes = StoreActionTypes;
         }
     }
     
-    async function init_app() { 
-        set_initial_theme();
+    async function start_normal_session() {
+        initState(); // Laddar från sessionStorage (eller skapar nytt state)
         
-        const t_init = get_t_fallback();
+        await init_global_components(); // Initierar knappar etc.
 
-        if (window.Translation && typeof window.Translation.ensure_initial_load === 'function') {
-            await window.Translation.ensure_initial_load();
-        } else {
-            console.error("[Main.js] CRITICAL: Translation module or ensure_initial_load not found!");
-            if(app_container) app_container.innerHTML = `<p>${t_init('critical_error_language_system_init_failed')}</p>`;
-            return;
-        }
-        
-        if (typeof initState === 'function') {
-            initState();
-        } else {
-            console.error("[Main.js] CRITICAL: initState function from state.js is not available!");
-        }
-        
-        document.title = get_t_fallback()('app_title');
-
-        if (window.NotificationComponent && typeof window.NotificationComponent.init === 'function') {
-            await NotificationComponent.init();
-        } else {
-            console.error("[Main.js] NotificationComponent is not available or not initialized correctly.");
-        }
-
-        await init_global_components();
-        
-        if (window.ScoreManager && typeof window.ScoreManager.init === 'function') {
+        // Initiera alla system som är beroende av state
+        if (window.ScoreManager?.init) {
             window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes);
-        } else {
-            console.error("[Main.js] CRITICAL: ScoreManager could not be initialized.");
         }
-        
-        if (window.MarkdownToolbar && typeof window.MarkdownToolbar.init === 'function') {
+        if (window.MarkdownToolbar?.init) {
             window.MarkdownToolbar.init();
-        } else {
-            console.error("[Main.js] MarkdownToolbar could not be initialized.");
         }
-        
+
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
 
-        if (window.NotificationComponent && typeof NotificationComponent.clear_global_message === 'function') {
+        // Rensa eventuella gamla meddelanden och kör igång routern
+        if (window.NotificationComponent?.clear_global_message) {
             NotificationComponent.clear_global_message();
         }
+        handle_hash_change(); 
+        update_app_chrome_texts();
+
+        // **NY LOGIK: Säkerställ att den sista versionen av state sparas när fliken stängs.**
+        // Denna lyssnare säkerställer en sista sparning om fliken stängs.
+        window.addEventListener('beforeunload', () => {
+            const current_state = getState();
+            // Anropar direkt den underliggande spara-funktionen från state.js
+            // utan en debounce-timer för att garantera att det sker.
+            if (window.Store && typeof window.Store.forceSaveStateToLocalStorage === 'function') {
+                window.Store.forceSaveStateToLocalStorage(current_state);
+            }
+        });
+    }
+
+    async function init_app() { 
+        set_initial_theme();
         
-        const autosaved_state = loadStateFromLocalStorage();
-        if (autosaved_state) {
+        await window.Translation.ensure_initial_load();
+        
+        // --- NY STARTLOGIK ---
+        // Steg 1: Kontrollera för en autosparad session FÖRST.
+        const autosaved_payload = loadStateFromLocalStorage();
+
+        if (autosaved_payload) {
+            // Om en backup finns, visa återställningsvyn omedelbart.
             const on_restore = () => {
-                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_state });
+                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
                 clearAutosavedState(); 
                 if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
-                navigate_and_set_hash('audit_overview');
+                
+                // Navigera till den sparade positionen
+                if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
+                    window.location.hash = autosaved_payload.lastKnownHash;
+                } else {
+                    navigate_and_set_hash('audit_overview');
+                }
             };
             const on_discard = () => {
                 clearAutosavedState();
-                handle_hash_change();
+                // Kör den normala startsekvensen efter att backupen är raderad
+                start_normal_session(); 
             };
             
-            render_view('restore_session', { autosaved_state, on_restore, on_discard });
+            // Rendera återställningsvyn och vänta på användarens val
+            render_view('restore_session', { 
+                autosaved_state: autosaved_payload.auditState,
+                on_restore, 
+                on_discard 
+            });
+            
+            // Kör globala komponenter som inte är beroende av state
+            await init_global_components();
+            update_app_chrome_texts();
 
         } else {
-            handle_hash_change();
+            // Om ingen backup finns, kör den normala startsekvensen direkt.
+            await start_normal_session();
         }
+        // --- SLUT PÅ NY STARTLOGIK ---
 
-        update_app_chrome_texts(); 
-
+        // Flyttade prenumerationen hit för att den ska gälla oavsett startmetod
         subscribe((new_state) => { 
             top_action_bar_instance.render();
             if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'restore_session') {
                 bottom_action_bar_instance.render();
             }
-
             updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
-
-            if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') {
-                return;
-            }
-
-            const hash = window.location.hash.substring(1);
-            const [view_name_from_hash,] = hash.split('?');
-            
-            if (current_view_name_rendered === view_name_from_hash && 
-                current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                current_view_component_instance.render();
-            }
         });
     }
 
