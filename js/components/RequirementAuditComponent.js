@@ -1017,7 +1017,6 @@ export const RequirementAuditComponent = (function () {
         const overall_status_text = t(`audit_status_${overall_status_key}`);
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
         
-        // --- **NY OCH KORRIGERAD** LOGIK FÖR ATT RENDERA TEXTBLOCKEN ---
         const render_markdown_section = (container_ref, title_key, content_data) => {
             if (content_data && typeof content_data === 'string' && content_data.trim()) {
                 container_ref.removeAttribute('hidden');
@@ -1035,27 +1034,20 @@ export const RequirementAuditComponent = (function () {
                 }
                 
                 if (typeof marked !== 'undefined' && typeof Helpers_escape_html === 'function') {
-                    // **KORRIGERING: Tvåstegsprocess**
-                    // 1. Ersätt inline `<code>`-taggar med backticks (markdowns motsvarighet)
-                    let processed_text = content_data.replace(/<code>(.*?)<\/code>/g, '`$1`');
-                    
-                    // 2. Escapa resten av eventuell HTML
-                    const temp_div = document.createElement('div');
-                    temp_div.textContent = processed_text;
-                    processed_text = temp_div.innerHTML;
-                    
-                    // 3. Återställ backticks så att de inte escapas (om de blev det)
-                    processed_text = processed_text.replace(/&lt;code&gt;/g, '`').replace(/&lt;\/code&gt;/g, '`');
-
-                    // 4. Kör den nu säkra texten genom marked
                     const renderer = new marked.Renderer();
                     renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
                     
-                    content_div.innerHTML = marked.parse(processed_text, { 
-                        renderer: renderer,
-                        breaks: true
-                    });
+                    // **KORRIGERING:** Denna override fångar upp rå HTML som `<strong>`
+                    // och ser till att den escapas och visas som text.
+                    renderer.html = (html) => {
+                        return Helpers_escape_html(html);
+                    };
 
+                    content_div.innerHTML = marked.parse(content_data, { 
+                        renderer: renderer,
+                        breaks: true,
+                        sanitize: false // Viktigt att denna är false
+                    });
                 } else {
                     content_div.textContent = content_data;
                 }
@@ -1071,25 +1063,20 @@ export const RequirementAuditComponent = (function () {
         render_markdown_section(exceptions_section_ref, 'requirement_exceptions', req_for_render.exceptions);
         render_markdown_section(common_errors_section_ref, 'requirement_common_errors', req_for_render.commonErrors);
         render_markdown_section(examples_section_ref, 'requirement_examples', req_for_render.examples);
-        // --- SLUT PÅ NY LOGIK FÖR TEXTBLOCK ---
-
-        if (req_for_render?.contentType?.length > 0) {
+        
+        if (current_sample_object_from_store?.selectedContentTypes?.length > 0) {
             metadata_section_ref.innerHTML = ''; 
             metadata_section_ref.removeAttribute('hidden');
-
             metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('content_types') }));
             
-            // Bygg upp lookup-mappen precis som förut
             const content_types_map = new Map();
             (current_global_state_for_render.ruleFileContent?.metadata?.contentTypes || []).forEach(parent => {
                 (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
             });
             
             const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
-            
-            // **KORRIGERING:** Loopa igenom kravets `contentType`-array istället för stickprovets.
-            req_for_render.contentType.forEach(ct_id => {
-                const ct_text = content_types_map.get(ct_id) || ct_id; // Slå upp namnet
+            current_sample_object_from_store.selectedContentTypes.forEach(ct_id => {
+                const ct_text = content_types_map.get(ct_id) || ct_id;
                 content_types_ul.appendChild(Helpers_create_element('li', { text_content: ct_text }));
             });
             
@@ -1097,7 +1084,6 @@ export const RequirementAuditComponent = (function () {
                 metadata_section_ref.appendChild(content_types_ul);
             }
         } else {
-            // Dölj sektionen om det specifika kravet inte har några kopplade innehållstyper
             metadata_section_ref.setAttribute('hidden', 'true');
         }
         
@@ -1121,7 +1107,7 @@ export const RequirementAuditComponent = (function () {
         
         restore_focus_state();
     }
-    
+
     async function render() { 
         assign_globals_once();
         const t = get_t_internally();
