@@ -18,7 +18,7 @@
 
     function precalculate_rule_data(ruleFileContent) {
         const t = get_t_func_internal();
-        console.log("[VardetalCalculator] precalculate_rule_data CALLED.");
+        console.log("[VardetalCalculator] Pre-calculating rule data for scoring...");
 
         const new_weights_map = {};
         let new_rE_total = 0;
@@ -33,21 +33,27 @@
         for (const req_id_key in ruleFileContent.requirements) {
             const requirement = ruleFileContent.requirements[req_id_key];
 
-            if (requirement && requirement.metadata && requirement.metadata.impact) {
-                let lambda_rho = 1;
-                let nu_rho = 0.9;
+            // **UPPDATERAD LOGIK HÄR**
+            // Kontrollerar nu efter metadata.impact och dess poängfält
+            if (requirement?.metadata?.impact) {
+                const impact = requirement.metadata.impact;
                 
+                // Använd 1 som standard om level inte finns, men prioritera WCAG-nivå om den finns
+                let lambda_rho = 1; 
                 if (requirement.metadata.level === 'A') {
                     lambda_rho = 1;
-                    nu_rho = requirement.metadata.impact.isCritical === true ? 1 : 0.9;
                 } else if (requirement.metadata.level === 'AA') {
                     lambda_rho = 0.75;
-                    nu_rho = requirement.metadata.impact.isCritical === true ? 1 : 0.9;
                 }
 
-                const phi_prime_rho = requirement.metadata.impact.primaryScore || 0;
-                const phi_double_prime_rho = requirement.metadata.impact.secondaryScore || 0;
+                // Sätt nu_rho baserat på isCritical
+                const nu_rho = impact.isCritical === true ? 1 : 0.9;
+                
+                // Hämta poäng från impact-objektet
+                const phi_prime_rho = impact.primaryScore || 0;
+                const phi_double_prime_rho = impact.secondaryScore || 0;
 
+                // Beräkna vikten (omega) enligt formeln
                 const omega_rho_sqrt_part = phi_prime_rho + (M_SECONDARY_FPS_WEIGHT * phi_double_prime_rho);
                 const omega_rho = lambda_rho * nu_rho * Math.sqrt(Math.max(0, omega_rho_sqrt_part));
 

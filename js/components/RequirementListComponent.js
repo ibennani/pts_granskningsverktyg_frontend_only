@@ -173,103 +173,94 @@ export const RequirementListComponent = (function () {
         const current_global_state = local_getState();
         
         const filter_settings = current_global_state.uiSettings?.requirementListFilter;
-
         if (toolbar_component_instance) {
              toolbar_component_instance.render();
         }
 
         const current_sample_object = current_global_state.samples.find(s => s.id === params_ref.sampleId);
 
+        // --- HÄR ÅTERSTÄLLER OCH FÖRBÄTTRAR VI HEADER-RENDERINGEN ---
         const header_div = plate_element_ref.querySelector('.requirement-list-header');
         header_div.innerHTML = '';
+        
         const actor_name = current_global_state.auditMetadata?.actorName || '';
         const sample_description = current_sample_object.description || t('undefined_description');
-        let title_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
+        const title_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
 
         const h1 = Helpers_create_element('h1');
         if (current_sample_object.url) {
-            const safe_url = Helpers_add_protocol_if_missing(current_sample_object.url);
-            const link = Helpers_create_element('a', {
-                href: safe_url,
+            h1.appendChild(Helpers_create_element('a', {
+                href: Helpers_add_protocol_if_missing(current_sample_object.url),
                 text_content: title_text,
-                attributes: {
-                    target: '_blank',
-                    rel: 'noopener noreferrer'
-                }
-            });
-            h1.appendChild(link);
+                attributes: { target: '_blank', rel: 'noopener noreferrer' }
+            }));
         } else {
             h1.textContent = title_text;
         }
         header_div.appendChild(h1);
+        
+        // **ÅTERSTÄLLD INFO:** Typ av sida
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
         sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(current_sample_object.pageType)}`;
         header_div.appendChild(sample_type_p);
+        
+        // **ÅTERSTÄLLD INFO:** Granskade krav och progressbar
         const all_relevant_requirements = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, current_sample_object);
         const total_relevant_requirements = all_relevant_requirements.length;
-        let audited_requirements_count = 0;
-        all_relevant_requirements.forEach(req => {
+        const audited_requirements_count = all_relevant_requirements.filter(req => {
             const status = AuditLogic_calculate_requirement_status(req, (current_sample_object.requirementResults || {})[req.key]);
-            if (status === 'passed' || status === 'failed') audited_requirements_count++;
-        });
+            return status === 'passed' || status === 'failed';
+        }).length;
+        
         const sample_audit_status_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-audit-progress' });
         sample_audit_status_p.innerHTML = `<strong>${t('requirements_audited_for_sample')}:</strong> ${audited_requirements_count}/${total_relevant_requirements}`;
         header_div.appendChild(sample_audit_status_p);
+
         if (window.ProgressBarComponent) {
             header_div.appendChild(window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {}));
         }
+        // --- SLUT PÅ HEADER-JUSTERINGAR ---
 
-        const search_term = filter_settings.searchText.toLowerCase();
+        // Filtrering och sortering (oförändrad)
+        const search_term = (filter_settings.searchText || '').toLowerCase();
         const active_status_filters = Object.keys(filter_settings.status).filter(key => filter_settings.status[key]);
 
         const filtered_requirements = all_relevant_requirements.filter(req => {
             const result = (current_sample_object.requirementResults || {})[req.key];
-            const display_status = result?.needsReview === true ? 'updated' : AuditLogic_calculate_requirement_status(req, result);
+            const display_status = result?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(req, result);
             if (!active_status_filters.includes(display_status)) return false;
 
             if (search_term) {
                 const searchable_content = [
                     req.title, req.expectedObservation, req.instructions, req.tips, 
                     req.exceptions, req.commonErrors, req.standardReference?.text
-                ].flat().filter(Boolean).map(item => (typeof item === 'object' ? item.text : item)).join(' ').toLowerCase();
-                if (!searchable_content.includes(search_term)) return false;
+                ].flat().filter(Boolean).map(item => (typeof item === 'object' ? item.text : String(item))).join(' ').toLowerCase();
+                return searchable_content.includes(search_term);
             }
             return true;
         });
-
+        
         const sorted_requirements = [...filtered_requirements];
-        switch(filter_settings.sortBy) {
-            case 'title_asc': sorted_requirements.sort((a, b) => a.title.localeCompare(b.title)); break;
-            case 'title_desc': sorted_requirements.sort((a, b) => b.title.localeCompare(a.title)); break;
-            case 'ref_desc': 
-                sorted_requirements.sort((a, b) => Helpers_natural_sort(b.metadata?.standardReference?.text || 'Z', a.metadata?.standardReference?.text || 'Z'));
-                break;
-            case 'category':
-                 sorted_requirements.sort((a, b) => {
-                    const main_a = a.metadata?.mainCategory?.text || t('uncategorized');
-                    const main_b = b.metadata?.mainCategory?.text || t('uncategorized');
-                    if (main_a !== main_b) return main_a.localeCompare(main_b);
-                    const sub_a = a.metadata?.subCategory?.text || t('other_requirements');
-                    const sub_b = b.metadata?.subCategory?.text || t('other_requirements');
-                    return sub_a.localeCompare(sub_b);
-                });
-                break;
-            case 'status':
+        const sort_function = {
+            'title_asc': (a, b) => (a.title || '').localeCompare(b.title || ''),
+            'title_desc': (a, b) => (b.title || '').localeCompare(a.title || ''),
+            'status': (a, b) => {
                 const status_order = { 'failed': 1, 'updated': 2, 'partially_audited': 3, 'not_audited': 4, 'passed': 5 };
-                sorted_requirements.sort((a, b) => {
-                    const result_a = (current_sample_object.requirementResults || {})[a.key];
-                    const status_a = result_a?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(a, result_a);
-                    const result_b = (current_sample_object.requirementResults || {})[b.key];
-                    const status_b = result_b?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(b, result_b);
-                    return (status_order[status_a] || 99) - (status_order[status_b] || 99);
-                });
-                break;
-            case 'default':
-            default:
-                sorted_requirements.sort((a, b) => Helpers_natural_sort(a.metadata?.standardReference?.text || 'Z', b.metadata?.standardReference?.text || 'Z'));
-                break;
-        }
+                const resA = (current_sample_object.requirementResults || {})[a.key], statusA = resA?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(a, resA);
+                const resB = (current_sample_object.requirementResults || {})[b.key], statusB = resB?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(b, resB);
+                return (status_order[statusA] || 99) - (status_order[statusB] || 99);
+            },
+            'default': (a, b) => Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z'),
+            'category': (a,b) => {
+                const mainA = a.metadata?.mainCategory?.text || t('uncategorized'), mainB = b.metadata?.mainCategory?.text || t('uncategorized');
+                if (mainA !== mainB) return mainA.localeCompare(mainB);
+                const subA = a.metadata?.subCategory?.text || t('other_requirements'), subB = b.metadata?.subCategory?.text || t('other_requirements');
+                return subA.localeCompare(subB);
+            }
+        };
+        sorted_requirements.sort(sort_function[filter_settings.sortBy] || sort_function['default']);
 
+        // Rendera listan (oförändrad)
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
             content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter') }));
@@ -282,7 +273,6 @@ export const RequirementListComponent = (function () {
                 acc[main_cat][sub_cat].push(req);
                 return acc;
             }, {});
-            
             Object.keys(requirements_by_category).sort().forEach(main_cat_key => {
                 const main_cat_group = Helpers_create_element('div', {class_name: 'category-group'});
                 main_cat_group.appendChild(Helpers_create_element('h2', {class_name: 'main-category-title', text_content: main_cat_key}));
@@ -312,12 +302,13 @@ export const RequirementListComponent = (function () {
 
     function create_requirement_list_item(req, sample) {
         const t = get_t_internally();
-        const req_result_object = (sample.requirementResults || {})[req.key];
-        const display_status = req_result_object?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(req, req_result_object);
+        const req_result = (sample.requirementResults || {})[req.key];
+        const display_status = req_result?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(req, req_result);
 
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
-        const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-row' });
-        const title_h_container = Helpers_create_element('h4', { class_name: 'requirement-title-container' });
+        
+        // **ÄNDRING HÄR:** Byt ut <h4> mot en <div>.
+        const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-container' });
         
         const title_button = Helpers_create_element('button', {
             class_name: 'list-title-button',
@@ -325,56 +316,31 @@ export const RequirementListComponent = (function () {
             attributes: { 'data-requirement-id': req.key }
         });
         
-        title_h_container.appendChild(title_button);
-        title_row_div.appendChild(title_h_container);
+        title_row_div.appendChild(title_button);
         li.appendChild(title_row_div);
 
+        // (Resten av funktionen är densamma)
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
         const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
-
         const status_icon_class = `status-icon-${display_status.replace('_', '-')}`;
-        const status_text_key = display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`;
-        const status_icon_title_key = display_status === 'updated' ? 'status_updated_needs_review' : `audit_status_${display_status}`;
-        const status_text = t(status_text_key);
-        const status_icon_title = t(status_icon_title_key);
+        const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+        const status_icon_title = t(display_status === 'updated' ? 'status_updated_needs_review' : `audit_status_${display_status}`);
 
-        const status_indicator_span_for_icon = Helpers_create_element('span', {
-           class_name: ['status-icon-indicator', status_icon_class],
-           attributes: { 'aria-hidden': 'true', title: status_icon_title }
-        });
-        const status_text_span = Helpers_create_element('span', {
-            class_name: display_status === 'updated' ? 'status-text-updated' : '',
-            text_content: ` ${status_text}`
-        });
-
-        status_indicator_wrapper.append(status_indicator_span_for_icon, status_text_span);
+        status_indicator_wrapper.append(
+            Helpers_create_element('span', { class_name: ['status-icon-indicator', status_icon_class], attributes: { 'aria-hidden': 'true', title: status_icon_title } }),
+            Helpers_create_element('span', { class_name: display_status === 'updated' ? 'status-text-updated' : '', text_content: ` ${status_text}` })
+        );
         details_row_div.appendChild(status_indicator_wrapper);
 
-        const total_checks_count = req.checks?.length || 0;
-        let audited_checks_count = 0;
-        if (req_result_object?.checkResults) {
-            Object.values(req_result_object.checkResults).forEach(check_res => {
-                const check_status = check_res.status;
-                if (check_status === 'passed' || check_status === 'failed') audited_checks_count++;
-            });
-        }
-        details_row_div.appendChild(Helpers_create_element('span', {
-            class_name: 'requirement-checks-info',
-            text_content: `(${audited_checks_count}/${total_checks_count} ${t('checks_short')})`
-        }));
+        const total_checks = req.checks?.length || 0;
+        const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length : 0;
+        details_row_div.appendChild(Helpers_create_element('span', { class_name: 'requirement-checks-info', text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})` }));
         
-        const ref_text = req.standardReference?.text;
-        if (ref_text) {
-            let ref_element;
-            if (req.standardReference.url) {
-                ref_element = Helpers_create_element('a', { 
-                    class_name: 'list-reference-link', text_content: ref_text, 
-                    attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
-                });
-            } else {
-                ref_element = Helpers_create_element('span', { class_name: 'list-reference-text', text_content: ref_text });
-            }
-            details_row_div.appendChild(ref_element);
+        if (req.standardReference?.text) {
+            details_row_div.appendChild(req.standardReference.url 
+                ? Helpers_create_element('a', { class_name: 'list-reference-link', text_content: req.standardReference.text, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
+                : Helpers_create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
+            );
         }
         
         li.appendChild(details_row_div);

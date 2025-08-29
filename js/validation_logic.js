@@ -15,36 +15,7 @@
             };
     }
 
-    const RULE_FILE_SCHEMA = {
-        required_top_keys: ['metadata', 'requirements'],
-        metadata_object: {
-            required_keys: ['title', 'pageTypes', 'contentTypes'],
-            pageTypes_is_array_of_strings: true,
-            contentTypes_is_array_of_objects: true,
-            contentTypes_object_keys: ['id', 'text']
-        },
-        requirements_is_object: true,
-        requirement_object: {
-            required_keys: ['id', 'title', 'expectedObservation', 'checks', 'contentType'],
-            id_is_string_non_empty: true,
-            title_is_string_non_empty: true,
-            expectedObservation_is_string: true,
-            checks_is_array: true,
-            contentType_is_array_of_strings: true
-        },
-        check_object: {
-            required_keys: ['id', 'condition', 'passCriteria'],
-            id_is_string_non_empty: true,
-            condition_is_string_non_empty: true,
-            passCriteria_is_array: true,
-            logic_is_optional_string_or_or_and: true
-        },
-        passCriterion_object: {
-            required_keys: ['id', 'requirement'],
-            id_is_string_non_empty: true,
-            requirement_is_string_non_empty: true
-        }
-    };
+    
 
 // Fil: js/validation_logic.js
 
@@ -52,9 +23,8 @@
 
 function validate_rule_file_json(json_object) {
     const t = get_t_func();
-    console.log("[ValidationLogic] validate_rule_file_json CALLED (Simplified Validation).");
+    console.log("[ValidationLogic] Running validation for new rule file...");
 
-    // Steg 1: Grundläggande kontroller som fortfarande är viktiga
     if (typeof json_object !== 'object' || json_object === null) {
         return { isValid: false, message: t('rule_file_invalid_json') };
     }
@@ -68,11 +38,34 @@ function validate_rule_file_json(json_object) {
         };
     }
     
-    // Steg 2: Acceptera filen om de grundläggande kontrollerna passerar.
-    // Vi kommenterar bort eller tar bort den detaljerade schemavalideringen
-    // eftersom den är inkompatibel med den nya, mer komplexa regelfilsstrukturen.
-    console.warn("[ValidationLogic] Detailed schema validation is currently BYPASSED. Only basic structure is checked.");
+    const metadata = json_object.metadata;
+    if (typeof metadata !== 'object' || metadata === null) {
+        return { isValid: false, message: t('rule_file_metadata_must_be_object') };
+    }
 
+    const required_metadata_keys = ['title', 'pageTypes', 'contentTypes'];
+    const missing_metadata_keys = required_metadata_keys.filter(key => !(key in metadata));
+    if (missing_metadata_keys.length > 0) {
+        return {
+            isValid: false,
+            message: t('rule_file_metadata_missing_keys', { missingKeys: missing_metadata_keys.join(', ') })
+        };
+    }
+
+    // Validera att kravets `instructions` nu är en sträng (om det finns)
+    if (typeof json_object.requirements === 'object' && json_object.requirements !== null) {
+        for (const req_key in json_object.requirements) {
+            const requirement = json_object.requirements[req_key];
+            if (requirement && requirement.hasOwnProperty('instructions') && typeof requirement.instructions !== 'string') {
+                // Detta är den centrala ändringen för r80
+                return { isValid: false, message: `Validation Error: Requirement '${req_key}' has an 'instructions' field that is not a string.` };
+            }
+        }
+    } else {
+         return { isValid: false, message: t('rule_file_requirements_must_be_object') };
+    }
+
+    console.log("[ValidationLogic] Basic validation passed for r80 structure.");
     return { isValid: true, message: t('rule_file_loaded_successfully') };
 }
 

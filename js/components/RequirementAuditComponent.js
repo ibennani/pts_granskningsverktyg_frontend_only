@@ -538,15 +538,19 @@ export const RequirementAuditComponent = (function () {
         });
     }
     
-    function render_audit_section_internal(title_key, content_data, section_ref, parent_element, custom_class_name = '') {
+    function render_audit_section_internal(title_key, content_data, section_ref, parent_element) {
         const t = get_t_internally();
-        const has_content = content_data && ((typeof content_data === 'string' && content_data.trim() !== '') || (Array.isArray(content_data) && content_data.length > 0));
+        
+        // **NY LOGIK:** Hanterar nu enbart strängar. Kontrollerar om strängen är tom.
+        const has_content = content_data && typeof content_data === 'string' && content_data.trim() !== '';
         
         if (has_content) {
+            // Om sektionen inte finns (bör inte hända om _initialRender körts), gör inget.
             if (!section_ref || !parent_element.contains(section_ref)) {
                  console.error("Internal logic error: section_ref is missing for render_audit_section_internal but content exists.");
                  return null;
             }
+            // Visa sektionen och sätt dess titel
             section_ref.removeAttribute('hidden');
             let h2_element = section_ref.querySelector('h2');
             if (!h2_element) {
@@ -555,48 +559,29 @@ export const RequirementAuditComponent = (function () {
             }
             h2_element.textContent = t(title_key);
     
+            // Hitta eller skapa content-containern
             let content_element = section_ref.querySelector('.audit-section-content');
-            
             if (!content_element) {
-                const old_p = section_ref.querySelector('p'); if(old_p) old_p.remove();
-                const old_ul = section_ref.querySelector('ul'); if(old_ul) old_ul.remove();
-
                 content_element = Helpers_create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
                 section_ref.appendChild(content_element);
             }
     
+            // Rensa och fyll på med det nya, tolkade innehållet
             content_element.innerHTML = ''; 
 
-            const markdown_text = Array.isArray(content_data)
-                ? content_data.map(item => (typeof item === 'object' && item.text) ? item.text : String(item)).join('\n\n')
-                : String(content_data);
-
-            const dedented_text = _dedent(markdown_text);
-
-            if (typeof marked !== 'undefined' && typeof Helpers_escape_html === 'function') {
+            // **NY LOGIK:** Använd marked.js direkt på strängen
+            if (typeof marked !== 'undefined') {
                 const renderer = new marked.Renderer();
-                
-                const originalLinkRenderer = renderer.link.bind(renderer);
-                renderer.link = (href, title, text) => {
-                    const link = originalLinkRenderer(href, title, text);
-                    return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
-                };
-
-                renderer.html = (html_token) => {
-                    const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
-                        ? html_token.text
-                        : String(html_token || '');
-                    
-                    return Helpers_escape_html(text_to_escape);
-                };
-                
-                content_element.innerHTML = marked.parse(dedented_text, { breaks: true, gfm: true, renderer: renderer });
+                // Säkerställ att länkar öppnas i ny flik
+                renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                content_element.innerHTML = marked.parse(String(content_data), { renderer });
             } else {
-                const escaped_text = Helpers_escape_html(dedented_text);
-                content_element.innerHTML = escaped_text.replace(/\n/g, '<br>');
+                // Fallback om marked.js inte finns
+                content_element.textContent = String(content_data);
             }
 
         } else if (section_ref) {
+            // Göm sektionen om det inte finns något innehåll
             section_ref.setAttribute('hidden', 'true');
             section_ref.innerHTML = '';
         }
@@ -992,15 +977,13 @@ export const RequirementAuditComponent = (function () {
         const ref_text = req_for_render.standardReference?.text;
         if (ref_text && ref_text.trim() !== '') {
             standard_reference_element_ref.removeAttribute('hidden');
-            const label_strong = Helpers_create_element('strong', { 
-                text_content: t('requirement_standard_reference_label')
-            });
+            const label_strong = Helpers_create_element('strong', { text_content: t('requirement_standard_reference_label') });
             standard_reference_element_ref.appendChild(label_strong);
             standard_reference_element_ref.appendChild(document.createTextNode(' '));
             if (req_for_render.standardReference.url) { 
                 const link = Helpers_create_element('a', { 
                     text_content: req_for_render.standardReference.text, 
-                    attributes: { href: req_for_render.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } 
+                    attributes: { href: Helpers_add_protocol_if_missing(req_for_render.standardReference.url), target: '_blank', rel: 'noopener noreferrer' } 
                 });
                 standard_reference_element_ref.appendChild(link); 
             } else { 
@@ -1015,9 +998,7 @@ export const RequirementAuditComponent = (function () {
         const sample_description = current_sample_object_from_store?.description || '';
         const context_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
         
-        const label_strong_audit = Helpers_create_element('strong', {
-            text_content: t('audited_page_label')
-        });
+        const label_strong_audit = Helpers_create_element('strong', { text_content: t('audited_page_label') });
         audited_page_link_element_ref.appendChild(label_strong_audit);
         audited_page_link_element_ref.appendChild(document.createTextNode(' '));
         if (current_sample_object_from_store.url) {
@@ -1036,43 +1017,88 @@ export const RequirementAuditComponent = (function () {
         const overall_status_text = t(`audit_status_${overall_status_key}`);
         requirement_status_display_element.innerHTML = `<strong>${t('overall_requirement_status')}:</strong> <span class="status-text status-${overall_status_key}">${overall_status_text}</span>`;
         
-        expected_observation_section_ref = render_audit_section_internal('requirement_expected_observation', req_for_render.expectedObservation, expected_observation_section_ref, plate_element_ref);
-        instructions_section_ref = render_audit_section_internal('requirement_instructions', req_for_render.instructions, instructions_section_ref, plate_element_ref);
-        tips_section_ref = render_audit_section_internal('requirement_tips', req_for_render.tips, tips_section_ref, plate_element_ref);
-        exceptions_section_ref = render_audit_section_internal('requirement_exceptions', req_for_render.exceptions, exceptions_section_ref, plate_element_ref);
-        common_errors_section_ref = render_audit_section_internal('requirement_common_errors', req_for_render.commonErrors, common_errors_section_ref, plate_element_ref); 
-        examples_section_ref = render_audit_section_internal('requirement_examples', req_for_render.examples, examples_section_ref, plate_element_ref);
+        // --- **NY OCH KORRIGERAD** LOGIK FÖR ATT RENDERA TEXTBLOCKEN ---
+        const render_markdown_section = (container_ref, title_key, content_data) => {
+            if (content_data && typeof content_data === 'string' && content_data.trim()) {
+                container_ref.removeAttribute('hidden');
+                let h2 = container_ref.querySelector('h2');
+                if (!h2) {
+                    h2 = Helpers_create_element('h2');
+                    container_ref.prepend(h2);
+                }
+                h2.textContent = t(title_key);
 
-        if (current_sample_object_from_store?.selectedContentTypes?.length > 0) {
-            if (!metadata_section_ref || !plate_element_ref.contains(metadata_section_ref)) {
-                metadata_section_ref = Helpers_create_element('div', { class_name: 'audit-section' });
-                const last_info_section = examples_section_ref || common_errors_section_ref || exceptions_section_ref || tips_section_ref || instructions_section_ref || expected_observation_section_ref;
-                if(last_info_section) last_info_section.after(metadata_section_ref);
-                else header_div_ref.after(metadata_section_ref);
+                let content_div = container_ref.querySelector('.markdown-content');
+                if (!content_div) {
+                    content_div = Helpers_create_element('div', { class_name: 'markdown-content' });
+                    container_ref.appendChild(content_div);
+                }
+                
+                if (typeof marked !== 'undefined' && typeof Helpers_escape_html === 'function') {
+                    // **KORRIGERING: Tvåstegsprocess**
+                    // 1. Ersätt inline `<code>`-taggar med backticks (markdowns motsvarighet)
+                    let processed_text = content_data.replace(/<code>(.*?)<\/code>/g, '`$1`');
+                    
+                    // 2. Escapa resten av eventuell HTML
+                    const temp_div = document.createElement('div');
+                    temp_div.textContent = processed_text;
+                    processed_text = temp_div.innerHTML;
+                    
+                    // 3. Återställ backticks så att de inte escapas (om de blev det)
+                    processed_text = processed_text.replace(/&lt;code&gt;/g, '`').replace(/&lt;\/code&gt;/g, '`');
+
+                    // 4. Kör den nu säkra texten genom marked
+                    const renderer = new marked.Renderer();
+                    renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                    
+                    content_div.innerHTML = marked.parse(processed_text, { 
+                        renderer: renderer,
+                        breaks: true
+                    });
+
+                } else {
+                    content_div.textContent = content_data;
+                }
+            } else {
+                container_ref.setAttribute('hidden', 'true');
+                container_ref.innerHTML = '';
             }
+        };
+
+        render_markdown_section(expected_observation_section_ref, 'requirement_expected_observation', req_for_render.expectedObservation);
+        render_markdown_section(instructions_section_ref, 'requirement_instructions', req_for_render.instructions);
+        render_markdown_section(tips_section_ref, 'requirement_tips', req_for_render.tips);
+        render_markdown_section(exceptions_section_ref, 'requirement_exceptions', req_for_render.exceptions);
+        render_markdown_section(common_errors_section_ref, 'requirement_common_errors', req_for_render.commonErrors);
+        render_markdown_section(examples_section_ref, 'requirement_examples', req_for_render.examples);
+        // --- SLUT PÅ NY LOGIK FÖR TEXTBLOCK ---
+
+        if (req_for_render?.contentType?.length > 0) {
             metadata_section_ref.innerHTML = ''; 
             metadata_section_ref.removeAttribute('hidden');
 
             metadata_section_ref.appendChild(Helpers_create_element('h2', { text_content: t('content_types') }));
             
-            const all_content_types_defs = current_global_state_for_render.ruleFileContent?.metadata?.contentTypes || [];
-            const content_types_map = new Map(all_content_types_defs.map(ct => [ct.id, ct.text]));
+            // Bygg upp lookup-mappen precis som förut
+            const content_types_map = new Map();
+            (current_global_state_for_render.ruleFileContent?.metadata?.contentTypes || []).forEach(parent => {
+                (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
+            });
             
             const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
             
-            current_sample_object_from_store.selectedContentTypes.forEach(ct_id => {
-                const ct_text = content_types_map.get(ct_id) || ct_id;
-                const li = Helpers_create_element('li', { text_content: ct_text });
-                content_types_ul.appendChild(li);
+            // **KORRIGERING:** Loopa igenom kravets `contentType`-array istället för stickprovets.
+            req_for_render.contentType.forEach(ct_id => {
+                const ct_text = content_types_map.get(ct_id) || ct_id; // Slå upp namnet
+                content_types_ul.appendChild(Helpers_create_element('li', { text_content: ct_text }));
             });
             
             if (content_types_ul.hasChildNodes()) {
                 metadata_section_ref.appendChild(content_types_ul);
             }
-
-        } else if (metadata_section_ref && plate_element_ref.contains(metadata_section_ref)) {
+        } else {
+            // Dölj sektionen om det specifika kravet inte har några kopplade innehållstyper
             metadata_section_ref.setAttribute('hidden', 'true');
-            metadata_section_ref.innerHTML = ''; 
         }
         
         render_navigation_buttons(top_nav_buttons_container_ref);

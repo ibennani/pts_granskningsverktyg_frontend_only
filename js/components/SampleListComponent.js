@@ -157,34 +157,39 @@ const SampleListComponent_internal = (function () {
         assign_globals_once();
         const t = get_t_internally();
 
-        if (!list_container_ref || !t || !local_getState || !Helpers_create_element || !AuditLogic_get_relevant_requirements_for_sample || !AuditLogic_calculate_requirement_status) {
-            console.error("SampleListComponent: Core dependencies missing for render. Has init completed successfully?");
+        if (!list_container_ref || !local_getState || !Helpers_create_element) {
+            console.error("SampleListComponent: Core dependencies missing for render.");
             if (list_container_ref) list_container_ref.innerHTML = `<p>${t('error_render_component', {componentName: 'SampleList'})}</p>`;
             return;
         }
-        list_container_ref.innerHTML = ''; 
+        list_container_ref.innerHTML = '';
 
         const current_global_state = local_getState();
-        if (!current_global_state || !current_global_state.ruleFileContent) {
+        if (!current_global_state?.ruleFileContent) {
              list_container_ref.textContent = t('error_audit_data_missing_for_list');
-             return; 
+             return;
         }
-        if (!current_global_state.samples || current_global_state.samples.length === 0) { 
-            const no_samples_msg = Helpers_create_element('p', {
-                class_name: 'no-samples-message',
-                text_content: t('no_samples_added')
-            });
-            list_container_ref.appendChild(no_samples_msg);
-            return; 
+        if (!current_global_state.samples || current_global_state.samples.length === 0) {
+            list_container_ref.appendChild(Helpers_create_element('p', { class_name: 'no-samples-message', text_content: t('no_samples_added') }));
+            return;
         }
 
         if (!ul_element_for_delegation) {
             ul_element_for_delegation = Helpers_create_element('ul', { class_name: 'sample-list item-list' });
             ul_element_for_delegation.addEventListener('click', handle_list_click);
         } else {
-            ul_element_for_delegation.innerHTML = ''; 
+            ul_element_for_delegation.innerHTML = '';
         }
-        
+
+        // --- **KORRIGERING HÄR:** SKAPA EN MAP FÖR SNABB UPPSLAGNING ---
+        // Denna map kommer att innehålla alla underkategorier (barn) med deras ID som nyckel.
+        const content_types_map = new Map();
+        (current_global_state.ruleFileContent.metadata.contentTypes || []).forEach(parent => {
+            (parent.types || []).forEach(child => {
+                content_types_map.set(child.id, child.text);
+            });
+        });
+
         const can_edit_or_delete = current_global_state.auditStatus === 'not_started' || current_global_state.auditStatus === 'in_progress';
 
         current_global_state.samples.forEach(sample => {
@@ -195,129 +200,99 @@ const SampleListComponent_internal = (function () {
             
             const info_div = Helpers_create_element('div', { class_name: 'sample-info' });
             
-            let sample_needs_review = false;
-            if (sample.requirementResults) {
-                sample_needs_review = Object.values(sample.requirementResults).some(res => res.needsReview === true);
-            }
-
+            let sample_needs_review = Object.values(sample.requirementResults || {}).some(res => res.needsReview === true);
             const desc_h3 = Helpers_create_element('h3');
             if (sample_needs_review) {
-                const icon_span = Helpers_create_element('span', {
+                desc_h3.appendChild(Helpers_create_element('span', {
                     style: 'margin-right: 0.5rem; color: var(--info-color);',
-                    attributes: { title: t('sample_has_updated_reqs_tooltip', {defaultValue: "This sample has updated requirements that need re-review."}) },
+                    attributes: { title: t('sample_has_updated_reqs_tooltip') },
                     html_content: Helpers_get_icon_svg ? Helpers_get_icon_svg('update', ['currentColor'], 20) : ''
-                });
-                desc_h3.appendChild(icon_span);
+                }));
             }
-            desc_h3.appendChild(document.createTextNode(sample.description || t('undefined_description', {defaultValue: "Undefined description"})));
+            desc_h3.appendChild(document.createTextNode(sample.description || t('undefined_description')));
             
             const type_p = Helpers_create_element('p');
             type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(sample.pageType)}`;
             info_div.appendChild(desc_h3);
             info_div.appendChild(type_p);
 
-            if(sample.url && Helpers_add_protocol_if_missing) {
+            if (sample.url) {
                 const url_p = Helpers_create_element('p');
-                const safe_url = Helpers_add_protocol_if_missing(sample.url);
-                url_p.innerHTML = `<strong>${t('url')}:</strong> <a href="${Helpers_escape_html(safe_url)}" target="_blank" rel="noopener noreferrer" title="${t('visit_url')}: ${Helpers_escape_html(sample.url)}">${Helpers_escape_html(sample.url)}</a>`;
+                url_p.innerHTML = `<strong>${t('url')}:</strong> <a href="${Helpers_escape_html(Helpers_add_protocol_if_missing(sample.url))}" target="_blank" rel="noopener noreferrer">${Helpers_escape_html(sample.url)}</a>`;
                 info_div.appendChild(url_p);
             }
 
-            const relevant_reqs_for_this_sample = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, sample);
-            const total_relevant_reqs = relevant_reqs_for_this_sample.length;
-            let audited_reqs_count = 0;
+            const relevant_reqs = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, sample);
+            const total_relevant_reqs = relevant_reqs.length;
+            let audited_reqs_count = relevant_reqs.filter(req => {
+                const status = AuditLogic_calculate_requirement_status(req, (sample.requirementResults || {})[req.key]);
+                return status === 'passed' || status === 'failed';
+            }).length;
 
-            relevant_reqs_for_this_sample.forEach(req_definition => {
-                const req_key = req_definition.key || req_definition.id;
-                const req_result = (sample.requirementResults || {})[req_key];
-                const req_status = AuditLogic_calculate_requirement_status(req_definition, req_result);
-                if (req_status === 'passed' || req_status === 'failed') {
-                    audited_reqs_count++;
-                }
-            });
-
-            const progress_p = Helpers_create_element('p');
-            progress_p.innerHTML = `<strong>${t('requirements_audited')}:</strong> ${audited_reqs_count} / ${total_relevant_reqs}`;
-            info_div.appendChild(progress_p);
+            info_div.appendChild(Helpers_create_element('p', { innerHTML: `<strong>${t('requirements_audited')}:</strong> ${audited_reqs_count} / ${total_relevant_reqs}` }));
             
-            if (window.ProgressBarComponent && typeof window.ProgressBarComponent.create === 'function') {
-                const progress_bar = window.ProgressBarComponent.create(audited_reqs_count, total_relevant_reqs, {});
-                info_div.appendChild(progress_bar);
+            if (window.ProgressBarComponent) {
+                info_div.appendChild(window.ProgressBarComponent.create(audited_reqs_count, total_relevant_reqs, {}));
             }
-            if (sample.selectedContentTypes && sample.selectedContentTypes.length > 0 &&
-                current_global_state.ruleFileContent.metadata && current_global_state.ruleFileContent.metadata.contentTypes) {
+            
+            // --- **KORRIGERING HÄR:** ANVÄND MAP FÖR ATT VISA RÄTT TEXT ---
+            if (sample.selectedContentTypes?.length > 0) {
                 const content_types_div = Helpers_create_element('div', { class_name: 'content-types-display' });
-                const content_types_strong = Helpers_create_element('strong', { text_content: t('content_types') + ':'});
+                content_types_div.appendChild(Helpers_create_element('strong', { text_content: t('content_types') + ':' }));
                 const content_types_ul = Helpers_create_element('ul');
+                
                 sample.selectedContentTypes.forEach(ct_id => {
-                    const ct_object = current_global_state.ruleFileContent.metadata.contentTypes.find(c => c.id === ct_id);
-                    const ct_text = ct_object ? ct_object.text : ct_id;
+                    const ct_text = content_types_map.get(ct_id) || ct_id; // Använd map, fallback till ID
                     content_types_ul.appendChild(Helpers_create_element('li', { text_content: Helpers_escape_html(ct_text) }));
                 });
-                content_types_div.appendChild(content_types_strong);
                 content_types_div.appendChild(content_types_ul);
                 info_div.appendChild(content_types_div);
             }
             li.appendChild(info_div);
 
-
             const actions_wrapper_div = Helpers_create_element('div', { class_name: 'sample-actions-wrapper' });
             const main_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-main' });
             const delete_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-delete' });
-
-            if (total_relevant_reqs > 0) {
-                const view_reqs_button = Helpers_create_element('button', {
-                    class_name: ['button', 'button-secondary', 'button-small'],
-                    attributes: { 'data-action': 'view-requirements', 'aria-label': `${t('view_all_requirements_button')}: ${sample.description}` },
-                    html_content: `<span>${t('view_all_requirements_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 16) : '')
-                });
-                main_actions_div.appendChild(view_reqs_button);
-            } else { 
-                 const no_reqs_info = Helpers_create_element('span', {class_name: 'text-muted button-small', text_content: t('no_relevant_requirements_for_sample_short', {defaultValue: "(No relevant requirements)"})});
-                 main_actions_div.appendChild(no_reqs_info);
-            }
-
-            if (sample.url) {
-                const visit_button = Helpers_create_element('button', {
-                    class_name: ['button', 'button-secondary', 'button-small'],
-                    attributes: { 'data-action': 'visit-url', 'aria-label': `${t('visit_url')}: ${sample.description}` },
-                    html_content: `<span>${t('visit_url')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('visit_url', ['currentColor'], 16) : '')
-                });
-                main_actions_div.appendChild(visit_button);
-            }
-
-            if (current_global_state.auditStatus === 'in_progress' && total_relevant_reqs > 0) {
-                const first_incomplete_req_key = AuditLogic_find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
-                let review_button_text_key = first_incomplete_req_key ? 'audit_next_incomplete_requirement' : 'view_audited_sample';
-                
-                const review_button = Helpers_create_element('button', {
-                    class_name: ['button', 'button-primary', 'button-small'],
-                    attributes: { 'data-action': 'review-sample', 'aria-label': `${t(review_button_text_key)}: ${sample.description}` },
-                    html_content: `<span>${t(review_button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : '')
-                });
-                main_actions_div.appendChild(review_button);
-            }
-
-            if (can_edit_or_delete && typeof on_edit_callback === 'function') {
-                const edit_button = Helpers_create_element('button', {
+            
+            if (can_edit_or_delete && on_edit_callback) {
+                 main_actions_div.appendChild(Helpers_create_element('button', {
                     class_name: ['button', 'button-default', 'button-small'],
                     attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
                     html_content: `<span>${t('edit_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit', ['currentColor'], 16) : '')
-                });
-                if (main_actions_div.firstChild) {
-                    main_actions_div.insertBefore(edit_button, main_actions_div.firstChild);
-                } else {
-                    main_actions_div.appendChild(edit_button);
-                }
+                }));
             }
 
-            if (can_edit_or_delete && typeof on_delete_callback === 'function' && current_global_state.samples.length > 1) {
-                const delete_button = Helpers_create_element('button', {
+            if (total_relevant_reqs > 0) {
+                main_actions_div.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-secondary', 'button-small'],
+                    attributes: { 'data-action': 'view-requirements', 'aria-label': `${t('view_all_requirements_button')}: ${sample.description}` },
+                    html_content: `<span>${t('view_all_requirements_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('list', ['currentColor'], 16) : '')
+                }));
+            }
+
+            if (sample.url) {
+                main_actions_div.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-secondary', 'button-small'],
+                    attributes: { 'data-action': 'visit-url', 'aria-label': `${t('visit_url')}: ${sample.description}` },
+                    html_content: `<span>${t('visit_url')}</span>` + (Helpers_get_icon_svg('visit_url', ['currentColor'], 16) || '')
+                }));
+            }
+
+            if (current_global_state.auditStatus === 'in_progress' && total_relevant_reqs > 0) {
+                const first_incomplete = AuditLogic_find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
+                const review_text_key = first_incomplete ? 'audit_next_incomplete_requirement' : 'view_audited_sample';
+                main_actions_div.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-primary', 'button-small'],
+                    attributes: { 'data-action': 'review-sample', 'aria-label': `${t(review_text_key)}: ${sample.description}` },
+                    html_content: `<span>${t(review_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : '')
+                }));
+            }
+             if (can_edit_or_delete && on_delete_callback && current_global_state.samples.length > 1) {
+                delete_actions_div.appendChild(Helpers_create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
                     attributes: { 'data-action': 'delete-sample', 'aria-label': `${t('delete_sample')}: ${sample.description}` },
                     html_content: `<span>${t('delete_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('delete', ['currentColor'], 16) : '')
-                });
-                delete_actions_div.appendChild(delete_button);
+                }));
             }
 
             if (main_actions_div.hasChildNodes()) actions_wrapper_div.appendChild(main_actions_div);

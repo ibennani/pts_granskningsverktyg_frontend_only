@@ -48,3 +48,49 @@
     gap: 1rem;
     flex-wrap: wrap;
 }
+
+/* --- NYA STILAR FÖR HIERARKISKA INNEHÅLLSTYPER --- */
+
+/* Huvudcontainer för en hel grupp (t.ex. "Text och struktur") */
+.content-type-parent-group {
+    border: none; /* Ta bort standard-fieldset-kantlinje */
+    padding: 0;
+    margin: 0 0 1rem 0; /* Utrymme mellan varje huvudgrupp */
+}
+
+/* Rubriken/Legenden för en huvudgrupp */
+.content-type-parent-group legend {
+    padding: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.1em; /* Gör huvudkategorin lite större */
+    font-weight: 500;
+    width: 100%; /* Säkerställ att den tar full bredd */
+    display: flex;
+    align-items: center;
+}
+
+/* Behållare för en underkategori (t.ex. "Rubriker") */
+.content-type-child-item {
+    /* **HÄR ÄR HUVUDÄNDRINGEN:** Skjut in underkategorierna */
+    padding-left: 2rem; /* Justera detta värde för mer eller mindre indrag */
+    margin-bottom: 0.25rem;
+}
+
+/* Beskrivningen för en underkategori */
+.content-type-description {
+    /* Skjut in beskrivningen lika mycket som dess checkbox + lite extra för att linjera med texten */
+    padding-left: 3.5rem; /* Ca 2rem (från .child-item) + 1.5rem (för checkbox och marginal) */
+    margin-bottom: 0.75rem;
+    font-size: 0.9em;
+    color: var(--text-color-muted);
+    line-height: 1.5;
+}
+
+/* Anpassa checkboxar och etiketter för bättre linjering */
+.form-check-input {
+    margin-top: 0.2em; /* Justera checkboxens vertikala position för att linjera bättre med texten */
+}
+
+.form-check label {
+    display: inline-block; /* Säkerställ att labeln håller sig på samma rad som checkboxen */
+}
