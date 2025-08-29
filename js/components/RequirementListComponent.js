@@ -179,7 +179,7 @@ export const RequirementListComponent = (function () {
 
         const current_sample_object = current_global_state.samples.find(s => s.id === params_ref.sampleId);
 
-        // --- HÄR ÅTERSTÄLLER OCH FÖRBÄTTRAR VI HEADER-RENDERINGEN ---
+        // --- START PÅ KORREKT HEADER-LOGIK (som ska vara kvar) ---
         const header_div = plate_element_ref.querySelector('.requirement-list-header');
         header_div.innerHTML = '';
         
@@ -199,12 +199,10 @@ export const RequirementListComponent = (function () {
         }
         header_div.appendChild(h1);
         
-        // **ÅTERSTÄLLD INFO:** Typ av sida
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
         sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(current_sample_object.pageType)}`;
         header_div.appendChild(sample_type_p);
         
-        // **ÅTERSTÄLLD INFO:** Granskade krav och progressbar
         const all_relevant_requirements = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, current_sample_object);
         const total_relevant_requirements = all_relevant_requirements.length;
         const audited_requirements_count = all_relevant_requirements.filter(req => {
@@ -219,9 +217,9 @@ export const RequirementListComponent = (function () {
         if (window.ProgressBarComponent) {
             header_div.appendChild(window.ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {}));
         }
-        // --- SLUT PÅ HEADER-JUSTERINGAR ---
+        // --- SLUT PÅ HEADER-LOGIK ---
 
-        // Filtrering och sortering (oförändrad)
+        // Filtrering (oförändrad)
         const search_term = (filter_settings.searchText || '').toLowerCase();
         const active_status_filters = Object.keys(filter_settings.status).filter(key => filter_settings.status[key]);
 
@@ -240,50 +238,31 @@ export const RequirementListComponent = (function () {
             return true;
         });
         
+        // --- DEN NYA SORTERINGSLOGIKEN (som också ska vara kvar) ---
         const sorted_requirements = [...filtered_requirements];
         const sort_function = {
+            'ref_desc': (a, b) => Helpers_natural_sort(b.standardReference?.text || 'Z', a.standardReference?.text || 'Z'),
             'title_asc': (a, b) => (a.title || '').localeCompare(b.title || ''),
             'title_desc': (a, b) => (b.title || '').localeCompare(a.title || ''),
-            'status': (a, b) => {
-                const status_order = { 'failed': 1, 'updated': 2, 'partially_audited': 3, 'not_audited': 4, 'passed': 5 };
-                const resA = (current_sample_object.requirementResults || {})[a.key], statusA = resA?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(a, resA);
-                const resB = (current_sample_object.requirementResults || {})[b.key], statusB = resB?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(b, resB);
-                return (status_order[statusA] || 99) - (status_order[statusB] || 99);
+            'updated_first': (a, b) => {
+                const resA = (current_sample_object.requirementResults || {})[a.key];
+                const resB = (current_sample_object.requirementResults || {})[b.key];
+                const isAUpdated = resA?.needsReview === true ? 0 : 1;
+                const isBUpdated = resB?.needsReview === true ? 0 : 1;
+                if (isAUpdated !== isBUpdated) {
+                    return isAUpdated - isBUpdated;
+                }
+                return Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z');
             },
-            'default': (a, b) => Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z'),
-            'category': (a,b) => {
-                const mainA = a.metadata?.mainCategory?.text || t('uncategorized'), mainB = b.metadata?.mainCategory?.text || t('uncategorized');
-                if (mainA !== mainB) return mainA.localeCompare(mainB);
-                const subA = a.metadata?.subCategory?.text || t('other_requirements'), subB = b.metadata?.subCategory?.text || t('other_requirements');
-                return subA.localeCompare(subB);
-            }
+            'default': (a, b) => Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z')
         };
         sorted_requirements.sort(sort_function[filter_settings.sortBy] || sort_function['default']);
+        // --- SLUT PÅ SORTERINGSLOGIK ---
 
         // Rendera listan (oförändrad)
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
             content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter') }));
-        } else if (filter_settings.sortBy === 'category') {
-            const requirements_by_category = sorted_requirements.reduce((acc, req) => {
-                const main_cat = req.metadata?.mainCategory?.text || t('uncategorized');
-                const sub_cat = req.metadata?.subCategory?.text || t('other_requirements');
-                if (!acc[main_cat]) acc[main_cat] = {};
-                if (!acc[main_cat][sub_cat]) acc[main_cat][sub_cat] = [];
-                acc[main_cat][sub_cat].push(req);
-                return acc;
-            }, {});
-            Object.keys(requirements_by_category).sort().forEach(main_cat_key => {
-                const main_cat_group = Helpers_create_element('div', {class_name: 'category-group'});
-                main_cat_group.appendChild(Helpers_create_element('h2', {class_name: 'main-category-title', text_content: main_cat_key}));
-                Object.keys(requirements_by_category[main_cat_key]).sort().forEach(sub_cat_key => {
-                    main_cat_group.appendChild(Helpers_create_element('h3', {class_name: 'sub-category-title', text_content: sub_cat_key}));
-                    const req_ul = Helpers_create_element('ul', {class_name: 'requirement-items-ul'});
-                    requirements_by_category[main_cat_key][sub_cat_key].forEach(req => req_ul.appendChild(create_requirement_list_item(req, current_sample_object)));
-                    main_cat_group.appendChild(req_ul);
-                });
-                content_div_for_delegation.appendChild(main_cat_group);
-            });
         } else {
             const req_ul = Helpers_create_element('ul', { class_name: 'requirement-items-ul' });
             sorted_requirements.forEach(req => req_ul.appendChild(create_requirement_list_item(req, current_sample_object)));

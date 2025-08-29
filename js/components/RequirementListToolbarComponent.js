@@ -227,12 +227,15 @@ export const RequirementListToolbarComponent = (function () {
                 </div>
             `;
             const sort_select = container_ref.querySelector('#req-list-sort');
+            // --- **HÄR ÄR ÄNDRINGEN FÖR SORTERINGSALTERNATIVEN** ---
             sort_select.innerHTML = `
-                <option value="default">${t('sort_option_default')}</option>
+                <option value="default">${t('sort_option_ref_asc_natural', {defaultValue: "Reference (ascending)"})}</option>
+                <option value="ref_desc">${t('sort_option_ref_desc_natural', {defaultValue: "Reference (descending)"})}</option>
                 <option value="title_asc">${t('sort_option_title_asc')}</option>
                 <option value="title_desc">${t('sort_option_title_desc')}</option>
-                <option value="status">${t('sort_option_status')}</option>
+                <option value="updated_first">${t('sort_option_updated_first', {defaultValue: "Updated First"})}</option>
             `;
+            // --- SLUT PÅ ÄNDRING ---
         }
 
         update_values();
