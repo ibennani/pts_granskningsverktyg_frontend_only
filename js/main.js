@@ -341,42 +341,51 @@ window.StoreActionTypes = StoreActionTypes;
         set_initial_theme();
         await window.Translation.ensure_initial_load();
         
-        initState();
+        // --- NY, KORREKT STARTLOGIK ---
+        
+        // Steg 1: Försök ALLTID ladda den aktiva sessionen först.
+        initState(); // Laddar från sessionStorage
         const active_session_state = getState();
 
+        // Steg 2: Kontrollera om vi lyckades ladda en aktiv session.
         if (active_session_state && active_session_state.ruleFileContent) {
+            // FALL A: Ja, vi har en aktiv session (detta är F5-omladdningsscenariot).
             console.log("[Main.js] Active session found in sessionStorage. Starting normally.");
             await start_normal_session();
+
         } else {
+            // FALL B: Nej, sessionStorage var tomt (detta är scenariot med stängd flik).
+            // Kontrollera NU om det finns en backup i localStorage.
             const autosaved_payload = loadStateFromLocalStorage();
+
             if (autosaved_payload) {
+                // Ja, en backup hittades. Visa återställningsvyn.
                 console.log("[Main.js] No active session, but found backup in localStorage. Prompting user.");
                 
                 const on_restore = () => {
-                    // Steg 1: Ladda in datan
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
                     clearAutosavedState(); 
                     if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
                     
-                    // Steg 2: Sätt hashen för att byta URL
                     if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
                         window.location.hash = autosaved_payload.lastKnownHash;
                     } else {
-                        // Sätt en default-hash om ingen sparades
                         window.location.hash = '#audit_overview';
                     }
-
-                    // **KORRIGERING:** Tvinga en omladdning av vyn EFTER att hashen har satts.
-                    // Detta säkerställer att vyn renderas med det nyligen inlästa state:t.
-                    handle_hash_change();
+                    // Vi måste starta den normala sessionen här också för att prenumerationer etc. ska fungera
+                    start_normal_session(); 
                 };
 
-                const on_discard = () => {
+                // --- **HÄR ÄR KORRIGERINGEN** ---
+                const on_discard = async () => {
                     clearAutosavedState();
-                    navigate_and_set_hash('upload');
+                    // Efter att backupen är raderad, starta appen som om det vore första gången.
+                    // Detta säkerställer att alla system initieras korrekt.
+                    await start_normal_session(); 
                 };
                 
-                await init_global_components();
+                // Rendera återställningsvyn och vänta på användarens val
+                await init_global_components(); // Initiera globala delar så vyn kan använda dem
                 update_app_chrome_texts();
                 render_view('restore_session', { 
                     autosaved_state: autosaved_payload.auditState,
@@ -385,6 +394,7 @@ window.StoreActionTypes = StoreActionTypes;
                 });
 
             } else {
+                // Nej, ingen backup heller. Starta helt från början.
                 console.log("[Main.js] No active session, no backup. Starting fresh.");
                 await start_normal_session();
             }
