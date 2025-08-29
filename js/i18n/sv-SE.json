@@ -27,6 +27,7 @@
   "audit_status_locked": "Låst",
   "audit_status_not_audited": "Ej granskat",
   "audit_status_not_started": "Ej påbörjad",
+  "audit_status_partially_audited": "Delvis granskad",
   "audit_status_passed": "Godkänt",
   "audit_unlocked_successfully": "Granskning upplåst",
   "auditor_name": "Ansvarig granskare",
