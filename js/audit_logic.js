@@ -8,20 +8,16 @@
             : (key, replacements) => `**${key}**`;
     }
 
-    // --- NY FUNKTION för att formatera ID ---
     function formatDeficiencyId(number) {
         const t = get_t_func();
         return `${t('deficiency_prefix', {defaultValue: "brist"})} ${String(number).padStart(4, '0')}`;
     }
 
-    // --- NY FUNKTION: Tilldelar ID:n första gången granskningen låses ---
     function assignSortedDeficiencyIdsOnLock(auditState) {
-        const t = get_t_func();
         console.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
         const newState = JSON.parse(JSON.stringify(auditState));
-
-        // Steg 1: Rensa eventuella preliminära ID:n och återställ räknaren
         newState.deficiencyCounter = 1;
+
         (newState.samples || []).forEach(sample => {
             Object.values(sample.requirementResults || {}).forEach(reqResult => {
                 Object.values(reqResult.checkResults || {}).forEach(checkResult => {
@@ -32,7 +28,6 @@
             });
         });
 
-        // Steg 2: Samla alla underkända kriterier i en lista för sortering
         const failedCriteria = [];
         (newState.samples || []).forEach(sample => {
             Object.keys(sample.requirementResults || {}).forEach(reqKey => {
@@ -48,7 +43,6 @@
                     Object.keys(checkResult.passCriteria || {}).forEach(pcKey => {
                         const pcResult = checkResult.passCriteria[pcKey];
                         const pcDef = checkDef.passCriteria.find(pc => pc.id === pcKey);
-                        // Hitta den ursprungliga referensen i state-trädet för att kunna uppdatera den
                         const originalPcResultRef = newState.samples.find(s => s.id === sample.id)
                             ?.requirementResults[reqKey]
                             ?.checkResults[checkKey]
@@ -59,7 +53,7 @@
                                 sampleDescription: sample.description,
                                 reqRefText: reqDef.standardReference?.text || reqDef.title,
                                 pcRequirementText: pcDef.requirement,
-                                resultObjectToUpdate: originalPcResultRef // Direkt referens till objektet som ska ändras
+                                resultObjectToUpdate: originalPcResultRef
                             });
                         }
                     });
@@ -67,7 +61,6 @@
             });
         });
 
-        // Steg 3: Sortera listan enligt specifikation
         failedCriteria.sort((a, b) => {
             const reqCompare = (a.reqRefText || '').localeCompare(b.reqRefText || '', undefined, { numeric: true });
             if (reqCompare !== 0) return reqCompare;
@@ -76,22 +69,18 @@
             return a.pcRequirementText.localeCompare(b.pcRequirementText);
         });
 
-        // Steg 4: Loopa igenom den sorterade listan och tilldela nya, sekventiella ID:n
         let counter = 1;
         failedCriteria.forEach(item => {
             item.resultObjectToUpdate.deficiencyId = formatDeficiencyId(counter);
             counter++;
         });
-        newState.deficiencyCounter = counter; // Spara nästa tillgängliga nummer
+        newState.deficiencyCounter = counter;
 
         return newState;
     }
     
-    // --- UPPDATERAD FUNKTION: Hanterar nu endast inkrementella ändringar ---
     function updateIncrementalDeficiencyIds(auditState) {
         if (!auditState) return auditState;
-        console.log("[AuditLogic] Running updateIncrementalDeficiencyIds...");
-
         const newState = JSON.parse(JSON.stringify(auditState));
         let nextId = newState.deficiencyCounter || 1;
 
@@ -138,7 +127,12 @@
         let has_failed_check = false, has_partially_audited_check = false, has_not_audited_check = false;
         
         for (const check_definition of requirement_object.checks) {
-            const status = (requirement_result_object.checkResults[check_definition.id])?.status || 'not_audited';
+            const checkResultForDef = requirement_result_object.checkResults[check_definition.id];
+            // **NY, SÄKRARE KONTROLL:** Använd calculate_check_status för att få den *beräknade* statusen
+            const status = checkResultForDef 
+                ? calculate_check_status(check_definition, checkResultForDef.passCriteria, checkResultForDef.overallStatus)
+                : 'not_audited';
+
             if (status === "failed") { has_failed_check = true; break; }
             if (status === "partially_audited") has_partially_audited_check = true;
             if (status === "not_audited") has_not_audited_check = true;
@@ -155,8 +149,6 @@
         const all_reqs = Object.values(rule_file_content.requirements);
         if (!sample.selectedContentTypes?.length) return all_reqs;
         return all_reqs.filter(req => {
-            // Kravet är relevant om dess contentType-lista är tom (gäller alla)
-            // ELLER om minst en av dess contentTypes matchar en av sampelns valda contentTypes.
             if (!req.contentType || req.contentType.length === 0) return true;
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
@@ -168,21 +160,12 @@
 
         if (sort_option === 'default') {
             relevant_reqs.sort((a, b) => {
-                const ref_a = a.metadata?.standardReference?.text || null;
-                const ref_b = b.metadata?.standardReference?.text || null;
-                const title_a = a.title || '';
-                const title_b = b.title || '';
-
-                if (ref_a && ref_b) {
-                    return window.Helpers.natural_sort(ref_a, ref_b);
-                }
-                if (ref_a && !ref_b) {
-                    return -1;
-                }
-                if (!ref_a && ref_b) {
-                    return 1;
-                }
-                return title_a.localeCompare(title_b);
+                const ref_a = a.standardReference?.text || null;
+                const ref_b = b.standardReference?.text || null;
+                if (ref_a && ref_b) return window.Helpers.natural_sort(ref_a, ref_b);
+                if (ref_a && !ref_b) return -1;
+                if (!ref_a && ref_b) return 1;
+                return (a.title || '').localeCompare(b.title || '');
             });
         } else if (sort_option === 'category') {
             relevant_reqs.sort((a, b) => {
@@ -198,7 +181,6 @@
         
         return relevant_reqs.map(req => req.key || req.id);
     }
-
 
     function calculate_overall_audit_progress(current_audit_data) {
         if (!current_audit_data?.samples || !current_audit_data.ruleFileContent?.requirements) return { audited: 0, total: 0 };

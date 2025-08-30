@@ -33,36 +33,19 @@ export const RequirementListComponent = (function () {
     }
 
     function assign_globals_once() {
-        if (Translation_t && Helpers_create_element && AuditLogic_get_relevant_requirements_for_sample) return true;
-
-        let all_assigned = true;
-        if (window.Translation && window.Translation.t) { Translation_t = window.Translation.t; }
-        else { console.error("ReqList: Translation.t is missing!"); all_assigned = false; }
-
-        if (window.Helpers) {
-            Helpers_create_element = window.Helpers.create_element;
-            Helpers_get_icon_svg = window.Helpers.get_icon_svg;
-            Helpers_escape_html = window.Helpers.escape_html;
-            Helpers_load_css = window.Helpers.load_css;
-            Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing;
-            Helpers_natural_sort = window.Helpers.natural_sort;
-        } else { console.error("ReqList: Helpers module is missing!"); all_assigned = false; }
-
-        if (window.NotificationComponent) {
-            NotificationComponent_clear_global_message = window.NotificationComponent.clear_global_message;
-            NotificationComponent_get_global_message_element_reference = window.NotificationComponent.get_global_message_element_reference;
-        } else { console.error("ReqList: NotificationComponent module is missing!"); all_assigned = false; }
-
-        if (window.AuditLogic) {
-            AuditLogic_get_relevant_requirements_for_sample = window.AuditLogic.get_relevant_requirements_for_sample;
-            AuditLogic_calculate_requirement_status = window.AuditLogic.calculate_requirement_status;
-            AuditLogic_calculate_check_status = window.AuditLogic.calculate_check_status;
-            if (!AuditLogic_get_relevant_requirements_for_sample || !AuditLogic_calculate_requirement_status || !AuditLogic_calculate_check_status) {
-                 console.error("ReqList: One or more AuditLogic functions are missing!"); all_assigned = false;
-            }
-        } else { console.error("ReqList: AuditLogic module is missing!"); all_assigned = false; }
-
-        return all_assigned;
+        if (Translation_t) return;
+        Translation_t = window.Translation.t;
+        Helpers_create_element = window.Helpers.create_element;
+        Helpers_get_icon_svg = window.Helpers.get_icon_svg;
+        Helpers_escape_html = window.Helpers.escape_html;
+        Helpers_load_css = window.Helpers.load_css;
+        Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing;
+        Helpers_natural_sort = window.Helpers.natural_sort;
+        NotificationComponent_clear_global_message = window.NotificationComponent.clear_global_message;
+        NotificationComponent_get_global_message_element_reference = window.NotificationComponent.get_global_message_element_reference;
+        AuditLogic_get_relevant_requirements_for_sample = window.AuditLogic.get_relevant_requirements_for_sample;
+        AuditLogic_calculate_requirement_status = window.AuditLogic.calculate_requirement_status;
+        AuditLogic_calculate_check_status = window.AuditLogic.calculate_check_status;
     }
 
     function handle_requirement_list_click(event) {
@@ -113,13 +96,7 @@ export const RequirementListComponent = (function () {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
 
-        if (Helpers_load_css) {
-            try {
-                const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
-                if (!link_tag) await Helpers_load_css(CSS_PATH);
-            }
-            catch (error) { console.warn("Failed to load CSS for RequirementListComponent:", error); }
-        }
+        await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
         
         is_dom_initialized = false;
     }
@@ -179,7 +156,7 @@ export const RequirementListComponent = (function () {
 
         const current_sample_object = current_global_state.samples.find(s => s.id === params_ref.sampleId);
 
-        // --- START PÅ KORREKT HEADER-LOGIK (som ska vara kvar) ---
+        // --- START PÅ UPPDATERAD HEADER-LOGIK ---
         const header_div = plate_element_ref.querySelector('.requirement-list-header');
         header_div.innerHTML = '';
         
@@ -199,8 +176,16 @@ export const RequirementListComponent = (function () {
         }
         header_div.appendChild(h1);
         
+        // **ÄNDRING:** Hämta kategoritext och kombinera med typen
+        const sample_categories_map = new Map();
+        (current_global_state.ruleFileContent.metadata.samples?.sampleCategories || []).forEach(cat => {
+            sample_categories_map.set(cat.id, cat.text);
+        });
+        const category_text = sample_categories_map.get(current_sample_object.sampleCategory) || current_sample_object.sampleCategory;
+        const type_info_string = `${current_sample_object.sampleType || ''} (${category_text || ''})`;
+        
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
-        sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(current_sample_object.pageType)}`;
+        sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(type_info_string)}`;
         header_div.appendChild(sample_type_p);
         
         const all_relevant_requirements = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, current_sample_object);
@@ -219,7 +204,6 @@ export const RequirementListComponent = (function () {
         }
         // --- SLUT PÅ HEADER-LOGIK ---
 
-        // Filtrering (oförändrad)
         const search_term = (filter_settings.searchText || '').toLowerCase();
         const active_status_filters = Object.keys(filter_settings.status).filter(key => filter_settings.status[key]);
 
@@ -238,7 +222,6 @@ export const RequirementListComponent = (function () {
             return true;
         });
         
-        // --- DEN NYA SORTERINGSLOGIKEN (som också ska vara kvar) ---
         const sorted_requirements = [...filtered_requirements];
         const sort_function = {
             'ref_desc': (a, b) => Helpers_natural_sort(b.standardReference?.text || 'Z', a.standardReference?.text || 'Z'),
@@ -257,9 +240,7 @@ export const RequirementListComponent = (function () {
             'default': (a, b) => Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z')
         };
         sorted_requirements.sort(sort_function[filter_settings.sortBy] || sort_function['default']);
-        // --- SLUT PÅ SORTERINGSLOGIK ---
 
-        // Rendera listan (oförändrad)
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
             content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter') }));
@@ -286,9 +267,7 @@ export const RequirementListComponent = (function () {
 
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
         
-        // **ÄNDRING HÄR:** Byt ut <h4> mot en <div>.
         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-container' });
-        
         const title_button = Helpers_create_element('button', {
             class_name: 'list-title-button',
             text_content: req.title,
@@ -298,7 +277,6 @@ export const RequirementListComponent = (function () {
         title_row_div.appendChild(title_button);
         li.appendChild(title_row_div);
 
-        // (Resten av funktionen är densamma)
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
         const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
         const status_icon_class = `status-icon-${display_status.replace('_', '-')}`;

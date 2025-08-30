@@ -337,5 +337,6 @@
   "sample_category_title": "Kategori",
   "sample_info_title": "Info om stickprovet",
   "sample_type_label": "Del av stickprov",
-  "content_types_instruction": "Kryssa för alla typer av innehåll du kan hitta i detta stickprov."
+  "content_types_instruction": "Kryssa för alla typer av innehåll du kan hitta i detta stickprov.",
+  "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas."
 }
