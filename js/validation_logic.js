@@ -21,21 +21,22 @@
 
 // ... (behåll get_t_func() och RULE_FILE_SCHEMA)
 
+// js/validation_logic.js
+
+// js/validation_logic.js
+
 function validate_rule_file_json(json_object) {
     const t = get_t_func();
-    console.log("[ValidationLogic] Running validation for new rule file...");
+    console.log("[ValidationLogic] Running validation for new rule file (r83 compatible)...");
 
     if (typeof json_object !== 'object' || json_object === null) {
         return { isValid: false, message: t('rule_file_invalid_json') };
     }
 
     const required_top_keys = ['metadata', 'requirements'];
-    const missing_top_keys = required_top_keys.filter(key => !(key in json_object));
-    if (missing_top_keys.length > 0) {
-        return {
-            isValid: false,
-            message: t('rule_file_missing_keys', { missingKeys: missing_top_keys.join(', ') })
-        };
+    if (required_top_keys.some(key => !(key in json_object))) {
+        const missing = required_top_keys.filter(key => !(key in json_object));
+        return { isValid: false, message: t('rule_file_missing_keys', { missingKeys: missing.join(', ') }) };
     }
     
     const metadata = json_object.metadata;
@@ -43,29 +44,28 @@ function validate_rule_file_json(json_object) {
         return { isValid: false, message: t('rule_file_metadata_must_be_object') };
     }
 
-    const required_metadata_keys = ['title', 'pageTypes', 'contentTypes'];
-    const missing_metadata_keys = required_metadata_keys.filter(key => !(key in metadata));
-    if (missing_metadata_keys.length > 0) {
-        return {
-            isValid: false,
-            message: t('rule_file_metadata_missing_keys', { missingKeys: missing_metadata_keys.join(', ') })
-        };
+    // --- START PÅ NY r83-validering ---
+    if (!metadata.samples || typeof metadata.samples !== 'object') {
+        return { isValid: false, message: "Regelfilen måste innehålla ett 'metadata.samples'-objekt." };
+    }
+    if (!Array.isArray(metadata.samples.sampleCategories) || metadata.samples.sampleCategories.length === 0) {
+        return { isValid: false, message: "'metadata.samples.sampleCategories' måste vara en array med minst en kategori." };
     }
 
-    // Validera att kravets `instructions` nu är en sträng (om det finns)
-    if (typeof json_object.requirements === 'object' && json_object.requirements !== null) {
-        for (const req_key in json_object.requirements) {
-            const requirement = json_object.requirements[req_key];
-            if (requirement && requirement.hasOwnProperty('instructions') && typeof requirement.instructions !== 'string') {
-                // Detta är den centrala ändringen för r80
-                return { isValid: false, message: `Validation Error: Requirement '${req_key}' has an 'instructions' field that is not a string.` };
+    // Validera varje kategori i sampleCategories
+    for (const category of metadata.samples.sampleCategories) {
+        if (!category.id || !category.text || !Array.isArray(category.categories) || category.categories.length === 0) {
+            return { isValid: false, message: `Varje objekt i 'sampleCategories' måste ha 'id', 'text', och en 'categories'-array med minst ett objekt. Fel vid: ${category.text || 'Okänd kategori'}` };
+        }
+        for (const subcat of category.categories) {
+            if (!subcat.id || !subcat.text) {
+                return { isValid: false, message: `Varje underkategori i '${category.text}' måste ha 'id' och 'text'.` };
             }
         }
-    } else {
-         return { isValid: false, message: t('rule_file_requirements_must_be_object') };
     }
+    // --- SLUT PÅ NY r83-validering ---
 
-    console.log("[ValidationLogic] Basic validation passed for r80 structure.");
+    console.log("[ValidationLogic] Validation passed for r83 structure.");
     return { isValid: true, message: t('rule_file_loaded_successfully') };
 }
 

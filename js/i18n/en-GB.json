@@ -331,5 +331,10 @@
   "app_title_suffix": "Audit Tool",
   "audit_sample_short": "Review",
   "cannot_change_criteria_if_check_not_compliant": "Criteria cannot be changed when the checkpoint is marked 'Does not comply'",
-  "audited_page_label": "Currently audited:"
+  "audited_page_label": "Currently audited:",
+  "add_sample_form_new_intro": "A sample can be a web page, a view in an app, a product, etc.",
+  "sample_category_title": "Category",
+  "sample_info_title": "Sample Details",
+  "sample_type_label": "Type of sample",
+  "content_types_instruction": "Tick all content types you can find in this sample."
 }

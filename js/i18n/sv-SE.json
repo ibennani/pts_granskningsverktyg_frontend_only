@@ -332,5 +332,10 @@
   "audit_sample_short": "Granska",
   "cannot_change_criteria_if_check_not_compliant": "Kriterier kan inte ändras när kontrollpunkten är markerad 'Stämmer inte'",
   "audited_page_label": "Du granskar:",
-  "score_progress_bar_could_not_be_loaded": "Poängstapeln kunde inte laddas"
+  "score_progress_bar_could_not_be_loaded": "Poängstapeln kunde inte laddas",
+  "add_sample_form_new_intro": "Ett stickprov kan vara en webbsida, en vy i en app, en produkt osv.",
+  "sample_category_title": "Kategori",
+  "sample_info_title": "Info om stickprovet",
+  "sample_type_label": "Del av stickprov",
+  "content_types_instruction": "Kryssa för alla typer av innehåll du kan hitta i detta stickprov."
 }

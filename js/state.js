@@ -136,7 +136,13 @@ function root_reducer(current_state, action) {
             };
 
         case ActionTypes.ADD_SAMPLE:
-             return { ...current_state, samples: [...current_state.samples, action.payload] };
+            // Säkerställ att nya fält från regelfil 2025.8.r83 finns med, även om de är tomma
+            const new_sample_with_defaults = {
+                sampleCategory: '',
+                sampleType: '', // Byt namn från pageType
+                ...action.payload
+            };
+            return { ...current_state, samples: [...current_state.samples, new_sample_with_defaults] };
 
         case ActionTypes.UPDATE_SAMPLE:
             return {
