@@ -13,10 +13,14 @@
 }
 
 .add-sample-form h2 {
-    margin-top: 0;
-    margin-bottom: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
     font-size: 1.5rem; 
     color: var(--primary-color);
+}
+
+.add-sample-form h2:first-of-type {
+    margin-top: 0;
 }
 
 .add-sample-form .form-group {
@@ -25,18 +29,18 @@
 
 /* Styling för fieldset och legend (Innehållstyper) */
 .add-sample-form .content-types-group {
-    border: none; /* Ta bort standard fieldset border om du inte vill ha den */
-    padding: 0;   /* Ta bort standard fieldset padding */
-    margin: 0;    /* Ta bort standard fieldset margin */
+    border: none;
+    padding: 0;
+    margin: 0;
 }
 
 .add-sample-form .content-types-group legend {
-    font-weight: 500; /* Samma som .form-label */
-    padding: 0; /* Ta bort default padding */
-    margin-bottom: 0.5rem; /* Lite utrymme till första checkboxen */
+    font-weight: 500;
+    padding: 0;
+    margin-bottom: 0.5rem;
     font-size: var(--font-size-base); 
     color: var(--text-color);
-    width: auto; /* För att legend inte ska ta full bredd om fieldset har border */
+    width: auto;
 }
 .add-sample-form .content-types-group .form-check {
     margin-bottom: 0.5rem; 
@@ -51,36 +55,35 @@
 
 /* --- NYA STILAR FÖR HIERARKISKA INNEHÅLLSTYPER --- */
 
-/* Huvudcontainer för en hel grupp (t.ex. "Text och struktur") */
 .content-type-parent-group {
-    border: none; /* Ta bort standard-fieldset-kantlinje */
+    border: none;
     padding: 0;
-    margin: 0 0 1rem 0; /* Utrymme mellan varje huvudgrupp */
+    margin: 0 0 1rem 0;
 }
 
-/* Rubriken/Legenden för en huvudgrupp */
 .content-type-parent-group legend {
     padding: 0;
     margin-bottom: 0.5rem;
-    font-size: 1.1em; /* Gör huvudkategorin lite större */
+    font-size: 1.1em;
     font-weight: 500;
-    width: 100%; /* Säkerställ att den tar full bredd */
+    width: 100%;
     display: flex;
     align-items: center;
 }
 
 /* Behållare för en underkategori (t.ex. "Rubriker") */
 .content-type-child-item {
-    /* **HÄR ÄR HUVUDÄNDRINGEN:** Skjut in underkategorierna */
-    padding-left: 2rem; /* Justera detta värde för mer eller mindre indrag */
-    margin-bottom: 0.25rem;
+    padding-left: 2rem;
+    /* --- ÄNDRING HÄR: Nollställ marginalen helt --- */
+    margin-bottom: 0;
 }
 
 /* Beskrivningen för en underkategori */
 .content-type-description {
-    /* Skjut in beskrivningen lika mycket som dess checkbox + lite extra för att linjera med texten */
-    padding-left: 3.5rem; /* Ca 2rem (från .child-item) + 1.5rem (för checkbox och marginal) */
-    margin-bottom: 0.75rem;
+    padding-left: 3.5rem;
+    /* --- ÄNDRING HÄR: Lägg till en liten marginal *ovanför* beskrivningen --- */
+    margin-top: 0.25rem; /* Drar den lite närmare */
+    margin-bottom: 1rem;  /* Öka marginalen *under* för att separera från nästa punkt */
     font-size: 0.9em;
     color: var(--text-color-muted);
     line-height: 1.5;
@@ -88,9 +91,15 @@
 
 /* Anpassa checkboxar och etiketter för bättre linjering */
 .form-check-input {
-    margin-top: 0.2em; /* Justera checkboxens vertikala position för att linjera bättre med texten */
+    margin-top: 0.2em;
 }
 
 .form-check label {
-    display: inline-block; /* Säkerställ att labeln håller sig på samma rad som checkboxen */
+    display: inline-block;
+}
+
+/* --- NY REGEL FÖR ATT SPECIFIKT HANTERA MARGINALEN PÅ .form-check --- */
+/* Åsidosätt den generella marginalen för just .form-check inuti .child-item */
+.add-sample-form .content-type-child-item.form-check {
+    margin-bottom: 0;
 }
