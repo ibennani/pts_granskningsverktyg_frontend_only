@@ -12,8 +12,6 @@ export const SampleListComponent = (function () {
     let local_getState;
 
     let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_add_protocol_if_missing, Helpers_load_css;
-    let AuditLogic_get_relevant_requirements_for_sample, AuditLogic_find_first_incomplete_requirement_key_for_sample, AuditLogic_calculate_requirement_status;
     
     let ul_element_for_delegation = null; 
 
@@ -25,14 +23,6 @@ export const SampleListComponent = (function () {
     function assign_globals_once() {
         if (Translation_t) return;
         Translation_t = window.Translation.t;
-        Helpers_create_element = window.Helpers.create_element;
-        Helpers_get_icon_svg = window.Helpers.get_icon_svg;
-        Helpers_escape_html = window.Helpers.escape_html;
-        Helpers_add_protocol_if_missing = window.Helpers.add_protocol_if_missing;
-        Helpers_load_css = window.Helpers.load_css;
-        AuditLogic_get_relevant_requirements_for_sample = window.AuditLogic.get_relevant_requirements_for_sample;
-        AuditLogic_find_first_incomplete_requirement_key_for_sample = window.AuditLogic.find_first_incomplete_requirement_key_for_sample;
-        AuditLogic_calculate_requirement_status = window.AuditLogic.calculate_requirement_status;
     }
 
     function handle_list_click(event) {
@@ -51,6 +41,9 @@ export const SampleListComponent = (function () {
         const sample = current_global_state.samples.find(s => s.id === sample_id);
 
         if (!sample) return;
+        
+        const local_Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
+        const local_AuditLogic_find_first_incomplete_requirement_key_for_sample = window.AuditLogic?.find_first_incomplete_requirement_key_for_sample;
 
         switch (action) {
             case 'edit-sample':
@@ -63,11 +56,11 @@ export const SampleListComponent = (function () {
                 if (router_ref_from_parent) router_ref_from_parent('requirement_list', { sampleId: sample_id });
                 break;
             case 'visit-url':
-                if (sample.url && Helpers_add_protocol_if_missing) window.open(Helpers_add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
+                if (sample.url && local_Helpers_add_protocol_if_missing) window.open(local_Helpers_add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
                 break;
             case 'review-sample':
-                if (router_ref_from_parent && current_global_state.ruleFileContent && AuditLogic_find_first_incomplete_requirement_key_for_sample) {
-                    const first_incomplete_req_key = AuditLogic_find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
+                if (router_ref_from_parent && current_global_state.ruleFileContent && local_AuditLogic_find_first_incomplete_requirement_key_for_sample) {
+                    const first_incomplete_req_key = local_AuditLogic_find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
                     if (first_incomplete_req_key) {
                         router_ref_from_parent('requirement_audit', { sampleId: sample.id, requirementId: first_incomplete_req_key });
                     } else { 
@@ -78,22 +71,36 @@ export const SampleListComponent = (function () {
         }
     }
 
-    async function init(_list_container, _on_edit_cb, _on_delete_cb, _router_cb, _getState) {
+    // --- FÖRENKLAD INIT-FUNKTION ---
+    async function init(_list_container, _callbacks, _router_cb, _getState) {
         assign_globals_once();
         list_container_ref = _list_container;
-        on_edit_callback = _on_edit_cb;
-        on_delete_callback = _on_delete_cb;
+        on_edit_callback = _callbacks?.on_edit || null;
+        on_delete_callback = _callbacks?.on_delete || null;
         router_ref_from_parent = _router_cb;
         local_getState = _getState;
-        await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
+        
+        if (window.Helpers?.load_css) {
+            await window.Helpers.load_css(CSS_PATH).catch(e => console.warn(e));
+        }
     }
 
     function render() {
-        assign_globals_once();
         const t = get_t_internally();
-        const current_global_state = local_getState();
+        const current_global_state = local_getState(); 
 
-        if (!list_container_ref) return;
+        const Helpers_create_element = window.Helpers?.create_element;
+        const Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
+        const Helpers_escape_html = window.Helpers?.escape_html;
+        const Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
+        const AuditLogic_get_relevant_requirements_for_sample = window.AuditLogic?.get_relevant_requirements_for_sample;
+        const AuditLogic_find_first_incomplete_requirement_key_for_sample = window.AuditLogic?.find_first_incomplete_requirement_key_for_sample;
+        const AuditLogic_calculate_requirement_status = window.AuditLogic?.calculate_requirement_status;
+        
+        if (!list_container_ref) {
+             console.error("[SampleListComponent] Cannot render: list_container_ref is not defined.");
+            return;
+        }
         list_container_ref.innerHTML = '';
 
         if (!current_global_state?.samples || current_global_state.samples.length === 0) {
@@ -139,7 +146,6 @@ export const SampleListComponent = (function () {
             const sample_description_text = sample.description || t('undefined_description');
 
             if (sample.url) {
-                // *** KORRIGERING HÄR: href har flyttats in i 'attributes' ***
                 const title_link = Helpers_create_element('a', {
                     text_content: sample_description_text,
                     attributes: {
@@ -181,15 +187,25 @@ export const SampleListComponent = (function () {
             }
             
             if (sample.selectedContentTypes?.length > 0) {
-                const content_types_div = Helpers_create_element('div', { class_name: 'content-types-display' });
-                content_types_div.appendChild(Helpers_create_element('strong', { text_content: t('content_types') + ':' }));
-                const content_types_ul = Helpers_create_element('ul');
+                const content_types_wrapper = Helpers_create_element('div', { class_name: 'content-types-wrapper' });
+                content_types_wrapper.appendChild(Helpers_create_element('strong', { 
+                    class_name: 'content-types-label',
+                    text_content: t('content_types') + ':' 
+                }));
+                
+                const tags_container = Helpers_create_element('div', { class_name: 'content-types-tags-container' });
+                
                 sample.selectedContentTypes.forEach(ct_id => {
                     const ct_text = content_types_map.get(ct_id) || ct_id;
-                    content_types_ul.appendChild(Helpers_create_element('li', { text_content: Helpers_escape_html(ct_text) }));
+                    const tag_element = Helpers_create_element('span', {
+                        class_name: 'content-type-tag',
+                        text_content: Helpers_escape_html(ct_text)
+                    });
+                    tags_container.appendChild(tag_element);
                 });
-                content_types_div.appendChild(content_types_ul);
-                info_div.appendChild(content_types_div);
+                
+                content_types_wrapper.appendChild(tags_container);
+                info_div.appendChild(content_types_wrapper);
             }
             li.appendChild(info_div);
 
@@ -197,12 +213,22 @@ export const SampleListComponent = (function () {
             const main_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-main' });
             const delete_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-delete' });
             
-            if (can_edit_or_delete && on_edit_callback) {
-                 main_actions_div.appendChild(Helpers_create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small'],
-                    attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
-                    html_content: `<span>${t('edit_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit', ['currentColor'], 16) : '')
-                }));
+            // --- FÖRENKLAD LOGIK: Visa alltid knapparna om det är tillåtet ---
+            if (can_edit_or_delete) {
+                 if (on_edit_callback) {
+                    main_actions_div.appendChild(Helpers_create_element('button', {
+                        class_name: ['button', 'button-default', 'button-small'],
+                        attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
+                        html_content: `<span>${t('edit_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit', ['currentColor'], 16) : '')
+                    }));
+                 }
+                 if (on_delete_callback && current_global_state.samples.length > 1) {
+                    delete_actions_div.appendChild(Helpers_create_element('button', {
+                        class_name: ['button', 'button-danger', 'button-small'],
+                        attributes: { 'data-action': 'delete-sample', 'aria-label': `${t('delete_sample')}: ${sample.description}` },
+                        html_content: `<span>${t('delete_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('delete', ['currentColor'], 16) : '')
+                    }));
+                }
             }
 
             if (total_relevant_reqs > 0) {
@@ -220,13 +246,6 @@ export const SampleListComponent = (function () {
                     class_name: ['button', 'button-primary', 'button-small'],
                     attributes: { 'data-action': 'review-sample', 'aria-label': `${t(review_text_key)}: ${sample.description}` },
                     html_content: `<span>${t(review_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : '')
-                }));
-            }
-             if (can_edit_or_delete && on_delete_callback && current_global_state.samples.length > 1) {
-                delete_actions_div.appendChild(Helpers_create_element('button', {
-                    class_name: ['button', 'button-danger', 'button-small'],
-                    attributes: { 'data-action': 'delete-sample', 'aria-label': `${t('delete_sample')}: ${sample.description}` },
-                    html_content: `<span>${t('delete_sample')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('delete', ['currentColor'], 16) : '')
                 }));
             }
 

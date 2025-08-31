@@ -258,7 +258,7 @@
   "select_option": "Select",
   "select_rule_file": "Select a JSON rule file",
   "show_all": "Show all",
-  "show_existing_samples": "Show existing samples",
+  "show_existing_samples": "Don't save and continue to the audit overview",
   "sort_by_label": "Sort by:",
   "sort_option_category": "Category",
   "sort_option_default": "Default (by category)",
@@ -337,5 +337,6 @@
   "sample_info_title": "Sample Details",
   "sample_type_label": "Type of sample",
   "content_types_instruction": "Tick all content types you can find in this sample.",
-  "sample_has_updated_reqs_tooltip": "This sample has updated requirements that need re-review."
+  "sample_has_updated_reqs_tooltip": "This sample has updated requirements that need re-review.",
+  "add_or_manage_samples": "Add Samples"
 }

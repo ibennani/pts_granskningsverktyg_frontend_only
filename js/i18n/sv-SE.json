@@ -258,7 +258,7 @@
   "select_option": "Välj",
   "select_rule_file": "Välj en JSON-regelfil",
   "show_all": "Visa alla",
-  "show_existing_samples": "Visa befintliga stickprov",
+  "show_existing_samples": "Släng bort och visa granskningsöversikten",
   "sort_by_label": "Sortera efter:",
   "sort_option_category": "Kategori",
   "sort_option_default": "Standard (per kategori)",
@@ -338,5 +338,6 @@
   "sample_info_title": "Info om stickprovet",
   "sample_type_label": "Del av stickprov",
   "content_types_instruction": "Kryssa för alla typer av innehåll du kan hitta i detta stickprov.",
-  "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas."
+  "sample_has_updated_reqs_tooltip": "Detta stickprov har uppdaterade krav som behöver omgranskas.",
+  "add_or_manage_samples": "Lägg till ett nytt stickprov"
 }

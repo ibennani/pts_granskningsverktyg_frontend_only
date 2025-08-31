@@ -1,9 +1,8 @@
 /* Styles for SampleListComponent */
-/* ... (befintlig H2 och .sample-list styling) ... */
 
 .sample-list-item {
-    display: flex; /* Behåll flex för övergripande layout */
-    flex-direction: column; /* ÄNDRING: Stapla info och actions vertikalt */
+    display: flex;
+    flex-direction: column;
     padding: 1rem;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -12,50 +11,44 @@
 }
 
 .sample-list-item .sample-info {
-    /* Tar nu full bredd automatiskt eftersom flex-direction är column */
-    margin-right: 0; /* Ingen marginal behövs till höger längre */
-    margin-bottom: 0.75rem; /* Lite utrymme till knappraden */
+    margin-right: 0;
+    margin-bottom: 0.75rem;
     width: 100%;
 }
 
-/* ... (befintlig styling för .sample-info h3, p, .content-types-display) ... */
-
-.sample-list-item .sample-actions-wrapper { /* NY WRAPPER för knapparna */
+/* --- ÄNDRINGAR FÖR KNAPPLAYOUT PÅ LISTOBJEKT --- */
+.sample-list-item .sample-actions-wrapper {
     display: flex;
-    justify-content: space-between; /* Huvudknappar till vänster, Radera till höger */
-    align-items: center; /* Linjera knapparna vertikalt om de har olika höjd */
+    justify-content: space-between; /* Sprider ut huvudknappar (vänster) och raderingsknapp (höger) */
+    align-items: center;
     width: 100%;
-    margin-top: 0.5rem; /* Lite extra utrymme ovanför knapparna */
+    margin-top: 0.5rem;
 }
 
-.sample-list-item .sample-actions-main { /* För knappar som Redigera, Granska etc. */
+.sample-list-item .sample-actions-main {
     display: flex;
     gap: 0.5rem;
-    flex-wrap: wrap; /* Om det blir många knappar här */
+    flex-wrap: wrap;
 }
 
-.sample-list-item .sample-actions-delete { /* Specifikt för delete-knappen */
-    /* Ingen specifik styling behövs här om vi bara har en knapp, 
-       justify-content: space-between på wrappern sköter det. */
+.sample-list-item .sample-actions-delete {
+    /* Denna container kommer nu att tryckas längst till höger */
 }
+/* --- SLUT PÅ ÄNDRINGAR --- */
 
 
-/* ... (befintlig .button.button-small och @media-query för 600px) ... */
-/* Media queryn kan behöva justeras eller tas bort om den nya layouten fungerar bra på alla storlekar */
 @media (max-width: 600px) {
-    /* .sample-list-item .sample-actions-wrapper kan behöva flex-direction: column; 
-       om skärmen är mycket smal och man vill ha delete-knappen under de andra. */
     .sample-list-item .sample-actions-wrapper {
         flex-direction: column;
-        align-items: stretch; /* Få knapparna att ta full bredd */
+        align-items: stretch;
     }
     .sample-list-item .sample-actions-main {
-        margin-bottom: 0.5rem; /* Utrymme till delete-knappen */
+        margin-bottom: 0.5rem;
         justify-content: flex-start;
     }
      .sample-list-item .sample-actions-main .button,
      .sample-list-item .sample-actions-delete .button {
-        width: 100%; /* Gör knapparna fullbredd på liten skärm */
+        width: 100%;
         margin-bottom: 0.5rem;
     }
     .sample-list-item .sample-actions-main .button:last-child,
@@ -64,4 +57,45 @@
     }
 }
 
-/* ... (befintlig .no-samples-message) ... */
+.no-samples-message {
+    /* (Stilar för meddelande om inga stickprov finns) */
+}
+
+/* --- STILAR FÖR TAGGAR FÖR INNEHÅLLSTYPER --- */
+
+.content-types-wrapper {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: baseline; 
+    gap: 0.5rem;
+}
+
+.content-types-label {
+    font-weight: 500;
+    color: var(--text-color);
+    white-space: nowrap;
+}
+
+.content-types-tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.6rem;
+}
+
+.content-type-tag {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    border-radius: var(--border-radius);
+    white-space: nowrap;
+    
+    background-color: transparent;
+    border: 1px solid var(--secondary-color);
+    color: var(--text-color-muted);
+    font-weight: 400;
+}
+
+[data-theme="dark"] .content-type-tag {
+    /* Inga specifika ändringar behövs */
+}

@@ -3,10 +3,11 @@
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { MetadataViewComponent } from './components/MetadataViewComponent.js';
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
+import { SampleFormViewComponent } from './components/SampleFormViewComponent.js'; // NY IMPORT
 import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
-import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js';
+import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js'; 
 import { RestoreSessionViewComponent } from './components/RestoreSessionViewComponent.js'; 
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
@@ -61,6 +62,10 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'sample_management':
                     title_prefix = t('manage_samples_title');
                     break;
+                // --- NYTT CASE FÖR SIDTITEL ---
+                case 'sample_form':
+                    title_prefix = params.editSampleId ? t('edit_sample') : t('add_new_sample');
+                    break;
                 case 'audit_overview':
                     title_prefix = t('audit_overview_title');
                     break;
@@ -94,26 +99,22 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function update_app_chrome_texts() {
+        // ... (oförändrad) ...
         const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
         }
-        
-        if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') {
-            top_action_bar_instance.render();
-        }
-        if (bottom_action_bar_instance && typeof bottom_action_bar_instance.render === 'function') {
-            bottom_action_bar_instance.render();
-        }
+        if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') { top_action_bar_instance.render(); }
+        if (bottom_action_bar_instance && typeof bottom_action_bar_instance.render === 'function') { bottom_action_bar_instance.render(); }
     }
 
     async function init_global_components() {
+        // ... (oförändrad) ...
         if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
             console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
-        
         const common_deps = {
             getState: getState,
             dispatch: dispatch,
@@ -123,12 +124,12 @@ window.StoreActionTypes = StoreActionTypes;
             NotificationComponent: window.NotificationComponent,
             SaveAuditLogic: window.SaveAuditLogic
         };
-
         await top_action_bar_instance.init(top_action_bar_container, common_deps);
         await bottom_action_bar_instance.init(bottom_action_bar_container, common_deps);
     }
     
     function set_initial_theme() {
+        // ... (oförändrad) ...
         const saved_theme = localStorage.getItem('theme_preference');
         if (saved_theme) {
             document.documentElement.setAttribute('data-theme', saved_theme);
@@ -140,11 +141,11 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
+        // ... (oförändrad) ...
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
             `${target_view_name}?${new URLSearchParams(target_params).toString()}` :
             target_view_name;
         const new_hash = `#${target_hash_part}`;
-
         if (window.location.hash === new_hash) {
             if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 current_view_component_instance.render();
@@ -155,6 +156,7 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function set_focus_to_h1() {
+        // ... (oförändrad) ...
         setTimeout(() => {
             if (app_container) {
                 const h1_element = app_container.querySelector('h1');
@@ -176,12 +178,14 @@ window.StoreActionTypes = StoreActionTypes;
 
         updatePageTitle(view_name_to_render, params_to_render);
 
+        // --- ÄNDRING: Dölj nedre baren även för den nya formulärvyn ---
+        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form'];
         top_action_bar_instance.render();
-        if (view_name_to_render !== 'upload' && view_name_to_render !== 'restore_session') {
+        if (views_without_bottom_bar.includes(view_name_to_render)) {
+            bottom_action_bar_container.style.display = 'none';
+        } else {
             bottom_action_bar_container.style.display = '';
             bottom_action_bar_instance.render();
-        } else {
-            bottom_action_bar_container.style.display = 'none';
         }
 
         if (current_view_name_rendered === view_name_to_render && 
@@ -202,10 +206,12 @@ window.StoreActionTypes = StoreActionTypes;
         current_view_component_instance = null;
 
         let ComponentClass;
+        // --- NYTT CASE I SWITCH-SATSEN ---
         switch (view_name_to_render) {
             case 'upload': ComponentClass = UploadViewComponent; break;
             case 'metadata': ComponentClass = MetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
+            case 'sample_form': ComponentClass = SampleFormViewComponent; break; // NY RAD
             case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
@@ -256,6 +262,7 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function handle_hash_change() { 
+        // ... (oförändrad) ...
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
         const params = {};
@@ -264,23 +271,20 @@ window.StoreActionTypes = StoreActionTypes;
             const url_params = new URLSearchParams(query_string);
             for (const [key, value] of url_params) { params[key] = value; }
          }
-
         let target_view = 'upload';
         let target_params = params;
-        
         const current_global_state = getState();
-
         if (view_name_from_hash) {
             target_view = view_name_from_hash;
         } else if (current_global_state && current_global_state.ruleFileContent) {
             target_view = 'audit_overview';
             target_params = {};
         }
-        
         render_view(target_view, target_params);
     }
 
     function on_language_changed_event() { 
+        // ... (oförändrad) ...
         update_app_chrome_texts();
         updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
@@ -289,38 +293,26 @@ window.StoreActionTypes = StoreActionTypes;
     }
     
     async function start_normal_session() {
-        // Initiera globala komponenter eftersom en session nu är aktiv
+        // ... (oförändrad) ...
         await init_global_components(); 
-
-        // Initiera alla system som är beroende av state
-        if (window.ScoreManager?.init) {
-            window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes);
-        }
-        if (window.MarkdownToolbar?.init) {
-            window.MarkdownToolbar.init();
-        }
-
-        // Sätt upp alla nödvändiga event listeners för sessionen
+        if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
+        if (window.MarkdownToolbar?.init) { window.MarkdownToolbar.init(); }
         document.addEventListener('languageChanged', on_language_changed_event);
         window.addEventListener('hashchange', handle_hash_change);
-
-        // Sista-chansen-sparning när fliken stängs
         window.addEventListener('beforeunload', () => {
             const current_state = getState();
             if (window.Store && typeof window.Store.forceSaveStateToLocalStorage === 'function') {
                 window.Store.forceSaveStateToLocalStorage(current_state);
             }
         });
-        
-        // Prenumerera på state-ändringar för att uppdatera UI
         subscribe((new_state) => { 
             top_action_bar_instance.render();
-            if (current_view_name_rendered !== 'upload' && current_view_name_rendered !== 'restore_session') {
+            // -- Ändrad logik för nedre baren här också --
+            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form'];
+            if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
                 bottom_action_bar_instance.render();
             }
             updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
-            
-            // Rendera om den aktiva vyn vid varje state-ändring
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
             if (current_view_name_rendered === view_name_from_hash && 
@@ -328,73 +320,47 @@ window.StoreActionTypes = StoreActionTypes;
                 current_view_component_instance.render();
             }
         });
-
-        // Rensa eventuella gamla meddelanden och kör igång routern
-        if (window.NotificationComponent?.clear_global_message) {
-            NotificationComponent.clear_global_message();
-        }
+        if (window.NotificationComponent?.clear_global_message) { window.NotificationComponent.clear_global_message(); }
         handle_hash_change(); 
         update_app_chrome_texts();
     } 
 
     async function init_app() { 
+        // ... (oförändrad) ...
         set_initial_theme();
         await window.Translation.ensure_initial_load();
-        
-        // --- NY, KORREKT STARTLOGIK ---
-        
-        // Steg 1: Försök ALLTID ladda den aktiva sessionen först.
-        initState(); // Laddar från sessionStorage
+        initState();
         const active_session_state = getState();
-
-        // Steg 2: Kontrollera om vi lyckades ladda en aktiv session.
         if (active_session_state && active_session_state.ruleFileContent) {
-            // FALL A: Ja, vi har en aktiv session (detta är F5-omladdningsscenariot).
             console.log("[Main.js] Active session found in sessionStorage. Starting normally.");
             await start_normal_session();
-
         } else {
-            // FALL B: Nej, sessionStorage var tomt (detta är scenariot med stängd flik).
-            // Kontrollera NU om det finns en backup i localStorage.
             const autosaved_payload = loadStateFromLocalStorage();
-
             if (autosaved_payload) {
-                // Ja, en backup hittades. Visa återställningsvyn.
                 console.log("[Main.js] No active session, but found backup in localStorage. Prompting user.");
-                
                 const on_restore = () => {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
                     clearAutosavedState(); 
                     if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
-                    
                     if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
                         window.location.hash = autosaved_payload.lastKnownHash;
                     } else {
                         window.location.hash = '#audit_overview';
                     }
-                    // Vi måste starta den normala sessionen här också för att prenumerationer etc. ska fungera
                     start_normal_session(); 
                 };
-
-                // --- **HÄR ÄR KORRIGERINGEN** ---
                 const on_discard = async () => {
                     clearAutosavedState();
-                    // Efter att backupen är raderad, starta appen som om det vore första gången.
-                    // Detta säkerställer att alla system initieras korrekt.
                     await start_normal_session(); 
                 };
-                
-                // Rendera återställningsvyn och vänta på användarens val
-                await init_global_components(); // Initiera globala delar så vyn kan använda dem
+                await init_global_components();
                 update_app_chrome_texts();
                 render_view('restore_session', { 
                     autosaved_state: autosaved_payload.auditState,
                     on_restore, 
                     on_discard 
                 });
-
             } else {
-                // Nej, ingen backup heller. Starta helt från början.
                 console.log("[Main.js] No active session, no backup. Starting fresh.");
                 await start_normal_session();
             }

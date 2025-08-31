@@ -13,6 +13,7 @@
     margin-bottom: 0;
 }
 
+/* Generell stil för H2 i denna vy */
 .audit-overview-section h2 {
     font-size: 1.5rem;
     color: var(--primary-color-dark);
@@ -41,25 +42,49 @@
     color: var(--text-color-muted);
 }
 
-/* *** UPPDATERAD SEKTION FÖR ATT HANTERA NY LAYOUT *** */
+
+/* --- SLUTGILTIG LÖSNING FÖR HEADER TILL STICKPROVSLISTAN --- */
+.sample-list-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 1rem;
+    
+    /* Ta bort padding och border från själva headern */
+    padding-bottom: 0; 
+    border-bottom: none; 
+    margin-bottom: 1rem;
+
+    /* VIKTIGT: Denna header ska inte vara en sektionsavdelare */
+    /* Detta åsidosätter den generella H2-regeln för just denna rubrik */
+}
+
+.sample-list-header h2 {
+    /* Nollställ alla värden från den generella h2-regeln */
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+/* --- SLUT PÅ SLUTGILTIG LÖSNING --- */
+
+
 .audit-overview-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem; /* Avstånd mellan vänster och höger grupp om de wrappar */
-    justify-content: space-between; /* Sprid ut vänster och höger grupp */
-    width: 100%; /* Se till att den tar full bredd för att space-between ska fungera */
-    align-items: center; /* Linjera knapparna vertikalt */
+    gap: 0.75rem;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
 }
 
 .audit-overview-actions .action-group-left,
 .audit-overview-actions .action-group-right {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem; /* Avstånd mellan knappar INUTI varje grupp */
-    align-items: center; /* Linjera knappar om de har olika höjd */
+    gap: 0.75rem;
+    align-items: center;
 }
 
-/* Ta bort margin-right från knappar inuti dessa grupper, då gap hanterar det */
 .audit-overview-actions .action-group-left .button,
 .audit-overview-actions .action-group-right .button {
     margin-right: 0;
