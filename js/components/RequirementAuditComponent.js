@@ -1033,20 +1033,22 @@ export const RequirementAuditComponent = (function () {
                     container_ref.appendChild(content_div);
                 }
                 
-                if (typeof marked !== 'undefined' && typeof Helpers_escape_html === 'function') {
+                if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
                     const renderer = new marked.Renderer();
                     renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-                    
-                    // **KORRIGERING:** Denna override fångar upp rå HTML som `<strong>`
-                    // och ser till att den escapas och visas som text.
-                    renderer.html = (html) => {
-                        return Helpers_escape_html(html);
+
+                    // KORREKT HANTERING AV RÅ HTML
+                    renderer.html = (html_token) => {
+                        const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                            ? html_token.text
+                            : String(html_token || '');
+                        return window.Helpers.escape_html(text_to_escape);
                     };
 
                     content_div.innerHTML = marked.parse(content_data, { 
                         renderer: renderer,
                         breaks: true,
-                        sanitize: false // Viktigt att denna är false
+                        gfm: true // Bra att ha för standard-markdown
                     });
                 } else {
                     content_div.textContent = content_data;

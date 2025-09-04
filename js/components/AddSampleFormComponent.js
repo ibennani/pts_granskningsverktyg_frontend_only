@@ -213,8 +213,19 @@ export const AddSampleFormComponent = (function () {
                 fieldset.appendChild(child_wrapper);
                 if (child.description) {
                     const desc_div = Helpers_create_element('div', { class_name: 'content-type-description markdown-content' });
-                    if (typeof marked !== 'undefined') {
-                        desc_div.innerHTML = marked.parse(child.description);
+                    if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
+                        // Skapa den korrekta renderern
+                        const renderer = new marked.Renderer();
+                        renderer.html = (html_token) => {
+                            const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                                ? html_token.text
+                                : String(html_token || '');
+                            return window.Helpers.escape_html(text_to_escape);
+                        };
+                        renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+
+                        // Använd renderern i anropet
+                        desc_div.innerHTML = marked.parse(child.description, { renderer: renderer });
                     } else {
                         desc_div.textContent = child.description;
                     }

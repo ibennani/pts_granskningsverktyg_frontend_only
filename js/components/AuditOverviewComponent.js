@@ -291,12 +291,30 @@ const AuditOverviewComponent_internal = (function () {
         section1.appendChild(info_grid);
         if (md.internalComment) {
             const comment_header = Helpers_create_element('h3', { text_content: t('internal_comment'), style: { 'font-size': '1rem', 'margin-top': '1rem', 'font-weight': '500' } });
-            const comment_p = Helpers_create_element('p', {
-                text_content: md.internalComment,
-                style: { 'white-space': 'pre-wrap', 'background-color': 'var(--input-background-color)', 'padding': '0.5rem', 'border-radius': 'var(--border-radius)', 'border': '1px solid var(--border-color)' }
+            
+            // Byt ut <p> mot en <div> med markdown-styling
+            const comment_div = Helpers_create_element('div', {
+                class_name: 'markdown-content', // För korrekt styling av listor etc.
+                style: { 'background-color': 'var(--input-background-color)', 'padding': '0.75rem 1rem', 'border-radius': 'var(--border-radius)', 'border': '1px solid var(--border-color)' }
             });
+
+            if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
+                const renderer = new marked.Renderer();
+                renderer.html = (html_token) => {
+                    const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                        ? html_token.text
+                        : String(html_token || '');
+                    return window.Helpers.escape_html(text_to_escape);
+                };
+                renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                
+                comment_div.innerHTML = marked.parse(md.internalComment, { renderer: renderer });
+            } else {
+                comment_div.textContent = md.internalComment;
+            }
+
             section1.appendChild(comment_header);
-            section1.appendChild(comment_p);
+            section1.appendChild(comment_div);
         }
         plate_element.appendChild(section1);
 

@@ -190,11 +190,24 @@ const MetadataViewComponent_internal = (function () {
                     attributes: { target: '_blank', rel: 'noopener noreferrer' }
                 }));
             } else {
-                if (label_key === 'internal_comment' && value.includes('\n')) { 
-                    value.split('\n').forEach((line, index) => {
-                        if (index > 0) field_div.appendChild(Helpers_create_element('br'));
-                        field_div.appendChild(document.createTextNode(' ' + Helpers_escape_html(line)));
-                    });
+                if (label_key === 'internal_comment') {
+                    const comment_content_div = Helpers_create_element('div', { class_name: 'markdown-content', style: { 'padding-top': '0.25rem' } });
+                    
+                    if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
+                        const renderer = new marked.Renderer();
+                        renderer.html = (html_token) => {
+                            const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                                ? html_token.text
+                                : String(html_token || '');
+                            return window.Helpers.escape_html(text_to_escape);
+                        };
+                        renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                        
+                        comment_content_div.innerHTML = marked.parse(value, { renderer: renderer });
+                    } else {
+                        comment_content_div.textContent = value;
+                    }
+                    field_div.appendChild(comment_content_div);
                 } else {
                     field_div.appendChild(document.createTextNode(' ' + Helpers_escape_html(value)));
                 }
