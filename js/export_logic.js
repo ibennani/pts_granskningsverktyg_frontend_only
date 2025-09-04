@@ -56,13 +56,13 @@ function export_to_csv(current_audit) {
     
     // Steg 1: Definiera rubrikerna
     const headers = [
-        t('excel_col_deficiency_id', {defaultValue: "Brist-ID"}),
-        t('excel_col_req_title', {defaultValue: "Kravets titel"}),
-        t('excel_col_reference', {defaultValue: "Referens"}),
-        t('excel_col_sample_name', {defaultValue: "Sidans namn"}),
-        t('excel_col_sample_url', {defaultValue: "Sidans URL"}),
-        t('excel_col_control', {defaultValue: "Kontroll"}),
-        t('excel_col_observation', {defaultValue: "Observation"})
+        t('excel_col_deficiency_id'),
+        t('excel_col_req_title'),
+        t('excel_col_reference'),
+        t('excel_col_sample_name'),
+        t('excel_col_sample_url'),
+        t('excel_col_control'),
+        t('excel_col_observation')
     ];
     csv_content_array.push(headers.join(';'));
 
@@ -114,8 +114,13 @@ function export_to_csv(current_audit) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    // Uppdaterat filnamn
-    const filename = `granskningsrapport_brister_${(current_audit.auditMetadata.actorName || 'export').replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+    
+    // Uppdaterat filnamn med översättningsnycklar
+    const report_prefix = t('filename_audit_report_prefix');
+    const deficiencies_suffix = t('filename_deficiencies_suffix');
+    const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
+    const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.csv`;
+
     link.setAttribute("download", filename);
     document.body.appendChild(link);
     link.click();
@@ -144,17 +149,21 @@ async function export_to_excel(current_audit) {
 
         // Flik 1: Allmän Information
         const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
+        
+        // Hämta den aktiva språkkoden för datumformatering
+        const lang_code = window.Translation.get_current_language_code();
+
         const general_info_data = [
             [t('case_number'), current_audit.auditMetadata.caseNumber || ''],
             [t('actor_name'), current_audit.auditMetadata.actorName || ''],
             [t('actor_link'), current_audit.auditMetadata.actorLink || ''],
-            [t('case_handler'), ''], // NY RAD
+            [t('case_handler'), ''],
             [t('auditor_name'), current_audit.auditMetadata.auditorName || ''],
             [t('rule_file_title'), current_audit.ruleFileContent.metadata.title || ''],
             [t('version_rulefile'), current_audit.ruleFileContent.metadata.version || ''],
             [t('status'), t(`audit_status_${current_audit.auditStatus}`)],
-            [t('start_time'), current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime) : ''],
-            [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime) : '']
+            [t('start_time'), current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : ''],
+            [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime, lang_code) : '']
         ];
         const vardetalValue = current_audit.auditCalculations?.currentVardetal;
         const displayVardetal = (vardetalValue !== null && vardetalValue !== undefined) ? vardetalValue : '---';
@@ -198,7 +207,6 @@ async function export_to_excel(current_audit) {
                                 finalObservation = t('requirement_not_met_default_text');
                             }
                             
-                            // SKAPA KLICKBARA LÄNKAR
                             const reference_obj = { text: req_definition.standardReference?.text || '' };
                             if (req_definition.standardReference?.url) {
                                 reference_obj.hyperlink = window.Helpers.add_protocol_if_missing(req_definition.standardReference.url);
@@ -212,9 +220,9 @@ async function export_to_excel(current_audit) {
                             deficiencies_data.push({
                                 id: pc_obj.deficiencyId,
                                 reqTitle: req_definition.title,
-                                reference: reference_obj, // Använd objektet här
+                                reference: reference_obj,
                                 sampleName: sample.description,
-                                sampleUrl: url_obj, // Använd objektet här
+                                sampleUrl: url_obj,
                                 control: get_pass_criterion_text(req_definition, check_id, pc_id),
                                 observation: finalObservation
                             });
@@ -228,9 +236,8 @@ async function export_to_excel(current_audit) {
         deficienciesSheet.addRows(deficiencies_data);
 
         const headerRow = deficienciesSheet.getRow(1);
-        // MODIFIED: Header styling changed to white text on a dark blue background.
         headerRow.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-        headerRow.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FF002060'} }; // Changed back to dark blue
+        headerRow.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FF002060'} };
         headerRow.alignment = { vertical: 'top', wrapText: true };
 
         deficienciesSheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
@@ -240,7 +247,6 @@ async function export_to_excel(current_audit) {
                 row.font = { color: { argb: 'FF000000' } };
                 row.alignment = { vertical: 'top', wrapText: true };
 
-                // Apply hyperlink styling only to data cells, not headers.
                 const referenceCell = row.getCell('reference');
                 if (referenceCell.hyperlink) {
                     referenceCell.font = { color: { argb: 'FF0000FF' }, underline: true };
@@ -253,17 +259,19 @@ async function export_to_excel(current_audit) {
         });
 
         deficienciesSheet.autoFilter = { from: 'A1', to: { row: 1, column: deficienciesSheet.columns.length } };
-
-        // ADDED: Freeze the header row (row 1)
-        deficienciesSheet.views = [
-            { state: 'frozen', ySplit: 1 }
-        ];
+        deficienciesSheet.views = [ { state: 'frozen', ySplit: 1 } ];
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const filename = `granskningsrapport_brister_${(current_audit.auditMetadata.actorName || 'export').replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+        // Uppdaterat filnamn med översättningsnycklar
+        const report_prefix = t('filename_audit_report_prefix');
+        const deficiencies_suffix = t('filename_deficiencies_suffix');
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
+        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
         link.href = url;
         link.download = filename;
         document.body.appendChild(link);

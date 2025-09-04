@@ -1,6 +1,4 @@
 // js/components/UpdateRulefileViewComponent.js
-// Ta bort import-satsen
-// import { RulefileUpdaterLogic } from '../logic/rulefile_updater_logic.js';
 
 export const UpdateRulefileViewComponent = (function () {
     'use-strict';
@@ -18,7 +16,6 @@ export const UpdateRulefileViewComponent = (function () {
     let NotificationComponent_show_global_message, NotificationComponent_get_global_message_element_reference;
     let SaveAuditLogic_save_audit_to_json_file;
     let ValidationLogic_validate_rule_file_json;
-    // Ingen variabel för RulefileUpdaterLogic behövs här uppe längre
 
     let global_message_element_ref;
     let plate_element_ref;
@@ -87,7 +84,7 @@ export const UpdateRulefileViewComponent = (function () {
         } else {
             console.error("SaveAuditLogic not available to perform backup.");
             if (NotificationComponent_show_global_message) {
-                NotificationComponent_show_global_message(t('error_saving_audit', {defaultValue: "Could not save audit."}), 'error');
+                NotificationComponent_show_global_message(t('error_saving_audit'), 'error');
             }
         }
     }
@@ -97,7 +94,6 @@ export const UpdateRulefileViewComponent = (function () {
         const file = event.target.files[0];
         if (!file) return;
         
-        // Se till att RulefileUpdaterLogic finns globalt
         if (!window.RulefileUpdaterLogic) {
             console.error("CRITICAL: RulefileUpdaterLogic is not available on the window object.");
             NotificationComponent_show_global_message('Internal application error. Please reload.', 'error');
@@ -137,7 +133,7 @@ export const UpdateRulefileViewComponent = (function () {
         const t = get_t_internally();
         if (!staged_new_rule_file_content || !staged_analysis_report) {
             console.error("Bekräftelse misslyckades: temporär data saknas.");
-            NotificationComponent_show_global_message(t('error_internal', {defaultValue: "An internal error occurred."}), 'error');
+            NotificationComponent_show_global_message(t('error_internal'), 'error');
             return;
         }
 
@@ -152,7 +148,7 @@ export const UpdateRulefileViewComponent = (function () {
             payload: final_reconciled_state
         });
 
-        NotificationComponent_show_global_message(t('update_rulefile_success', {defaultValue: "Rule file was successfully updated."}), 'success');
+        NotificationComponent_show_global_message(t('update_rulefile_success'), 'success');
         router_ref('audit_overview');
     }
 
@@ -171,7 +167,7 @@ export const UpdateRulefileViewComponent = (function () {
             plate_element_ref.appendChild(global_message_element_ref);
         }
 
-        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: get_t_internally()('update_rulefile_title', {defaultValue: "Update Rule File"}) }));
+        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: get_t_internally()('update_rulefile_title') }));
 
         switch (current_step) {
             case VIEW_STEPS.WARNING:
@@ -188,25 +184,25 @@ export const UpdateRulefileViewComponent = (function () {
 
     function render_warning_step() {
         const t = get_t_internally();
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_warning_intro', {defaultValue: "You are about to update the rule file for an ongoing audit. This is an advanced action with consequences:"}) }));
+        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_warning_intro') }));
         
         const warning_list = Helpers_create_element('ul', { class_name: 'warning-list' });
         warning_list.innerHTML = `
-            <li>${t('update_rulefile_warning_li1', {defaultValue: "Results for requirements that are removed from the new rule file will be permanently deleted."})}</li>
-            <li>${t('update_rulefile_warning_li2', {defaultValue: "Requirements that have been changed will be marked for re-review."})}</li>
+            <li>${t('update_rulefile_warning_li1')}</li>
+            <li>${t('update_rulefile_warning_li2')}</li>
         `;
         plate_element_ref.appendChild(warning_list);
 
-        plate_element_ref.appendChild(Helpers_create_element('h2', { style: 'font-size: 1.2rem; margin-top: 1.5rem;', text_content: t('update_rulefile_recommendation', {defaultValue: "Step 1: Save a backup"}) }));
-        plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('update_rulefile_backup_text', {defaultValue: "It is strongly recommended to save a backup of your current audit before proceeding."}) }));
+        plate_element_ref.appendChild(Helpers_create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_recommendation') }));
+        plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('update_rulefile_backup_text') }));
 
         const backup_button = Helpers_create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('save_audit_to_file', {defaultValue: "Save Audit to File"})}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('save') : '')
+            html_content: `<span>${t('save_audit_to_file')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('save') : '')
         });
         backup_button.addEventListener('click', handle_backup_click);
         
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
+        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         actions_div.append(backup_button);
         plate_element_ref.appendChild(actions_div);
     }
@@ -216,22 +212,22 @@ export const UpdateRulefileViewComponent = (function () {
         
         plate_element_ref.appendChild(Helpers_create_element('div', {
             class_name: 'backup-confirmation',
-            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved', {defaultValue: "Backup saved."})}</span>`
+            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
         }));
         
-        plate_element_ref.appendChild(Helpers_create_element('h2', { style: 'font-size: 1.2rem; margin-top: 1.5rem;', text_content: t('update_rulefile_step2_title', {defaultValue: "Step 2: Upload new rule file"}) }));
-        plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('update_rulefile_step2_text', {defaultValue: "Select the new, updated JSON rule file from your computer."}) }));
+        plate_element_ref.appendChild(Helpers_create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
+        plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('update_rulefile_step2_text') }));
 
         const file_input = Helpers_create_element('input', { id: 'new-rule-file-input', attributes: { type: 'file', accept: '.json', style: 'display: none;' } });
         file_input.addEventListener('change', handle_new_rule_file_upload);
 
         const upload_button = Helpers_create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('upload_new_rulefile_btn', {defaultValue: "Upload New Rule File"})}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('upload_file') : '')
+            html_content: `<span>${t('upload_new_rulefile_btn')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('upload_file') : '')
         });
         upload_button.addEventListener('click', () => file_input.click());
         
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
+        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         actions_div.appendChild(upload_button);
         
         plate_element_ref.appendChild(file_input);
@@ -242,7 +238,7 @@ export const UpdateRulefileViewComponent = (function () {
         const t = get_t_internally();
         const old_reqs = local_getState().ruleFileContent.requirements;
 
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro', {defaultValue: "The new rule file has been analyzed. Please review the changes below before confirming."}) }));
+        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') }));
 
         const render_report_section = (title_key, items) => {
             const section = Helpers_create_element('div', { class_name: 'report-section' });
@@ -262,7 +258,7 @@ export const UpdateRulefileViewComponent = (function () {
                 });
                 section.appendChild(ul);
             } else {
-                section.appendChild(Helpers_create_element('p', { class_name: 'text-muted', text_content: t('no_items_in_category', {defaultValue: "No items in this category."}) }));
+                section.appendChild(Helpers_create_element('p', { class_name: 'text-muted', text_content: t('no_items_in_category') }));
             }
             return section;
         };
@@ -272,17 +268,17 @@ export const UpdateRulefileViewComponent = (function () {
 
         const confirm_button = Helpers_create_element('button', {
             class_name: ['button', 'button-success'],
-            html_content: `<span>${t('update_rulefile_confirm_button', {defaultValue: "Confirm and Apply Changes"})}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle') : '')
+            html_content: `<span>${t('update_rulefile_confirm_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle') : '')
         });
         confirm_button.addEventListener('click', handle_confirm_update_click);
 
         const cancel_button = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
-            text_content: t('update_rulefile_continue_with_old', {defaultValue: "Continue with old rule file"})
+            text_content: t('update_rulefile_continue_with_old')
         });
         cancel_button.addEventListener('click', () => router_ref('audit_overview'));
         
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
+        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         
         actions_div.append(confirm_button, cancel_button);
         plate_element_ref.appendChild(actions_div);

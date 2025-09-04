@@ -7,13 +7,16 @@
         const time_str = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
         const datetime_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${time_str}`;
         
-        let actor_name_part = 'granskning';
+        // Hämta prefix från språkfil, med en säker fallback
+        const filename_prefix = t_func('filename_audit_prefix');
 
-        if (audit_data && audit_data.auditMetadata && audit_data.auditMetadata.actorName) {
-            actor_name_part = audit_data.auditMetadata.actorName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'granskning';
+        let actor_name_part = t_func('filename_fallback_actor');
+
+        if (audit_data?.auditMetadata?.actorName) {
+            actor_name_part = audit_data.auditMetadata.actorName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || t_func('filename_fallback_actor');
         }
         
-        return `tillganglighetsgranskning_${actor_name_part}_${datetime_str}.json`;
+        return `${filename_prefix}_${actor_name_part}_${datetime_str}.json`;
     }
 
     function save_audit_to_json_file(current_audit_data, t_func, show_notification_func) {

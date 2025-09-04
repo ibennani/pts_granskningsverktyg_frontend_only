@@ -24,16 +24,21 @@
         });
     }
 
-    function format_iso_to_local_datetime(iso_string) {
+    function format_iso_to_local_datetime(iso_string, lang_code = 'sv-SE') {
         if (!iso_string) return '';
         try {
             const date = new Date(iso_string);
             const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
             if (isNaN(date.getTime())) return t_func('invalid_date_format');
-            return date.toLocaleString('sv-SE', {
+
+            const options = {
                 year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false
+            };
+            
+            return date.toLocaleString(lang_code, options);
+
         } catch (e) {
             console.error("Error formatting date:", iso_string, e);
             const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
@@ -41,51 +46,46 @@
         }
     }
 
-    // --- HELT OMbyggd DATUMFORMATERARE ---
-    function format_iso_to_relative_time(iso_string) {
+    function format_iso_to_relative_time(iso_string, lang_code = 'sv-SE') {
         if (!iso_string) return '';
-        const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key, rep) => rep.defaultValue;
+        const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
         
         try {
             const date = new Date(iso_string);
             if (isNaN(date.getTime())) return t('invalid_date_format');
 
             const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            
-            const diffTime = today - targetDay;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const today_start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday_start = new Date(today_start);
+            yesterday_start.setDate(yesterday_start.getDate() - 1);
+            const day_before_yesterday_start = new Date(today_start);
+            day_before_yesterday_start.setDate(day_before_yesterday_start.getDate() - 2);
 
-            const timeString = date.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-            const weekday = t(`weekday_long_${date.getDay()}`);
-            const day = date.getDate();
-            const month = t(`month_long_${date.getMonth()}`);
-            const year = date.getFullYear();
-            
-            let final_string;
+            const timeString = date.toLocaleTimeString(lang_code, { hour: '2-digit', minute: '2-digit', hour12: false });
 
-            if (diffDays === 0) {
-                final_string = t('relative_time_format_today', { weekday, day, month, time: timeString });
-            } else if (diffDays === 1) {
-                final_string = t('relative_time_format_yesterday', { weekday, day, month, time: timeString });
-            } else if (diffDays === 2 && !t('relative_time_prefix_day_before_yesterday', {defaultValue: '**'}).startsWith('**')) {
-                final_string = t('relative_time_format_day_before_yesterday', { weekday, day, month, time: timeString });
-            } else if (diffDays < 7) {
-                final_string = t('relative_time_format_this_week', { weekday, day, month, time: timeString });
-            } else if (now.getFullYear() === date.getFullYear()) {
-                final_string = t('relative_time_format_this_year', { weekday, day, month, time: timeString });
-            } else {
-                final_string = t('relative_time_format_previous_year', { weekday, day, month, year, time: timeString });
+            if (date >= today_start) {
+                return t('relative_time_today') + `, ${timeString}`;
             }
-            
-            return final_string;
+            if (date >= yesterday_start) {
+                return t('relative_time_yesterday') + `, ${timeString}`;
+            }
+            if (date >= day_before_yesterday_start) {
+                return t('relative_time_day_before_yesterday') + `, ${timeString}`;
+            }
+
+            const date_part = date.toLocaleDateString(lang_code, {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            return t('relative_time_date_format', { date: date_part });
 
         } catch (e) {
             console.error("Error formatting relative date:", iso_string, e);
             return t('date_formatting_error');
         }
     }
+
 
     function get_current_iso_datetime_utc() {
         return new Date().toISOString();
@@ -125,6 +125,16 @@
         if (options.children) {
             options.children.forEach(child => { if (child) element.appendChild(child); });
         }
+        // --- START OF FIX ---
+        // Gör funktionen mer robust: hantera både style-objekt och style-strängar.
+        if (options.style) {
+            if (typeof options.style === 'object' && options.style !== null) {
+                Object.assign(element.style, options.style);
+            } else if (typeof options.style === 'string') {
+                element.style.cssText = options.style;
+            }
+        }
+        // --- END OF FIX ---
         return element;
     }
 
@@ -134,6 +144,7 @@
         const base_paths = {
             'arrow_back': `<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>`,
             'arrow_forward': `<path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>`,
+            'arrow_forward_alt': `<path d="m11.59 7.41-1.42 1.42L12.17 10.83l-2 2 .59.59 2-2 2 2 .59-.59-2-2 2-2-.59-.59-2 2-2-2zM20 12l-8 8-1.41-1.41L16.17 13H4v-2h12.17l-5.58-5.59L12 4l8 8z"/>`,
             'list': `<path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/>`,
             'add': `<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>`,
             'save': `<path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>`,
@@ -164,8 +175,9 @@
     }
 
     function add_protocol_if_missing(url_string) {
-        if (typeof url_string !== 'string') return '';
-        return /^(?:f|ht)tps?:\/\//i.test(url_string) ? url_string : `https://${url_string}`;
+        if (typeof url_string !== 'string' || !url_string.trim()) return '';
+        const trimmed_url = url_string.trim();
+        return /^(?:f|ht)tps?:\/\//i.test(trimmed_url) ? trimmed_url : `https://${trimmed_url}`;
     }
 
     function init_auto_resize_for_textarea(textarea_element) {

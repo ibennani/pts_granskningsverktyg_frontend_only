@@ -43,26 +43,46 @@ export const RestoreSessionViewComponent = (function () {
         plate.appendChild(Helpers_create_element('h1', { text_content: t('restore_session_title') }));
         plate.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('restore_session_lead_text') }));
 
-        const info_box = Helpers_create_element('div', { style: 'margin-bottom: 2rem; padding: 1rem; background-color: var(--background-color); border-radius: var(--border-radius);' });
+        const info_box = Helpers_create_element('div', { 
+            style: { 
+                marginBottom: '2rem', 
+                padding: '1rem', 
+                backgroundColor: 'var(--background-color)', 
+                borderRadius: 'var(--border-radius)' 
+            } 
+        });
         
         const actor_name = autosaved_state_ref.auditMetadata?.actorName || 'Okänd';
         info_box.appendChild(Helpers_create_element('p', { 
             html_content: t('restore_session_info', { actorName: actor_name }),
-            style: 'font-weight: 500; font-size: 1.1rem;'
+            style: { fontWeight: '500', fontSize: '1.1rem' }
         }));
 
-        const last_update = autosaved_state_ref.samples?.[0]?.requirementResults?.[Object.keys(autosaved_state_ref.samples[0].requirementResults || {})[0]]?.lastStatusUpdate;
-        if (last_update && Helpers_format_iso_to_relative_time) {
-            info_box.appendChild(Helpers_create_element('p', { 
-                text_content: t('restore_session_timestamp', { timestamp: Helpers_format_iso_to_relative_time(last_update) }),
-                style: 'color: var(--text-color-muted); font-size: 0.9rem;'
-            }));
+        const last_update_timestamps = (autosaved_state_ref.samples || [])
+            .flatMap(s => Object.values(s.requirementResults || {}))
+            .map(res => res.lastStatusUpdate)
+            .filter(Boolean);
+
+        if (last_update_timestamps.length > 0) {
+            last_update_timestamps.sort((a, b) => new Date(b) - new Date(a));
+            const most_recent_update = last_update_timestamps[0];
+
+            if (most_recent_update && Helpers_format_iso_to_relative_time) {
+                const lang_code = window.Translation.get_current_language_code();
+                info_box.appendChild(Helpers_create_element('p', { 
+                    text_content: t('restore_session_timestamp', { timestamp: Helpers_format_iso_to_relative_time(most_recent_update, lang_code) }),
+                    style: { color: 'var(--text-color-muted)', fontSize: '0.9rem' }
+                }));
+            }
         }
         
         plate.appendChild(info_box);
         plate.appendChild(Helpers_create_element('p', { text_content: t('restore_session_question') }));
 
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 1.5rem;' });
+        const actions_div = Helpers_create_element('div', { 
+            class_name: 'form-actions', 
+            style: { marginTop: '1.5rem' } 
+        });
 
         const restore_button = Helpers_create_element('button', {
             class_name: ['button', 'button-success'],

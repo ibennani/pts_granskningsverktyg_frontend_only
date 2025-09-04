@@ -210,7 +210,7 @@ const AuditOverviewComponent_internal = (function () {
 
         if (!app_container_ref || !Helpers_create_element || !t || !local_getState) {
             console.error("AuditOverview: Core dependencies missing for render.");
-            if (app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_overview', { defaultValue: "Could not render the overview." })}</p>`;
+            if (app_container_ref) app_container_ref.innerHTML = `<p>${t('error_render_overview')}</p>`;
             return;
         }
         app_container_ref.innerHTML = '';
@@ -282,17 +282,18 @@ const AuditOverviewComponent_internal = (function () {
         info_grid.appendChild(create_info_item('version_rulefile', rf_meta.version));
         info_grid.appendChild(create_info_item('status', t(`audit_status_${current_global_state.auditStatus}`)));
         if (Helpers_format_iso_to_local_datetime) {
-            info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime)));
+            const lang_code = window.Translation.get_current_language_code();
+            info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime, lang_code)));
             if (current_global_state.endTime) {
-                info_grid.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_global_state.endTime)));
+                info_grid.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_global_state.endTime, lang_code)));
             }
         }
         section1.appendChild(info_grid);
         if (md.internalComment) {
-            const comment_header = Helpers_create_element('h3', { text_content: t('internal_comment'), style: 'font-size: 1rem; margin-top: 1rem; font-weight: 500;' });
+            const comment_header = Helpers_create_element('h3', { text_content: t('internal_comment'), style: { 'font-size': '1rem', 'margin-top': '1rem', 'font-weight': '500' } });
             const comment_p = Helpers_create_element('p', {
                 text_content: md.internalComment,
-                style: 'white-space: pre-wrap; background-color: var(--input-background-color); padding: 0.5rem; border-radius: var(--border-radius); border: 1px solid var(--border-color);'
+                style: { 'white-space': 'pre-wrap', 'background-color': 'var(--input-background-color)', 'padding': '0.5rem', 'border-radius': 'var(--border-radius)', 'border': '1px solid var(--border-color)' }
             });
             section1.appendChild(comment_header);
             section1.appendChild(comment_p);

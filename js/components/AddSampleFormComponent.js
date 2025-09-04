@@ -52,7 +52,6 @@ export const AddSampleFormComponent = (function () {
         await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
     }
 
-    // **ÄNDRING 1:** Ny funktion för att automatiskt fylla i beskrivningen
     function update_description_from_sample_type() {
         const t = get_t_internally();
         if (!sample_type_select || !description_input) return;
@@ -60,7 +59,6 @@ export const AddSampleFormComponent = (function () {
         const current_description = description_input.value.trim();
         const new_sample_type = sample_type_select.value;
 
-        // Fyll bara i om fältet är tomt, eller om det innehöll det FÖREGÅENDE valet
         if (new_sample_type && (current_description === '' || current_description === previous_sample_type_value)) {
             description_input.value = new_sample_type;
         }
@@ -76,23 +74,18 @@ export const AddSampleFormComponent = (function () {
         form_container_ref.innerHTML = '';
         const form_wrapper = Helpers_create_element('div', { class_name: 'add-sample-form' });
         
-        // **ÄNDRING 2:** Ta bort H2 och P-taggen från denna komponent
-        
         form_element = Helpers_create_element('form');
         form_element.addEventListener('submit', validate_and_save_sample);
 
-        // Sektion 1: Kategori
         category_container_element = Helpers_create_element('div', { class_name: 'form-group' });
-        category_container_element.appendChild(Helpers_create_element('h2', { text_content: t('sample_category_title', {defaultValue: "Kategori"}) }));
+        category_container_element.appendChild(Helpers_create_element('h2', { text_content: t('sample_category_title') }));
         category_fieldset_element = Helpers_create_element('fieldset', { class_name: 'content-type-parent-group' }); 
         category_container_element.appendChild(category_fieldset_element);
         
-        // Sektion 2: Info om stickprovet
         sample_info_container_element = Helpers_create_element('div', { class_name: 'form-group' });
-        sample_info_container_element.appendChild(Helpers_create_element('h2', { text_content: t('sample_info_title', {defaultValue: "Info om stickprovet"})}));
+        sample_info_container_element.appendChild(Helpers_create_element('h2', { text_content: t('sample_info_title')}));
         
         sample_type_select = Helpers_create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true }});
-        // **ÄNDRING 3:** Lägg till event-lyssnare för automatisk ifyllnad
         sample_type_select.addEventListener('change', update_description_from_sample_type);
 
         description_input = Helpers_create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true }});
@@ -101,20 +94,18 @@ export const AddSampleFormComponent = (function () {
         url_form_group_ref = Helpers_create_element('div', { class_name: 'form-group', children: [Helpers_create_element('label', { attributes: {for: 'sampleUrlInput'}, text_content: t('url') }), url_input]});
 
         sample_info_container_element.append(
-            Helpers_create_element('div', { class_name: 'form-group', children: [Helpers_create_element('label', { attributes: {for: 'sampleTypeSelect'}, text_content: t('sample_type_label', {defaultValue: "Del av stickprov"}) + '*' }), sample_type_select]}),
+            Helpers_create_element('div', { class_name: 'form-group', children: [Helpers_create_element('label', { attributes: {for: 'sampleTypeSelect'}, text_content: t('sample_type_label') + '*' }), sample_type_select]}),
             Helpers_create_element('div', { class_name: 'form-group', children: [Helpers_create_element('label', { attributes: {for: 'sampleDescriptionInput'}, text_content: t('description') + '*' }), description_input]}),
             url_form_group_ref
         );
 
-        // Sektion 3: Innehållstyper (oförändrad)
         content_types_container_element = Helpers_create_element('div', { class_name: 'content-types-group' });
         content_types_container_element.appendChild(Helpers_create_element('h2', { text_content: t('content_types')}));
-        content_types_container_element.appendChild(Helpers_create_element('p', { text_content: t('content_types_instruction', {defaultValue: "Kryssa för alla typer av innehåll du kan hitta i detta stickprov."}), style: 'margin-top: 0; color: var(--text-color-muted);' }));
+        content_types_container_element.appendChild(Helpers_create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
         content_types_container_element.addEventListener('change', _handleCheckboxChange);
         
         form_element.append(category_container_element, sample_info_container_element, content_types_container_element);
         
-        // Knappar
         const actions_div = Helpers_create_element('div', { class_name: 'form-actions' });
         const save_button = Helpers_create_element('button', { class_name: ['button', 'button-primary'], attributes: { type: 'submit' }});
         save_button.innerHTML = `<span>${current_editing_sample_id ? t('save_changes_button') : t('save_sample_button')}</span>` + Helpers_get_icon_svg(current_editing_sample_id ? 'save' : 'add');
@@ -143,7 +134,7 @@ export const AddSampleFormComponent = (function () {
 
         category_fieldset_element.innerHTML = '';
         category_fieldset_element.appendChild(Helpers_create_element('legend', { 
-            text_content: t('sample_category_title', {defaultValue: "Kategori"}),
+            text_content: t('sample_category_title'),
             class_name: 'visually-hidden'
         }));
         
@@ -172,7 +163,6 @@ export const AddSampleFormComponent = (function () {
             on_category_change(selected_cat_id, sample_data?.sampleType);
         }
 
-        // **ÄNDRING 4:** Sätt initialvärdet för `previous_sample_type_value`
         previous_sample_type_value = sample_type_select.value;
     }
 
@@ -201,7 +191,6 @@ export const AddSampleFormComponent = (function () {
         }
     }
 
-    // Funktionerna render_content_types, _updateParentCheckboxState och _handleCheckboxChange är OFÖRÄNDRADE...
     function render_content_types(sample_data) {
         const existing_fieldsets = content_types_container_element.querySelectorAll('fieldset');
         existing_fieldsets.forEach(fs => fs.remove());
@@ -265,7 +254,6 @@ export const AddSampleFormComponent = (function () {
         }
     }
 
-    // Funktionen validate_and_save_sample är OFÖRÄNDRAD...
     function validate_and_save_sample(event) {
         event.preventDefault();
         const t = Translation_t;
@@ -276,8 +264,8 @@ export const AddSampleFormComponent = (function () {
         const description = description_input.value.trim();
         let url_val = url_input.value.trim();
         const selected_content_types = Array.from(content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')).map(cb => cb.value);
-        if (!sample_category) { NotificationComponent_show_global_message(t('field_is_required', {fieldName: t('sample_category_title', {defaultValue: "Kategori"})}), 'error'); return; }
-        if (!sample_type) { NotificationComponent_show_global_message(t('field_is_required', {fieldName: t('sample_type_label', {defaultValue: "Del av stickprov"})}), 'error'); sample_type_select.focus(); return; }
+        if (!sample_category) { NotificationComponent_show_global_message(t('field_is_required', {fieldName: t('sample_category_title')}), 'error'); return; }
+        if (!sample_type) { NotificationComponent_show_global_message(t('field_is_required', {fieldName: t('sample_type_label')}), 'error'); sample_type_select.focus(); return; }
         if (!description) { NotificationComponent_show_global_message(t('field_is_required', {fieldName: t('description')}), 'error'); description_input.focus(); return; }
         if (selected_content_types.length === 0) { NotificationComponent_show_global_message(t('error_min_one_content_type'), 'error'); return; }
         if (url_val) {
