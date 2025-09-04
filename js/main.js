@@ -3,7 +3,8 @@
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { MetadataViewComponent } from './components/MetadataViewComponent.js';
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
-import { SampleFormViewComponent } from './components/SampleFormViewComponent.js'; // NY IMPORT
+import { SampleFormViewComponent } from './components/SampleFormViewComponent.js';
+import { ConfirmSampleEditViewComponent } from './components/ConfirmSampleEditViewComponent.js'; // NY IMPORT
 import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
@@ -62,9 +63,11 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'sample_management':
                     title_prefix = t('manage_samples_title');
                     break;
-                // --- NYTT CASE FÖR SIDTITEL ---
                 case 'sample_form':
                     title_prefix = params.editSampleId ? t('edit_sample') : t('add_new_sample');
+                    break;
+                case 'confirm_sample_edit': // NYTT CASE
+                    title_prefix = t('sample_edit_confirm_dialog_title');
                     break;
                 case 'audit_overview':
                     title_prefix = t('audit_overview_title');
@@ -99,7 +102,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function update_app_chrome_texts() {
-        // ... (oförändrad) ...
         const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
@@ -110,7 +112,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     async function init_global_components() {
-        // ... (oförändrad) ...
         if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
             console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
@@ -129,7 +130,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
     
     function set_initial_theme() {
-        // ... (oförändrad) ...
         const saved_theme = localStorage.getItem('theme_preference');
         if (saved_theme) {
             document.documentElement.setAttribute('data-theme', saved_theme);
@@ -141,7 +141,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
-        // ... (oförändrad) ...
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
             `${target_view_name}?${new URLSearchParams(target_params).toString()}` :
             target_view_name;
@@ -156,7 +155,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function set_focus_to_h1() {
-        // ... (oförändrad) ...
         setTimeout(() => {
             if (app_container) {
                 const h1_element = app_container.querySelector('h1');
@@ -178,8 +176,8 @@ window.StoreActionTypes = StoreActionTypes;
 
         updatePageTitle(view_name_to_render, params_to_render);
 
-        // --- ÄNDRING: Dölj nedre baren även för den nya formulärvyn ---
-        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form'];
+        // NY VY TILLAGD I LISTAN
+        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit'];
         top_action_bar_instance.render();
         if (views_without_bottom_bar.includes(view_name_to_render)) {
             bottom_action_bar_container.style.display = 'none';
@@ -206,12 +204,13 @@ window.StoreActionTypes = StoreActionTypes;
         current_view_component_instance = null;
 
         let ComponentClass;
-        // --- NYTT CASE I SWITCH-SATSEN ---
+        // NYTT CASE I SWITCH-SATSEN
         switch (view_name_to_render) {
             case 'upload': ComponentClass = UploadViewComponent; break;
             case 'metadata': ComponentClass = MetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
-            case 'sample_form': ComponentClass = SampleFormViewComponent; break; // NY RAD
+            case 'sample_form': ComponentClass = SampleFormViewComponent; break;
+            case 'confirm_sample_edit': ComponentClass = ConfirmSampleEditViewComponent; break; // NY RAD
             case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
@@ -262,7 +261,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function handle_hash_change() { 
-        // ... (oförändrad) ...
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
         const params = {};
@@ -284,7 +282,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     function on_language_changed_event() { 
-        // ... (oförändrad) ...
         update_app_chrome_texts();
         updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
@@ -293,7 +290,6 @@ window.StoreActionTypes = StoreActionTypes;
     }
     
     async function start_normal_session() {
-        // ... (oförändrad) ...
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
         if (window.MarkdownToolbar?.init) { window.MarkdownToolbar.init(); }
@@ -307,8 +303,7 @@ window.StoreActionTypes = StoreActionTypes;
         });
         subscribe((new_state) => { 
             top_action_bar_instance.render();
-            // -- Ändrad logik för nedre baren här också --
-            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form'];
+            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit'];
             if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
                 bottom_action_bar_instance.render();
             }
@@ -317,7 +312,10 @@ window.StoreActionTypes = StoreActionTypes;
             const [view_name_from_hash,] = hash.split('?');
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                current_view_component_instance.render();
+                // Avstå från att rendera om det är confirm-vyn, för att undvika att tappa state
+                if (current_view_name_rendered !== 'confirm_sample_edit') {
+                    current_view_component_instance.render();
+                }
             }
         });
         if (window.NotificationComponent?.clear_global_message) { window.NotificationComponent.clear_global_message(); }
@@ -326,10 +324,13 @@ window.StoreActionTypes = StoreActionTypes;
     } 
 
     async function init_app() { 
-        // ... (oförändrad) ...
         set_initial_theme();
         await window.Translation.ensure_initial_load();
         initState();
+
+        // Rensa eventuella gamla "staged" ändringar om sidan laddas om
+        dispatch({ type: StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
+
         const active_session_state = getState();
         if (active_session_state && active_session_state.ruleFileContent) {
             console.log("[Main.js] Active session found in sessionStorage. Starting normally.");

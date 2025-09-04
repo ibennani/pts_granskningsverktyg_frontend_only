@@ -339,5 +339,13 @@
   "sample_info_title": "Sample Details",
   "sample_type_label": "Type of sample",
   "content_types_instruction": "Tick all content types you can find in this sample.",
-  "add_or_manage_samples": "Add a new sample"
+  "add_or_manage_samples": "Add a new sample",
+  "back_to_metadata": "Back to Metadata",
+  "sample_edit_confirm_dialog_title": "Confirm Changes to Sample",
+  "sample_edit_confirm_added_reqs_header": "The following requirements will be ADDED to this sample for review:",
+  "sample_edit_confirm_removed_reqs_header": "The following requirements and all saved work will be REMOVED from this sample:",
+  "sample_edit_confirm_data_loss_warning_header": "WARNING: You are about to permanently delete saved work!",
+  "sample_edit_confirm_data_loss_warning_text": "The assessments and comments you have entered for the removed requirements listed above will be deleted. This action cannot be undone.",
+  "sample_edit_confirm_action_button": "Confirm and Save Changes",
+  "sample_edit_discard_action_button": "Discard Changes and Return"
 }

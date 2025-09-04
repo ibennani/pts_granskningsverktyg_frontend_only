@@ -339,5 +339,13 @@
   "sample_info_title": "Info om stickprovet",
   "sample_type_label": "Del av stickprov",
   "content_types_instruction": "Kryssa för alla typer av innehåll du kan hitta i detta stickprov.",
-  "add_or_manage_samples": "Lägg till ett nytt stickprov"
+  "add_or_manage_samples": "Lägg till ett nytt stickprov",
+  "back_to_metadata": "Tillbaka till metadata",
+  "sample_edit_confirm_dialog_title": "Bekräfta ändringar för stickprov",
+  "sample_edit_confirm_added_reqs_header": "Följande krav läggs till för granskning:",
+  "sample_edit_confirm_removed_reqs_header": "Följande krav och allt sparat arbete kommer att tas bort:",
+  "sample_edit_confirm_data_loss_warning_header": "VARNING: Du är på väg att radera sparat arbete!",
+  "sample_edit_confirm_data_loss_warning_text": "De bedömningar och kommentarer du har angett för de borttagna kraven kommer att raderas permanent. Denna åtgärd kan inte ångras.",
+  "sample_edit_confirm_action_button": "Bekräfta och spara ändringar",
+  "sample_edit_discard_action_button": "Släng ändringar och återgå"
 }

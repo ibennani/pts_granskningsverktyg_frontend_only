@@ -17,7 +17,10 @@ export const ActionTypes = {
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_PRECALCULATED_RULE_DATA: 'SET_PRECALCULATED_RULE_DATA',
     UPDATE_CALCULATED_VARDETAL: 'UPDATE_CALCULATED_VARDETAL',
-    SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS' 
+    SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
+    // --- NYA ACTION TYPES ---
+    STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
+    CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES'
 };
 
 const initial_state = {
@@ -55,7 +58,9 @@ const initial_state = {
             sum_of_all_weights: 0
         },
         currentVardetal: null
-    }
+    },
+    // --- NY EGENSKAP I STATE ---
+    pendingSampleChanges: null // Håller temporär data för bekräftelsevyn
 };
 
 let internal_state = { ...initial_state };
@@ -70,6 +75,21 @@ function root_reducer(current_state, action) {
     let new_state;
 
     switch (action.type) {
+        // --- NYA CASES I REDUCER ---
+        case ActionTypes.STAGE_SAMPLE_CHANGES:
+            return {
+                ...current_state,
+                pendingSampleChanges: action.payload
+            };
+
+        case ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES:
+            return {
+                ...current_state,
+                pendingSampleChanges: null
+            };
+        
+        // ... (resten av switch-satsen är oförändrad) ...
+
         case ActionTypes.INITIALIZE_NEW_AUDIT:
             return {
                 ...initial_state,
@@ -80,26 +100,17 @@ function root_reducer(current_state, action) {
 
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
             if (action.payload && typeof action.payload === 'object') {
-                // --- KORRIGERING BÖRJAR HÄR: Robust sammanslagning ---
                 const loaded_data = action.payload;
-                
-                // Skapa en djup kopia av standardinställningarna för att undvika referensproblem
                 const new_state_base = JSON.parse(JSON.stringify(initial_state));
-
-                // Slå ihop det laddade tillståndet över standardinställningarna.
-                // Detta bevarar nya nycklar (som uiSettings) om de saknas i den gamla filen.
                 const merged_state = {
                     ...new_state_base,
                     ...loaded_data,
-                    // Se till att uiSettings också slås ihop på en djupare nivå
                     uiSettings: {
                         ...new_state_base.uiSettings,
                         ...(loaded_data.uiSettings || {})
                     },
-                    saveFileVersion: APP_STATE_VERSION // Tvinga alltid aktuell version
+                    saveFileVersion: APP_STATE_VERSION
                 };
-
-                // Migrera gamla dataformat för passCriteria
                 (merged_state.samples || []).forEach(sample => {
                     Object.values(sample.requirementResults || {}).forEach(reqResult => {
                         Object.values(reqResult.checkResults || {}).forEach(checkResult => {
@@ -118,13 +129,10 @@ function root_reducer(current_state, action) {
                         });
                     });
                 });
-
                 if (!merged_state.deficiencyCounter) {
                     merged_state.deficiencyCounter = 1;
                 }
-                
                 return window.AuditLogic.updateIncrementalDeficiencyIds(merged_state);
-                // --- KORRIGERING SLUTAR HÄR ---
             }
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
@@ -136,10 +144,9 @@ function root_reducer(current_state, action) {
             };
 
         case ActionTypes.ADD_SAMPLE:
-            // Säkerställ att nya fält från regelfil 2025.8.r83 finns med, även om de är tomma
             const new_sample_with_defaults = {
                 sampleCategory: '',
-                sampleType: '', // Byt namn från pageType
+                sampleType: '',
                 ...action.payload
             };
             return { ...current_state, samples: [...current_state.samples, new_sample_with_defaults] };
@@ -248,12 +255,13 @@ function root_reducer(current_state, action) {
     }
 }
 
+// ... (resten av filen är oförändrad) ...
+
 function saveStateToLocalStorage(state_to_save) {
     if (!state_to_save || state_to_save.auditStatus === 'not_started') {
         return;
     }
     try {
-        // **NY LOGIK:** Skapa ett nytt objekt som innehåller både state och hash
         const autosave_payload = {
             auditState: state_to_save,
             lastKnownHash: window.location.hash
@@ -266,8 +274,6 @@ function saveStateToLocalStorage(state_to_save) {
 }
 
 function forceSaveStateToLocalStorage(state_to_save) {
-    // Denna funktion är till för att anropas synkront, t.ex. från beforeunload.
-    // Den använder INTE en debounce-timer.
     if (!state_to_save || state_to_save.auditStatus === 'not_started') {
         return;
     }
@@ -277,12 +283,9 @@ function forceSaveStateToLocalStorage(state_to_save) {
             lastKnownHash: window.location.hash
         };
         const serializedState = JSON.stringify(autosave_payload);
-        // Använd setItem, som är en synkron operation.
         localStorage.setItem(APP_AUTOSAVE_KEY, serializedState);
         console.log("[State.js] State forcefully saved to localStorage on page exit.");
     } catch (e) {
-        // Vi kan inte göra så mycket här eftersom sidan är på väg att stängas,
-        // men vi loggar felet.
         console.error("[State.js] Could not perform final save to localStorage:", e);
     }
 }
@@ -383,18 +386,15 @@ function loadStateFromLocalStorage() {
     try {
         const storedPayload = JSON.parse(serializedState);
         
-        // **NY LOGIK:** Kontrollera om det är det nya formatet med auditState
         if (storedPayload && storedPayload.auditState && storedPayload.lastKnownHash) {
             const storedState = storedPayload.auditState;
             if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
-                // Returnera hela payloaden så main.js kan komma åt både state och hash
                 return storedPayload; 
             }
         } else {
-            // Fallback för att kunna läsa det gamla formatet (om det skulle finnas kvar)
             const storedState = storedPayload;
             if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
-                return { auditState: storedState, lastKnownHash: '#audit_overview' }; // Default till översikten
+                return { auditState: storedState, lastKnownHash: '#audit_overview' };
             }
         }
     } catch (e) {

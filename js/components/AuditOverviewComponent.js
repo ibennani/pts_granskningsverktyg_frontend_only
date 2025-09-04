@@ -14,13 +14,11 @@ const AuditOverviewComponent_internal = (function () {
     let local_StoreActionTypes;
     let local_subscribe_func;
 
-    // --- ÅTERSTÄLLDA VARIABLER ---
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_format_iso_to_local_datetime, Helpers_escape_html, Helpers_get_current_iso_datetime_utc, Helpers_add_protocol_if_missing, Helpers_load_css;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
     let AuditLogic_calculate_overall_audit_progress;
-    // --- SLUT PÅ ÅTERSTÄLLDA VARIABLER ---
 
     let vardetal_progress_bar_component_instance = null;
     let vardetal_progress_bar_container_element = null;
@@ -41,7 +39,6 @@ const AuditOverviewComponent_internal = (function () {
             : (key, replacements) => `**${key}**`;
     }
 
-    // --- KORRIGERAD FUNKTION ---
     function assign_globals_once() {
         if (Translation_t) return;
         Translation_t = window.Translation?.t;
@@ -59,9 +56,9 @@ const AuditOverviewComponent_internal = (function () {
         ExportLogic_export_to_excel = window.ExportLogic?.export_to_excel;
         AuditLogic_calculate_overall_audit_progress = window.AuditLogic?.calculate_overall_audit_progress;
     }
-    // --- SLUT PÅ KORRIGERAD FUNKTION ---
 
     function handle_edit_sample_request_from_list(sample_id) {
+        // ÄNDRING: Navigera till den dedikerade formulärvyn
         router_ref('sample_form', { editSampleId: sample_id });
     }
 
@@ -185,7 +182,7 @@ const AuditOverviewComponent_internal = (function () {
     }
 
     async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes, _subscribe) {
-        assign_globals_once(); // Se till att detta körs
+        assign_globals_once();
         app_container_ref = _app_container;
         router_ref = _router;
         local_getState = _getState;
@@ -205,7 +202,7 @@ const AuditOverviewComponent_internal = (function () {
     }
 
     function render() {
-        assign_globals_once(); // Se till att detta körs
+        assign_globals_once();
         const t = get_t_internally();
 
         if (!app_container_ref || !Helpers_create_element || !t || !local_getState) {
@@ -292,9 +289,8 @@ const AuditOverviewComponent_internal = (function () {
         if (md.internalComment) {
             const comment_header = Helpers_create_element('h3', { text_content: t('internal_comment'), style: { 'font-size': '1rem', 'margin-top': '1rem', 'font-weight': '500' } });
             
-            // Byt ut <p> mot en <div> med markdown-styling
             const comment_div = Helpers_create_element('div', {
-                class_name: 'markdown-content', // För korrekt styling av listor etc.
+                class_name: 'markdown-content',
                 style: { 'background-color': 'var(--input-background-color)', 'padding': '0.75rem 1rem', 'border-radius': 'var(--border-radius)', 'border': '1px solid var(--border-color)' }
             });
 
@@ -329,6 +325,7 @@ const AuditOverviewComponent_internal = (function () {
                 class_name: ['button', 'button-default', 'button-small'],
                 html_content: `<span>${t('add_new_sample')}</span>` + (Helpers_get_icon_svg('add', ['currentColor'], 18) || '')
             });
+            // ÄNDRING: Navigera till den dedikerade formulärvyn
             add_sample_button.addEventListener('click', () => {
                 router_ref('sample_form');
             });
@@ -410,12 +407,11 @@ const AuditOverviewComponent_internal = (function () {
     }
 
     function handle_store_update(new_state) {
-        if (!app_container_ref || !app_container_ref.classList.contains(ACTIVE_VIEW_MARKER_CLASS)) {
-            return;
-        }
-        if (document.body.contains(app_container_ref)) {
-            render();
-        }
+        // Vi behöver inte denna check längre, `subscribe` i main.js hanterar detta
+        // if (!app_container_ref || !app_container_ref.classList.contains(ACTIVE_VIEW_MARKER_CLASS)) {
+        //     return;
+        // }
+        // render anropas nu från main.js' subscribe istället
     }
 
     return { init, render, destroy };

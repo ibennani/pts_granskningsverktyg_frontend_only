@@ -1,5 +1,4 @@
 // js/components/SampleManagementViewComponent.js
-import { AddSampleFormComponent } from './AddSampleFormComponent.js';
 import { SampleListComponent } from './SampleListComponent.js';
 
 export const SampleManagementViewComponent = (function () {
@@ -17,15 +16,15 @@ export const SampleManagementViewComponent = (function () {
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_load_css, Helpers_escape_html;
     let NotificationComponent_show_global_message, NotificationComponent_get_global_message_element_reference;
 
-    let add_sample_form_component_instance;
+    // Förenklat: Vi behöver inte längre instansiering av formulärkomponenten här
     let sample_list_component_instance;
-    let add_sample_form_container_element;
     let sample_list_container_element;
     let global_message_element_ref;
     let plate_element_ref;
 
-    let is_form_visible = false;
-    let current_editing_sample_id = null;
+    // Förenklat: Dessa state-variabler behövs inte längre i denna komponent
+    // let is_form_visible = false;
+    // let current_editing_sample_id = null;
     let previously_focused_element = null;
 
     function assign_globals_once() {
@@ -47,27 +46,14 @@ export const SampleManagementViewComponent = (function () {
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes;
         
-        // --- ÄNDRING: Läs in parameter från URL ---
-        // Om vi navigerar hit med en parameter, öppna formuläret direkt i redigeringsläge
-        current_editing_sample_id = _params?.editSampleId || null;
-        is_form_visible = !!current_editing_sample_id;
-        
         await init_sub_components();
         await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
     }
 
     async function init_sub_components() {
-        add_sample_form_container_element = Helpers_create_element('div', { id: 'add-sample-form-area-smv' });
         sample_list_container_element = Helpers_create_element('div', { id: 'sample-list-area-smv' });
 
-        add_sample_form_component_instance = AddSampleFormComponent;
-        await add_sample_form_component_instance.init(
-            add_sample_form_container_element,
-            on_sample_saved_or_updated_in_form,
-            () => toggle_add_sample_form_visibility(false),
-            local_getState, local_dispatch, local_StoreActionTypes
-        );
-
+        // Förenklat: Vi initierar bara listkomponenten nu
         sample_list_component_instance = SampleListComponent;
         await sample_list_component_instance.init(
             sample_list_container_element,
@@ -76,18 +62,13 @@ export const SampleManagementViewComponent = (function () {
                 on_delete: handle_delete_sample_request_from_list
             },
             router_ref, 
-            local_getState,
-            { show_management_buttons: true }
+            local_getState
         );
     }
     
-    function on_sample_saved_or_updated_in_form() {
-        toggle_add_sample_form_visibility(false);
-    }
-
+    // Ändrad logik: Navigera till den dedikerade formulärvyn
     function handle_edit_sample_request_from_list(sample_id) {
-        current_editing_sample_id = sample_id;
-        toggle_add_sample_form_visibility(true);
+        router_ref('sample_form', { editSampleId: sample_id });
     }
 
     function handle_delete_sample_request_from_list(sample_id) {
@@ -104,20 +85,10 @@ export const SampleManagementViewComponent = (function () {
 
         if (confirm(t('confirm_delete_sample', { sampleName: sample_name }))) {
             local_dispatch({ type: local_StoreActionTypes.DELETE_SAMPLE, payload: { sampleId: sample_id } });
-            toggle_add_sample_form_visibility(false); 
+            // Vi behöver inte längre rendera om manuellt, state-uppdateringen triggar det
         } else {
             previously_focused_element?.focus();
         }
-    }
-
-    function toggle_add_sample_form_visibility(show) {
-        is_form_visible = !!show;
-        
-        if (show && !current_editing_sample_id) {
-            current_editing_sample_id = null;
-        }
-
-        render();
     }
 
     function handle_start_audit() {
@@ -129,7 +100,6 @@ export const SampleManagementViewComponent = (function () {
         assign_globals_once();
         const t = Translation_t;
         const current_state = local_getState();
-        // --- BORTTAGEN: is_audit_in_progress behövs inte längre här ---
 
         if (!plate_element_ref || !app_container_ref.contains(plate_element_ref)) {
             app_container_ref.innerHTML = '';
@@ -144,59 +114,57 @@ export const SampleManagementViewComponent = (function () {
             plate_element_ref.appendChild(global_message_element_ref);
         }
 
-        const title_text = is_form_visible
-            ? (current_editing_sample_id ? t('edit_sample') : t('add_new_sample'))
-            : t('sample_management_title');
-        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: title_text }));
-
-        if (is_form_visible) {
-            add_sample_form_component_instance.render(current_editing_sample_id);
-            plate_element_ref.appendChild(add_sample_form_container_element);
-        } else {
-            plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('add_samples_intro_message') }));
-            
-            const top_actions_div = Helpers_create_element('div', { class_name: 'sample-management-actions' });
-            const add_button = Helpers_create_element('button', {
-                class_name: ['button', 'button-primary'],
-                html_content: `<span>${t('add_new_sample')}</span>` + Helpers_get_icon_svg('add')
-            });
-            add_button.addEventListener('click', () => {
-                current_editing_sample_id = null; 
-                toggle_add_sample_form_visibility(true);
-            });
-            top_actions_div.appendChild(add_button);
-            plate_element_ref.appendChild(top_actions_div);
-
-            sample_list_component_instance.render();
-            plate_element_ref.appendChild(sample_list_container_element);
-        }
+        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: t('sample_management_title') }));
+        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('add_samples_intro_message') }));
         
-        // --- FÖRENKLAD LOGIK FÖR KNAPPRAD ---
-        if (!is_form_visible) {
-            const bottom_actions_div = Helpers_create_element('div', { class_name: ['form-actions', 'space-between-groups'], style: 'margin-top: 2rem; width: 100%;' });
-            
-            // Tom vänstergrupp för att `justify-content: space-between` ska fungera
-            bottom_actions_div.appendChild(Helpers_create_element('div', { class_name: 'action-group-left' }));
+        const top_actions_div = Helpers_create_element('div', { class_name: 'sample-management-actions' });
+        const add_button = Helpers_create_element('button', {
+            class_name: ['button', 'button-primary'],
+            html_content: `<span>${t('add_new_sample')}</span>` + Helpers_get_icon_svg('add')
+        });
+        // Ändrad logik: Navigera till formulärvyn
+        add_button.addEventListener('click', () => {
+            router_ref('sample_form');
+        });
+        top_actions_div.appendChild(add_button);
+        plate_element_ref.appendChild(top_actions_div);
 
-            if (current_state.samples.length > 0) {
-                const right_group_bottom = Helpers_create_element('div', { class_name: 'action-group-right' });
-                const start_audit_button = Helpers_create_element('button', {
-                    class_name: ['button', 'button-success'],
-                    html_content: `<span>${t('start_audit')}</span>` + Helpers_get_icon_svg('check_circle')
-                });
-                start_audit_button.addEventListener('click', handle_start_audit);
-                right_group_bottom.appendChild(start_audit_button);
-                bottom_actions_div.appendChild(right_group_bottom);
-            }
-            plate_element_ref.appendChild(bottom_actions_div);
+        // Rendera alltid listan
+        sample_list_component_instance.render();
+        plate_element_ref.appendChild(sample_list_container_element);
+        
+        // Rendera alltid nedre knappraden
+        const bottom_actions_div = Helpers_create_element('div', { class_name: ['form-actions', 'space-between-groups'], style: 'margin-top: 2rem; width: 100%;' });
+        
+        // Tom vänstergrupp för att `justify-content: space-between` ska fungera
+        const left_group_bottom = Helpers_create_element('div', { class_name: 'action-group-left' });
+        const back_to_metadata_btn = Helpers_create_element('button', {
+            class_name: ['button', 'button-default'],
+            html_content: `<span>${t('back_to_metadata')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back') : '')
+        });
+        back_to_metadata_btn.addEventListener('click', () => router_ref('metadata'));
+        left_group_bottom.appendChild(back_to_metadata_btn);
+        bottom_actions_div.appendChild(left_group_bottom);
+
+
+        if (current_state.samples.length > 0) {
+            const right_group_bottom = Helpers_create_element('div', { class_name: 'action-group-right' });
+            const start_audit_button = Helpers_create_element('button', {
+                class_name: ['button', 'button-success'],
+                html_content: `<span>${t('start_audit')}</span>` + Helpers_get_icon_svg('check_circle')
+            });
+            start_audit_button.addEventListener('click', handle_start_audit);
+            right_group_bottom.appendChild(start_audit_button);
+            bottom_actions_div.appendChild(right_group_bottom);
         }
+        plate_element_ref.appendChild(bottom_actions_div);
     }
 
     function destroy() {
-        add_sample_form_component_instance?.destroy();
+        // Förenklat: behöver inte längre förstöra formulärkomponenten
         sample_list_component_instance?.destroy();
         plate_element_ref = null;
-        current_editing_sample_id = null;
+        previously_focused_element = null;
     }
 
     return { init, render, destroy };
