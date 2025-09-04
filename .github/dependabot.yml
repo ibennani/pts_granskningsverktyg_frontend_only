@@ -1,0 +1,29 @@
+# Fil: .github/dependabot.yml
+
+version: 2
+updates:
+  # Konfiguration för npm (JavaScript-beroenden)
+  - package-ecosystem: "npm"
+    # Söker efter package.json och package-lock.json i roten av repot
+    directory: "/"
+    # Hur ofta ska Dependabot kolla efter uppdateringar?
+    schedule:
+      interval: "daily" # Kan vara "weekly" eller "monthly"
+      time: "04:00" # Tid på dygnet (UTC)
+      timezone: "Europe/Stockholm" # Tidszon för schemat
+
+    # Begränsa antalet öppna PRs från Dependabot för att undvika att bli överöst
+    open-pull-requests-limit: 10
+
+    # Valfritt: Lägg automatiskt till granskare till PRs
+    reviewers:
+      - "ibennani" # Byt ut detta mot ditt GitHub-användarnamn
+
+    # Valfritt: Tilldela PRs till någon automatiskt
+    assignees:
+      - "ibennani" # Byt ut detta mot ditt GitHub-användarnamn
+
+    # Valfritt: Lägg till etiketter (labels) på PRs för bättre organisering
+    labels:
+      - "dependencies"
+      - "dependabot"
