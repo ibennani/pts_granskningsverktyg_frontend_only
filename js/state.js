@@ -306,7 +306,7 @@ function dispatch(action) {
             clearTimeout(autosaveDebounceTimer);
             autosaveDebounceTimer = setTimeout(() => {
                 saveStateToLocalStorage(internal_state);
-            }, 1500);
+            }, 3000);
 
             notify_listeners(); 
         }

@@ -344,7 +344,7 @@ export const RequirementAuditComponent = (function () {
         clearTimeout(debounceTimerComments);
         debounceTimerComments = setTimeout(() => {
             auto_save_general_comments();
-        }, 400);
+        }, 3000);
     }
     
     function auto_save_general_comments() { 
@@ -382,7 +382,7 @@ export const RequirementAuditComponent = (function () {
         clearTimeout(debounceTimerObservation[key]);
         debounceTimerObservation[key] = setTimeout(() => {
             auto_save_pc_observation_detail(check_id, pc_id);
-        }, 400);
+        }, 3000);
     }
     
     function auto_save_pc_observation_detail(check_id, pc_id) {
