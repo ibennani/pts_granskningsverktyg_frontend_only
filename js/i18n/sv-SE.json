@@ -353,7 +353,7 @@
   "info_about_total_deficiency_score": "Information om Total Bristpoäng",
   "total_score_explanation_text": "En sammanvägd poäng baserad på antal och allvarlighetsgrad av funna brister. Ju lägre poäng, desto bättre resultat.",
   "lower_is_better": "Ju lägre, desto bättre",
-  "based_on_samples": "Baserat på {count} granskade stickprov.",
+  "based_on_samples": "Baserat på {count} stycken stickprov.",
   "score_by_principle": "Uppdelning per princip",
   "info_about_principle_scores": "Information om poäng per princip",
   "principle_scores_explanation_text": "Visar hur bristerna fördelar sig över WCAG:s fyra grundprinciper. Ger en indikation på var de största problemområdena finns.",

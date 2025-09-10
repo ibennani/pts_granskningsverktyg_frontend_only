@@ -353,7 +353,7 @@
   "info_about_total_deficiency_score": "Information about Total Deficiency Score",
   "total_score_explanation_text": "A weighted score based on the number and severity of deficiencies found. A lower score indicates a better result.",
   "lower_is_better": "Lower is better",
-  "based_on_samples": "Based on {count} audited samples.",
+  "based_on_samples": "Based on {count} samples.",
   "score_by_principle": "Breakdown by Principle",
   "info_about_principle_scores": "Information about scores per principle",
   "principle_scores_explanation_text": "Shows how deficiencies are distributed across the four core principles of accessibility. Indicates where the main problem areas are.",
