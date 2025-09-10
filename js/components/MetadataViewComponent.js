@@ -30,6 +30,7 @@ export const MetadataViewComponent = (function () {
         NotificationComponent_clear_global_message = window.NotificationComponent?.clear_global_message;
     }
 
+    // MODIFIED: init is now simpler
     async function init(_app_container, _router_cb, _params, _getState, _dispatch, _StoreActionTypes) {
         assign_globals_once();
         app_container_ref = _app_container;
@@ -41,12 +42,9 @@ export const MetadataViewComponent = (function () {
         metadata_form_container_element = Helpers_create_element('div', { id: 'metadata-form-container-in-create-view' });
 
         metadata_form_component_instance = MetadataFormComponent;
-        // The component is initialized with options specific for the "create" flow
         await metadata_form_component_instance.init(metadata_form_container_element, {
-            onSubmit: handle_form_submit,
-            initialData: local_getState().auditMetadata,
-            submitButtonText: Translation_t('continue_to_samples')
-            // No cancel button needed in this flow
+            onSubmit: handle_form_submit
+            // No onCancel callback needed for this view
         });
     }
 
@@ -58,7 +56,6 @@ export const MetadataViewComponent = (function () {
         router_ref('sample_management');
     }
     
-    // This function creates the read-only view for when metadata cannot be edited.
     function render_static_view(plate_element, metadata_from_store) {
         const t = Translation_t;
         
@@ -101,6 +98,7 @@ export const MetadataViewComponent = (function () {
         plate_element.appendChild(actions_div_readonly);
     }
 
+    // MODIFIED: render now passes dynamic options to the form component
     function render() {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
@@ -116,7 +114,6 @@ export const MetadataViewComponent = (function () {
         const global_message_element = NotificationComponent_get_global_message_element_reference();
         if (global_message_element) {
             plate_element.appendChild(global_message_element);
-            // Clear any non-persistent messages when re-rendering
             if (!global_message_element.classList.contains('message-error') && !global_message_element.classList.contains('message-warning')) {
                 NotificationComponent_clear_global_message();
             }
@@ -128,7 +125,15 @@ export const MetadataViewComponent = (function () {
 
         if (is_editable) {
             plate_element.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('metadata_form_instruction') }));
-            metadata_form_component_instance.render();
+            
+            // Dynamic options are created here with fresh translations
+            const form_options = {
+                initialData: current_state.auditMetadata,
+                submitButtonText: t('continue_to_samples')
+                // No cancelButtonText needed for this view
+            };
+            metadata_form_component_instance.render(form_options);
+            
             plate_element.appendChild(metadata_form_container_element);
         } else {
             plate_element.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('audit_started_metadata_locked') }));

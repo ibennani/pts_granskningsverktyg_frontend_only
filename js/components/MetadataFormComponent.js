@@ -6,18 +6,15 @@ export const MetadataFormComponent = (function () {
     const CSS_PATH = 'css/components/metadata_form_component.css';
     let form_container_ref;
     
-    // Callbacks and configuration passed from parent
+    // Callbacks passed from parent during init
     let on_submit_callback;
-    let initial_data = {};
-    let submit_button_text = 'Submit';
-    let cancel_button_text = null; // Optional cancel button
-    let on_cancel_callback = null;
+    let on_cancel_callback;
 
     // Dependencies
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_add_protocol_if_missing, Helpers_load_css;
 
-    // Internal DOM references
+    // Internal DOM references, live only during render cycle
     let form_element_ref;
     let case_number_input, actor_name_input, actor_link_input, auditor_name_input, internal_comment_input;
 
@@ -30,16 +27,13 @@ export const MetadataFormComponent = (function () {
         Helpers_load_css = window.Helpers?.load_css;
     }
 
-    async function init(_form_container, _options) {
+    // MODIFIED: init is now simpler, only taking callbacks and the container.
+    async function init(_form_container, _callbacks) {
         assign_globals_once();
         form_container_ref = _form_container;
         
-        // Unpack options from parent component
-        on_submit_callback = _options.onSubmit;
-        initial_data = _options.initialData || {};
-        submit_button_text = _options.submitButtonText || 'Submit';
-        cancel_button_text = _options.cancelButtonText || null;
-        on_cancel_callback = _options.onCancel || null;
+        on_submit_callback = _callbacks.onSubmit;
+        on_cancel_callback = _callbacks.onCancel || null;
 
         await Helpers_load_css(CSS_PATH);
     }
@@ -91,30 +85,37 @@ export const MetadataFormComponent = (function () {
         return { form_group, input_element };
     }
 
-    function render() {
+    // MODIFIED: render now accepts dynamic options.
+    function render(options = {}) {
+        const {
+            initialData = {},
+            submitButtonText = 'Submit',
+            cancelButtonText = null
+        } = options;
+
         form_container_ref.innerHTML = '';
         const form_wrapper = Helpers_create_element('div', { class_name: 'metadata-form-container' });
 
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);
 
-        const case_field = create_form_field('caseNumber', 'case_number', 'text', initial_data.caseNumber);
+        const case_field = create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
         case_number_input = case_field.input_element;
         form_element_ref.appendChild(case_field.form_group);
 
-        const actor_field = create_form_field('actorName', 'actor_name', 'text', initial_data.actorName);
+        const actor_field = create_form_field('actorName', 'actor_name', 'text', initialData.actorName);
         actor_name_input = actor_field.input_element;
         form_element_ref.appendChild(actor_field.form_group);
 
-        const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', initial_data.actorLink);
+        const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', initialData.actorLink);
         actor_link_input = actor_link_field.input_element;
         form_element_ref.appendChild(actor_link_field.form_group);
 
-        const auditor_field = create_form_field('auditorName', 'auditor_name', 'text', initial_data.auditorName);
+        const auditor_field = create_form_field('auditorName', 'auditor_name', 'text', initialData.auditorName);
         auditor_name_input = auditor_field.input_element;
         form_element_ref.appendChild(auditor_field.form_group);
 
-        const comment_field = create_form_field('internalComment', 'internal_comment', 'textarea', initial_data.internalComment);
+        const comment_field = create_form_field('internalComment', 'internal_comment', 'textarea', initialData.internalComment);
         internal_comment_input = comment_field.input_element;
         form_element_ref.appendChild(comment_field.form_group);
         
@@ -124,11 +125,11 @@ export const MetadataFormComponent = (function () {
 
         const form_actions_wrapper = Helpers_create_element('div', { class_name: 'form-actions' });
         
-        if (cancel_button_text && typeof on_cancel_callback === 'function') {
+        if (cancelButtonText && typeof on_cancel_callback === 'function') {
             const cancel_button = Helpers_create_element('button', {
                 class_name: ['button', 'button-default'],
-                attributes: { type: 'button' }, // Important: not a submit button
-                text_content: cancel_button_text
+                attributes: { type: 'button' },
+                text_content: cancelButtonText
             });
             cancel_button.addEventListener('click', on_cancel_callback);
             form_actions_wrapper.appendChild(cancel_button);
@@ -137,7 +138,7 @@ export const MetadataFormComponent = (function () {
         const submit_button = Helpers_create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'submit' },
-            html_content: `<span>${submit_button_text}</span>` + Helpers_get_icon_svg('arrow_forward')
+            html_content: `<span>${submitButtonText}</span>` + Helpers_get_icon_svg('arrow_forward')
         });
         form_actions_wrapper.appendChild(submit_button);
 
@@ -151,11 +152,9 @@ export const MetadataFormComponent = (function () {
             form_element_ref.removeEventListener('submit', handle_form_submit);
         }
         form_container_ref.innerHTML = '';
-        // Clear all references to avoid memory leaks
         form_element_ref = null;
         on_submit_callback = null;
         on_cancel_callback = null;
-        initial_data = {};
     }
 
     return {

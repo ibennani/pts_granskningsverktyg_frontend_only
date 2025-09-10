@@ -28,6 +28,7 @@ export const EditMetadataViewComponent = (function () {
         NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
     }
 
+    // MODIFIED: init is now simpler
     async function init(_app_container, _router_cb, _params, _getState, _dispatch, _StoreActionTypes) {
         assign_globals_once();
         app_container_ref = _app_container;
@@ -41,10 +42,7 @@ export const EditMetadataViewComponent = (function () {
         metadata_form_component_instance = MetadataFormComponent;
         await metadata_form_component_instance.init(metadata_form_container_element, {
             onSubmit: handle_form_submit,
-            onCancel: handle_cancel,
-            initialData: local_getState().auditMetadata,
-            submitButtonText: Translation_t('save_changes_button'),
-            cancelButtonText: Translation_t('return_without_saving_button_text', {defaultValue: "Return without saving"})
+            onCancel: handle_cancel
         });
     }
 
@@ -62,6 +60,7 @@ export const EditMetadataViewComponent = (function () {
         router_ref('audit_overview');
     }
 
+    // MODIFIED: render now passes dynamic options to the form component
     function render() {
         app_container_ref.innerHTML = '';
 
@@ -75,9 +74,15 @@ export const EditMetadataViewComponent = (function () {
         plate_element.appendChild(Helpers_create_element('h1', { text_content: Translation_t('edit_audit_metadata_title') }));
         plate_element.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: Translation_t('edit_metadata_form_instruction') }));
         
-        metadata_form_component_instance.render();
+        // Dynamic options are created here, with fresh translations
+        const form_options = {
+            initialData: local_getState().auditMetadata,
+            submitButtonText: Translation_t('save_changes_button'),
+            cancelButtonText: Translation_t('return_without_saving_button_text')
+        };
+        metadata_form_component_instance.render(form_options);
+        
         plate_element.appendChild(metadata_form_container_element);
-
         app_container_ref.appendChild(plate_element);
     }
 
