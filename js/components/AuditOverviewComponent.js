@@ -115,21 +115,21 @@ export const AuditOverviewComponent = (function () {
 
     function create_info_item(label_key, value, is_html = false) {
         const t = Translation_t;
-        const p = Helpers_create_element('p');
-        const strong = Helpers_create_element('strong', { text_content: t(label_key) + ':' });
-        p.appendChild(strong); p.appendChild(document.createTextNode(' '));
+        const item_div = Helpers_create_element('div', { class_name: 'info-item' });
+        const strong = Helpers_create_element('strong', { text_content: t(label_key) });
+        item_div.appendChild(strong);
+        
+        const p = Helpers_create_element('p', { class_name: 'value' });
         if (value || typeof value === 'number' || typeof value === 'boolean') {
             if (is_html) {
-                const span = Helpers_create_element('span', { class_name: 'value' });
-                span.innerHTML = value;
-                p.appendChild(span);
+                p.innerHTML = value;
             } else {
-                p.appendChild(Helpers_create_element('span', { class_name: 'value', text_content: String(value) }));
+                p.textContent = String(value);
             }
         } else {
-            p.appendChild(Helpers_create_element('span', { class_name: 'value text-muted', text_content: '---' }));
+            p.textContent = '---';
+            p.classList.add('text-muted');
         }
-        const item_div = Helpers_create_element('div', { class_name: 'info-item' });
         item_div.appendChild(p);
         return item_div;
     }
@@ -203,40 +203,64 @@ export const AuditOverviewComponent = (function () {
         }
         plate_element.appendChild(Helpers_create_element('h1', { text_content: t('audit_overview_title') }));
         
-        if (scoreAnalysisComponentInstance) {
-            plate_element.appendChild(scoreAnalysisContainerElement);
-            scoreAnalysisComponentInstance.render();
-        }
+        const dashboard_container = Helpers_create_element('div', { class_name: 'overview-dashboard' });
 
-        const section1 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
-        section1.appendChild(Helpers_create_element('h2', { text_content: t('audit_info_title') }));
-        const info_grid = Helpers_create_element('div', { class_name: 'info-grid' });
+        const info_panel = Helpers_create_element('div', { class_name: ['dashboard-panel', 'info-panel'] });
+        info_panel.appendChild(Helpers_create_element('h2', { 
+            class_name: 'dashboard-panel__title',
+            text_content: t('audit_info_title') 
+        }));
         
         const md = current_global_state.auditMetadata || {};
         const rf_meta = current_global_state.ruleFileContent.metadata || {};
+        const lang_code = window.Translation.get_current_language_code();
 
-        info_grid.appendChild(create_info_item('case_number', md.caseNumber));
-        info_grid.appendChild(create_info_item('actor_name', md.actorName));
+        info_panel.appendChild(create_info_item('case_number', md.caseNumber));
+        info_panel.appendChild(create_info_item('actor_name', md.actorName));
         if (md.actorLink) {
             const safe_link = Helpers_add_protocol_if_missing(md.actorLink);
             const link_html = `<a href="${Helpers_escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${Helpers_escape_html(md.actorLink)}</a>`;
-            info_grid.appendChild(create_info_item('actor_link', link_html, true));
+            info_panel.appendChild(create_info_item('actor_link', link_html, true));
         } else {
-            info_grid.appendChild(create_info_item('actor_link', null));
+            info_panel.appendChild(create_info_item('actor_link', null));
         }
-        info_grid.appendChild(create_info_item('auditor_name', md.auditorName));
-        info_grid.appendChild(create_info_item('rule_file_title', rf_meta.title));
-        info_grid.appendChild(create_info_item('version_rulefile', rf_meta.version));
-        info_grid.appendChild(create_info_item('status', t(`audit_status_${current_global_state.auditStatus}`)));
-        const lang_code = window.Translation.get_current_language_code();
-        info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime, lang_code)));
+        info_panel.appendChild(create_info_item('auditor_name', md.auditorName));
+        info_panel.appendChild(create_info_item('rule_file_title', rf_meta.title));
+        info_panel.appendChild(create_info_item('version_rulefile', rf_meta.version));
+        info_panel.appendChild(create_info_item('status', t(`audit_status_${current_global_state.auditStatus}`)));
+        info_panel.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime, lang_code)));
         if (current_global_state.endTime) {
-            info_grid.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_global_state.endTime, lang_code)));
+            info_panel.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_global_state.endTime, lang_code)));
         }
         
-        section1.appendChild(info_grid);
-        plate_element.appendChild(section1);
+        if (md.internalComment) {
+            const comment_item = create_info_item('internal_comment', md.internalComment);
+            const comment_value_p = comment_item.querySelector('p.value');
+            if (comment_value_p) {
+                comment_value_p.classList.add('markdown-content');
+                if (typeof marked !== 'undefined') {
+                    comment_value_p.innerHTML = marked.parse(md.internalComment, { breaks: true });
+                }
+            }
+            info_panel.appendChild(comment_item);
+        }
+        
+        dashboard_container.appendChild(info_panel);
 
+        const score_panel = Helpers_create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
+        score_panel.appendChild(Helpers_create_element('h2', { 
+            class_name: 'dashboard-panel__title',
+            text_content: t('result_summary_and_deficiency_analysis', {defaultValue: "Result Summary & Deficiency Analysis"})
+        }));
+        
+        if (scoreAnalysisComponentInstance) {
+            score_panel.appendChild(scoreAnalysisContainerElement);
+            scoreAnalysisComponentInstance.render();
+        }
+        dashboard_container.appendChild(score_panel);
+        
+        plate_element.appendChild(dashboard_container);
+        
         if (AuditLogic_calculate_overall_audit_progress && window.ProgressBarComponent) {
             const overall_progress_section = Helpers_create_element('section', { class_name: 'audit-overview-section' });
             
@@ -247,14 +271,10 @@ export const AuditOverviewComponent = (function () {
             });
 
             const text_wrapper = Helpers_create_element('div', { class_name: 'progress-text-wrapper' });
-            
-            // **** START OF CORRECTION ****
-            // Use innerHTML with a non-breaking space entity (&nbsp;) to guarantee the space.
             const labelText = t('total_requirements_audited_label', {defaultValue: "Total requirements reviewed"});
             const valueText = `${progress_data.audited} / ${progress_data.total}`;
             text_wrapper.innerHTML = `<strong>${labelText}:</strong>&nbsp;<span class="value">${valueText}</span>`;
-            // **** END OF CORRECTION ****
-
+            
             const overall_progress_bar = window.ProgressBarComponent.create(
                 progress_data.audited, 
                 progress_data.total, 
@@ -268,33 +288,6 @@ export const AuditOverviewComponent = (function () {
             plate_element.appendChild(overall_progress_section);
         }
         
-        if (md.internalComment) {
-            const comment_header = Helpers_create_element('h3', { text_content: t('internal_comment'), style: { 'font-size': '1rem', 'margin-top': '1.5rem', 'font-weight': '500' } });
-            
-            const comment_div = Helpers_create_element('div', {
-                class_name: 'markdown-content',
-                style: { 'background-color': 'var(--input-background-color)', 'padding': '0.75rem 1rem', 'border-radius': 'var(--border-radius)', 'border': '1px solid var(--border-color)' }
-            });
-
-            if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
-                const renderer = new marked.Renderer();
-                renderer.html = (html_token) => {
-                    const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
-                        ? html_token.text
-                        : String(html_token || '');
-                    return window.Helpers.escape_html(text_to_escape);
-                };
-                renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-                
-                comment_div.innerHTML = marked.parse(md.internalComment, { renderer: renderer });
-            } else {
-                comment_div.textContent = md.internalComment;
-            }
-
-            section1.appendChild(comment_header);
-            section1.appendChild(comment_div);
-        }
-
         const section2 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         const sample_management_header_div = Helpers_create_element('div', { class_name: 'sample-list-header' });
         const number_of_samples = current_global_state.samples ? current_global_state.samples.length : 0;

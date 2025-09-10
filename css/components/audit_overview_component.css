@@ -1,75 +1,115 @@
 /* css/components/audit_overview_component.css */
 
-/* Styles for AuditOverviewComponent */
-.audit-overview-plate {
-    /* ... */
+/* --- NY LAYOUT FÖR DASHBOARD --- */
+.overview-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Responsiv grid */
+    gap: 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 2rem;
 }
 
+.dashboard-panel {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-panel__title {
+    font-size: 1.5rem;
+    color: var(--primary-color-dark);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
+/* --- Kompakt styling för informationspanelen (VÄNSTER) --- */
+.info-panel .info-item {
+    margin-bottom: 0.8rem;
+    word-break: break-word;
+}
+
+.info-panel .info-item strong {
+    display: block;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+    font-size: 0.9em;
+}
+
+.info-panel .info-item p.value {
+    margin: 0;
+    color: var(--text-color-muted);
+}
+
+.info-panel .info-item p.value.text-muted {
+    font-style: italic;
+}
+/* --- SLUT PÅ INFO-PANEL STYLING --- */
+
+
+/* --- ALLMÄNNA SEKTIONSSTILAR --- */
 .audit-overview-section {
     margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color);
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
 }
 .audit-overview-section:last-child {
     border-bottom: none;
     margin-bottom: 0;
 }
 
-/* Generell stil för H2 i denna vy */
-.audit-overview-section h2 {
-    font-size: 1.5rem;
-    color: var(--primary-color-dark);
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px dashed var(--secondary-color);
-}
 
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.info-grid .info-item p {
-    margin-bottom: 0.5rem;
+/* --- Total Progress Bar Container --- */
+.info-item--progress-container {
     background-color: var(--background-color);
-    word-break: break-word;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
 }
-.info-grid .info-item strong {
-    display: block;
+
+.progress-text-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress-text-wrapper strong {
     color: var(--text-color);
     font-weight: 500;
 }
-.info-grid .info-item span.value {
+
+.progress-text-wrapper span.value {
     color: var(--text-color-muted);
+    font-size: 0.9em;
 }
 
 
-/* --- SLUTGILTIG LÖSNING FÖR HEADER TILL STICKPROVSLISTAN --- */
+/* --- Header för stickprovslistan --- */
 .sample-list-header {
     display: flex;
     align-items: baseline;
     justify-content: flex-start;
     gap: 1rem;
-    
-    /* Ta bort padding och border från själva headern */
     padding-bottom: 0; 
     border-bottom: none; 
     margin-bottom: 1rem;
-
-    /* VIKTIGT: Denna header ska inte vara en sektionsavdelare */
-    /* Detta åsidosätter den generella H2-regeln för just denna rubrik */
 }
 
 .sample-list-header h2 {
-    /* Nollställ alla värden från den generella h2-regeln */
+    font-size: 1.5rem;
+    color: var(--primary-color-dark);
     margin: 0;
     padding: 0;
     border: none;
 }
-/* --- SLUT PÅ SLUTGILTIG LÖSNING --- */
 
-
+/* --- Åtgärder längst ner --- */
 .audit-overview-actions {
     display: flex;
     flex-wrap: wrap;
@@ -85,48 +125,4 @@
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: center;
-}
-
-.audit-overview-actions .action-group-left .button,
-.audit-overview-actions .action-group-right .button {
-    margin-right: 0;
-}
-
-
-/* --- NYA STILAR FÖR INTEGRERAD PROGRESS-STAPEL --- */
-
-/* Applicera samma bakgrund och padding som de andra info-fälten */
-.info-item--progress-container {
-    background-color: var(--background-color);
-    padding: 0.75rem 1rem;
-    border-radius: var(--border-radius);
-    margin-top: 1rem; /* Lite extra luft ovanför */
-}
-
-/* Styr layouten för textraden */
-.progress-text-wrapper {
-    display: flex;
-    justify-content: flex-start;
-    align-items: baseline;
-    margin-bottom: 0.5rem; /* Avstånd till stapeln */
-}
-
-/* Se till att etiketten (strong) och värdet (span.value) ärver stilar */
-.progress-text-wrapper strong {
-    color: var(--text-color);
-    font-weight: 500;
-}
-
-.progress-text-wrapper span.value {
-    color: var(--text-color-muted);
-    font-size: 0.9em;
-}
-
-/* Anpassning för mindre skärmar: Lägg texten ovanför värdet */
-@media (max-width: 400px) {
-    .progress-text-wrapper {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.25rem;
-    }
 }

@@ -15,7 +15,7 @@ export const ScoreAnalysisComponent = (function () {
         Helpers = _dependencies.Helpers;
         Translation = _dependencies.Translation;
         getState = _dependencies.getState;
-        ScoreCalculator = _dependencies.ScoreCalculator; // Store reference to the calculator module
+        ScoreCalculator = _dependencies.ScoreCalculator;
 
         await Helpers.load_css(CSS_PATH);
     }
@@ -42,14 +42,12 @@ export const ScoreAnalysisComponent = (function () {
         }
         
         return all_reqs.filter(req => {
-            if (!req.contentType || req.contentType.length === 0) return true; // Relevant for all if contentType is empty
+            if (!req.contentType || req.contentType.length === 0) return true;
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
     }
 
     function _performAnalysis() {
-        // This function is now superseded by the ScoreCalculator module
-        // We call the global module instead.
         return ScoreCalculator.calculateDeficiencyScore(getState());
     }
 
@@ -58,29 +56,17 @@ export const ScoreAnalysisComponent = (function () {
         container_ref.innerHTML = '';
         
         const t = Translation.t;
-        const lang_code = Translation.get_current_language_code(); // Get current language
+        const lang_code = Translation.get_current_language_code();
         const analysis = _performAnalysis();
         
         if (!analysis) {
             return;
         }
 
-        const state = getState();
-
-        const section = Helpers.create_element('section', { 
-            class_name: 'score-analysis-section', 
-            attributes: { 'aria-labelledby': 'score-analysis-title' } 
-        });
-
-        section.appendChild(Helpers.create_element('h2', { 
-            id: 'score-analysis-title',
-            class_name: 'score-analysis-section__main-title',
-            text_content: t('result_summary_and_deficiency_analysis', {defaultValue: "Result Summary & Deficiency Analysis"})
-        }));
+        const main_container = Helpers.create_element('div', { class_name: 'score-analysis-content' });
 
         // --- Total Score Part ---
         const totalScoreContainer = Helpers.create_element('div', { class_name: 'score-analysis-total' });
-        // **** REMOVED: Help button and associated tooltip text are removed ****
         totalScoreContainer.appendChild(Helpers.create_element('h3', { 
             class_name: 'score-analysis-total__title',
             text_content: t('deficiency_index', {defaultValue: "Deficiency Index"})
@@ -132,11 +118,10 @@ export const ScoreAnalysisComponent = (function () {
         scoreVisualization.appendChild(svgCircle);
         scoreVisualization.appendChild(scoreContext);
         totalScoreContainer.appendChild(scoreVisualization);
-        section.appendChild(totalScoreContainer);
+        main_container.appendChild(totalScoreContainer);
 
         // --- Score by Principle Part ---
         const principlesContainer = Helpers.create_element('div', { class_name: 'score-analysis-principles' });
-        // **** REMOVED: Help button and associated tooltip text are removed ****
         principlesContainer.appendChild(Helpers.create_element('h3', { 
             class_name: 'score-analysis-principles__title',
             text_content: t('score_by_principle', {defaultValue: "Breakdown by Principle"})
@@ -153,8 +138,8 @@ export const ScoreAnalysisComponent = (function () {
             const dd = Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
             
             let barStatusClass = 'status--low';
-            if (data.score >= 50) barStatusClass = 'status--high';
-            else if (data.score >= 10) barStatusClass = 'status--medium';
+            if (data.score > 25) barStatusClass = 'status--high';
+            else if (data.score > 5) barStatusClass = 'status--medium';
             
             const formattedScoreForAria = Helpers.format_number_locally(data.score, lang_code);
             
@@ -180,8 +165,8 @@ export const ScoreAnalysisComponent = (function () {
         }
         
         principlesContainer.appendChild(dl);
-        section.appendChild(principlesContainer);
-        container_ref.appendChild(section);
+        main_container.appendChild(principlesContainer);
+        container_ref.appendChild(main_container);
     }
 
     function destroy() {
