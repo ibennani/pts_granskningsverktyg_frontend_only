@@ -365,5 +365,12 @@
   "total_score_explanation_text_0_100": "Ett normaliserat index från 0-100 som representerar andelen funna viktade brister, i förhållande till vad som granskats. En lägre poäng är bättre.",
   "principle_scores_explanation_text_0_100": "Visar bristindex (0-100) för var och en av de fyra grundprinciperna för tillgänglighet.",
   "total_requirements_audited_label": "Totalt antal granskade krav",
-  "info_about_deficiency_index": "Information om Bristindex"
+  "info_about_deficiency_index": "Information om Bristindex",
+  "edit_audit_metadata_title": "Redigera granskningsinformation",
+  "edit_metadata_form_instruction": "Uppdatera informationen nedan. Ändringarna kommer att synas i exporterade rapporter.",
+  "save_changes_button": "Spara ändringar",
+  "return_without_saving_button_text": "Återgå utan att spara",
+  "metadata_updated_successfully": "Granskningsinformationen har uppdaterats.",
+  "edit_audit_metadata_aria_label": "Redigera granskningsinformation",
+  "audit_started_metadata_locked": "Granskningen har startat, så informationen kan inte längre ändras här. Använd 'Redigera'-knappen i granskningsöversikten."
 }

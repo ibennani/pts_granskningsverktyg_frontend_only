@@ -363,5 +363,12 @@
   "principle_scores_explanation_text_0_100": "Shows the deficiency index (0-100) for each of the four core accessibility principles.",
   "total_requirements_audited_label": "Total Requirements Reviewed",
   "deficiency_index": "Deficiency Index",
-  "info_about_deficiency_index": "Information about Deficiency Index"
+  "info_about_deficiency_index": "Information about Deficiency Index",
+  "edit_audit_metadata_title": "Edit Audit Information",
+  "edit_metadata_form_instruction": "Update the information below. The changes will be reflected in exported reports.",
+  "save_changes_button": "Save changes",
+  "return_without_saving_button_text": "Return without saving",
+  "metadata_updated_successfully": "The audit information has been updated.",
+  "edit_audit_metadata_aria_label": "Edit audit information",
+  "audit_started_metadata_locked": "The audit has started, so this information can no longer be changed here. Use the 'Edit' button in the audit overview."
 }

@@ -206,10 +206,28 @@ export const AuditOverviewComponent = (function () {
         const dashboard_container = Helpers_create_element('div', { class_name: 'overview-dashboard' });
 
         const info_panel = Helpers_create_element('div', { class_name: ['dashboard-panel', 'info-panel'] });
-        info_panel.appendChild(Helpers_create_element('h2', { 
+        
+        // --- START: MODIFICATION FOR EDIT BUTTON ---
+        const info_panel_header = Helpers_create_element('div', {
+            style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }
+        });
+        info_panel_header.appendChild(Helpers_create_element('h2', { 
             class_name: 'dashboard-panel__title',
+            style: { marginBottom: '0', borderBottom: 'none' }, // Remove default styles
             text_content: t('audit_info_title') 
         }));
+
+        if (current_global_state.auditStatus === 'in_progress') {
+            const edit_metadata_button = Helpers_create_element('button', {
+                class_name: ['button', 'button-default', 'button-small'],
+                attributes: { 'aria-label': t('edit_audit_metadata_aria_label', {defaultValue: 'Edit audit information'}) },
+                html_content: `<span>${t('edit_prefix')}</span>` + Helpers_get_icon_svg('edit', ['currentColor'], 16)
+            });
+            edit_metadata_button.addEventListener('click', () => router_ref('edit_metadata'));
+            info_panel_header.appendChild(edit_metadata_button);
+        }
+        info_panel.appendChild(info_panel_header);
+        // --- END: MODIFICATION FOR EDIT BUTTON ---
         
         const md = current_global_state.auditMetadata || {};
         const rf_meta = current_global_state.ruleFileContent.metadata || {};
