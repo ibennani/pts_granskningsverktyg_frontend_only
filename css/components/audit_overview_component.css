@@ -1,3 +1,5 @@
+/* css/components/audit_overview_component.css */
+
 /* Styles for AuditOverviewComponent */
 .audit-overview-plate {
     /* ... */
@@ -88,4 +90,43 @@
 .audit-overview-actions .action-group-left .button,
 .audit-overview-actions .action-group-right .button {
     margin-right: 0;
+}
+
+
+/* --- NYA STILAR FÖR INTEGRERAD PROGRESS-STAPEL --- */
+
+/* Applicera samma bakgrund och padding som de andra info-fälten */
+.info-item--progress-container {
+    background-color: var(--background-color);
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    margin-top: 1rem; /* Lite extra luft ovanför */
+}
+
+/* Styr layouten för textraden */
+.progress-text-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    align-items: baseline;
+    margin-bottom: 0.5rem; /* Avstånd till stapeln */
+}
+
+/* Se till att etiketten (strong) och värdet (span.value) ärver stilar */
+.progress-text-wrapper strong {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.progress-text-wrapper span.value {
+    color: var(--text-color-muted);
+    font-size: 0.9em;
+}
+
+/* Anpassning för mindre skärmar: Lägg texten ovanför värdet */
+@media (max-width: 400px) {
+    .progress-text-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
 }

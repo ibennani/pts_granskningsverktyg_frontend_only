@@ -1,0 +1,208 @@
+/* css/components/score_analysis_component.css */
+
+.score-analysis-section {
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.score-analysis-section__main-title {
+    font-size: 1.5rem;
+    color: var(--primary-color-dark);
+    margin-top: 0;
+    margin-bottom: 2rem;
+    padding-bottom: 0.5rem;
+}
+
+.score-analysis-total, .score-analysis-principles {
+    margin-bottom: 2.5rem;
+}
+
+.score-analysis-principles:last-child {
+    margin-bottom: 0.5rem;
+}
+
+.score-analysis__help-button {
+    display: inline-block;
+    vertical-align: middle;
+    border: none;
+    background-color: transparent;
+    color: var(--text-color-muted);
+    padding: 0.25rem;
+    margin-left: 0.5rem;
+    cursor: help;
+    border-radius: 50%;
+    line-height: 1;
+    position: relative;
+}
+
+.score-analysis__help-button:hover,
+.score-analysis__help-button:focus-visible {
+    color: var(--primary-color);
+    background-color: var(--button-default-bg);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--focus-ring-color-outer);
+}
+
+.score-analysis__help-button:focus-visible + .visually-hidden[role="tooltip"],
+.score-analysis__help-button:hover + .visually-hidden[role="tooltip"] {
+    clip: auto;
+    height: auto;
+    width: max-content;
+    max-width: 300px;
+    margin: 0;
+    overflow: visible;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(0.5rem);
+    background-color: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 10;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text-color);
+    text-align: left;
+}
+
+
+/* --- Total Score --- */
+.score-analysis-total__title, .score-analysis-principles__title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.score-analysis-total__visualization {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.score-analysis-total__score-svg {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.score-analysis-total__score-svg-circle {
+    fill: none;
+    stroke-width: 8;
+    stroke: var(--border-color);
+}
+
+.score-analysis-total__score-svg-text {
+    font-size: 38px;
+    font-weight: 700;
+    fill: var(--text-color);
+}
+
+.score-analysis-total__context p {
+    margin: 0;
+    line-height: 1.4;
+}
+
+.score-analysis-total__subtext {
+    font-style: italic;
+    color: var(--text-color-muted);
+}
+.score-analysis-total__info {
+    font-size: 0.9em;
+    color: var(--text-color-muted);
+}
+
+/* --- Score by Principle --- */
+.score-analysis-principles__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.principle-row {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    align-items: center;
+    gap: 1rem;
+}
+
+.principle-row__name {
+    font-weight: 500;
+    text-align: right;
+    font-size: 0.9em;
+}
+
+.principle-row__bar-container {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    background-color: var(--input-background-color);
+    border-radius: var(--border-radius);
+    height: 2em;
+    position: relative;
+    overflow: hidden;
+}
+
+.principle-row__bar {
+    height: 100%;
+    transition: width 0.5s ease-out;
+}
+
+.principle-row__value {
+    position: absolute;
+    left: 0.75rem;
+    font-weight: bold;
+    color: var(--text-color);
+    text-shadow: 0 0 4px rgba(255,255,255,0.7);
+}
+
+
+/* --- Color Statuses --- */
+.score-analysis-total__score-svg.status--low .score-analysis-total__score-svg-circle {
+    stroke: var(--success-color);
+}
+.score-analysis-total__score-svg.status--low .score-analysis-total__score-svg-text {
+    fill: var(--success-color);
+}
+
+.score-analysis-total__score-svg.status--medium .score-analysis-total__score-svg-circle {
+    stroke: var(--warning-color);
+}
+.score-analysis-total__score-svg.status--medium .score-analysis-total__score-svg-text {
+    fill: var(--warning-color);
+}
+
+.score-analysis-total__score-svg.status--high .score-analysis-total__score-svg-circle {
+    stroke: var(--danger-color);
+}
+.score-analysis-total__score-svg.status--high .score-analysis-total__score-svg-text {
+    fill: var(--danger-color);
+}
+
+
+/* For the bar fill itself */
+.principle-row__bar.status--low { background-color: var(--success-color); }
+.principle-row__bar.status--medium { background-color: var(--warning-color); }
+.principle-row__bar.status--high { background-color: var(--danger-color); }
+
+/* Ensure text inside colored bars is readable */
+.principle-row__bar.status--medium + .principle-row__value {
+    color: var(--button-warning-text, #2a1e14);
+    text-shadow: none;
+}
+[data-theme="dark"] .principle-row__bar.status--medium + .principle-row__value {
+    color: var(--button-warning-text, #1b2326);
+}
+
+.principle-row__bar.status--high + .principle-row__value {
+    color: var(--button-danger-text, #ffffff);
+    text-shadow: none;
+}

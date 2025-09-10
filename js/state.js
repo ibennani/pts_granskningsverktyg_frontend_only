@@ -2,7 +2,7 @@
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave';
-const APP_STATE_VERSION = '2.0.1';
+const APP_STATE_VERSION = '2.1.0'; // Version bumped to reflect new scoring model
 
 export const ActionTypes = {
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
@@ -13,12 +13,9 @@ export const ActionTypes = {
     DELETE_SAMPLE: 'DELETE_SAMPLE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
-    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT', // Maintained for potential future use
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
-    SET_PRECALCULATED_RULE_DATA: 'SET_PRECALCULATED_RULE_DATA',
-    UPDATE_CALCULATED_VARDETAL: 'UPDATE_CALCULATED_VARDETAL',
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
-    // --- NYA ACTION TYPES ---
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
     CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES'
 };
@@ -51,16 +48,10 @@ const initial_state = {
             }
         }
     },
-    auditCalculations: {
-        ruleData: {
-            weights_map: null,
-            rE_total: 0,
-            sum_of_all_weights: 0
-        },
-        currentVardetal: null
-    },
-    // --- NY EGENSKAP I STATE ---
-    pendingSampleChanges: null // Håller temporär data för bekräftelsevyn
+    // This part is now simplified. The score is calculated on-the-fly by the component.
+    // We no longer store pre-calculated data or the score itself in the central state.
+    auditCalculations: {}, 
+    pendingSampleChanges: null
 };
 
 let internal_state = { ...initial_state };
@@ -75,7 +66,6 @@ function root_reducer(current_state, action) {
     let new_state;
 
     switch (action.type) {
-        // --- NYA CASES I REDUCER ---
         case ActionTypes.STAGE_SAMPLE_CHANGES:
             return {
                 ...current_state,
@@ -88,8 +78,6 @@ function root_reducer(current_state, action) {
                 pendingSampleChanges: null
             };
         
-        // ... (resten av switch-satsen är oförändrad) ...
-
         case ActionTypes.INITIALIZE_NEW_AUDIT:
             return {
                 ...initial_state,
@@ -200,21 +188,15 @@ function root_reducer(current_state, action) {
                 console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload.');
                 return current_state;
             }
-            const new_precalculated_data = window.VardetalCalculator.precalculate_rule_data(action.payload.ruleFileContent);
             return {
                 ...action.payload,
-                auditCalculations: {
-                    ...current_state.auditCalculations,
-                    ruleData: new_precalculated_data
-                },
                 saveFileVersion: APP_STATE_VERSION
             };
 
         case ActionTypes.SET_RULE_FILE_CONTENT:
             return {
                 ...current_state,
-                ruleFileContent: action.payload.ruleFileContent,
-                auditCalculations: { ...initial_state.auditCalculations } 
+                ruleFileContent: action.payload.ruleFileContent
             };
         
         case ActionTypes.SET_UI_FILTER_SETTINGS:
@@ -229,33 +211,11 @@ function root_reducer(current_state, action) {
                 }
             };
 
-        case ActionTypes.SET_PRECALCULATED_RULE_DATA:
-            return {
-                ...current_state,
-                auditCalculations: {
-                    ...current_state.auditCalculations,
-                    ruleData: { ...action.payload }
-                }
-            };
-
-        case ActionTypes.UPDATE_CALCULATED_VARDETAL:
-            if (current_state.auditCalculations?.currentVardetal === action.payload.vardetal) {
-                return current_state;
-            }
-            return {
-                ...current_state,
-                auditCalculations: {
-                    ...current_state.auditCalculations,
-                    currentVardetal: action.payload.vardetal
-                }
-            };
-
         default:
             return current_state;
     }
 }
 
-// ... (resten av filen är oförändrad) ...
 
 function saveStateToLocalStorage(state_to_save) {
     if (!state_to_save || state_to_save.auditStatus === 'not_started') {

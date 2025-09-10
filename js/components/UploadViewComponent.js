@@ -1,6 +1,6 @@
 // js/components/UploadViewComponent.js
 
-const UploadViewComponent_internal = (function () {
+export const UploadViewComponent = (function () {
     'use-strict';
 
     const CSS_PATH = 'css/components/upload_view_component.css';
@@ -13,12 +13,10 @@ const UploadViewComponent_internal = (function () {
     let load_ongoing_audit_btn;
     let start_new_audit_btn;
 
+    // Local state/dependencies
     let local_getState;
     let local_dispatch;
     let local_StoreActionTypes;
-
-    let VardetalCalculator_precalculate_rule_data_func;
-
 
     function get_t_func() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
@@ -42,7 +40,6 @@ const UploadViewComponent_internal = (function () {
                     const validation_result = window.ValidationLogic.validate_rule_file_json(json_content);
 
                     if (validation_result.isValid) {
-                        // **NY RAD:** Rensa gammal backup när en ny granskning explicit startas.
                         if(window.Store && typeof window.Store.clearAutosavedState === 'function') {
                             window.Store.clearAutosavedState();
                         }
@@ -53,23 +50,13 @@ const UploadViewComponent_internal = (function () {
                             type: local_StoreActionTypes.INITIALIZE_NEW_AUDIT,
                             payload: { ruleFileContent: json_content }
                         });
-
-                        if (VardetalCalculator_precalculate_rule_data_func) {
-                            const precalculated_data = VardetalCalculator_precalculate_rule_data_func(json_content);
-                            if (precalculated_data && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
-                                local_dispatch({
-                                    type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
-                                    payload: precalculated_data 
-                                });
-                            }
-                        }
                         
                         router_ref('metadata');
                     } else {
                         if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
                     }
                 } catch (error) {
-                    console.error("Fel vid parsning av JSON från regelfil:", error);
+                    console.error("Error parsing JSON from rule file:", error);
                     if (window.NotificationComponent) NotificationComponent.show_global_message(t('rule_file_invalid_json'), 'error');
                 } finally {
                     if (rule_file_input_element) rule_file_input_element.value = '';
@@ -100,18 +87,6 @@ const UploadViewComponent_internal = (function () {
                             payload: file_content_object
                         });
 
-                        // NYTT: Förberäkna värdetalsdata för den inbäddade regelfilen
-                        const new_loaded_state = local_getState(); 
-                        if (new_loaded_state && new_loaded_state.ruleFileContent && VardetalCalculator_precalculate_rule_data_func) {
-                            const precalculated_data = VardetalCalculator_precalculate_rule_data_func(new_loaded_state.ruleFileContent);
-                            if (precalculated_data && local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
-                                local_dispatch({
-                                    type: local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA,
-                                    payload: precalculated_data
-                                });
-                            }
-                        }
-
                         if (window.NotificationComponent) NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
                         router_ref('audit_overview');
 
@@ -119,7 +94,7 @@ const UploadViewComponent_internal = (function () {
                         if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
                     }
                 } catch (error) {
-                    console.error("Fel vid parsning av JSON från sparad granskningsfil:", error);
+                    console.error("Error parsing JSON from saved audit file:", error);
                     if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
                 } finally {
                      if (saved_audit_input_element) saved_audit_input_element.value = '';
@@ -141,47 +116,18 @@ const UploadViewComponent_internal = (function () {
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes;
 
-        if (!local_StoreActionTypes || 
-            !local_StoreActionTypes.INITIALIZE_NEW_AUDIT || 
-            !local_StoreActionTypes.LOAD_AUDIT_FROM_FILE ||
-            !local_StoreActionTypes.SET_PRECALCULATED_RULE_DATA) {
-            console.error("[UploadViewComponent] CRITICAL: Core StoreActionTypes missing for init.");
-            local_StoreActionTypes = { 
-                INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT_ERROR_UPLOAD',
-                LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE_ERROR_UPLOAD',
-                SET_PRECALCULATED_RULE_DATA: 'SET_PRECALCULATED_RULE_DATA_ERROR_UPLOAD'
-            };
+        if (window.NotificationComponent?.get_global_message_element_reference) {
+            global_message_element_ref = window.NotificationComponent.get_global_message_element_reference();
         }
 
-        if (window.NotificationComponent && typeof window.NotificationComponent.get_global_message_element_reference === 'function') {
-            global_message_element_ref = NotificationComponent.get_global_message_element_reference();
-        } else {
-            console.error("[UploadViewComponent] NotificationComponent.get_global_message_element_reference not available!");
-        }
-        try {
-            if (window.Helpers && typeof window.Helpers.load_css === 'function') {
-                const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
-                if (!link_tag) {
-                    await window.Helpers.load_css(CSS_PATH);
-                }
-            } else {
-                console.warn("[UploadViewComponent] Helpers.load_css not available.");
-            }
-        } catch (error) {
-            console.warn(`Failed to load CSS for UploadViewComponent: ${CSS_PATH}`, error);
-        }
-
-        if (window.VardetalCalculator && typeof window.VardetalCalculator.precalculate_rule_data === 'function') {
-            VardetalCalculator_precalculate_rule_data_func = window.VardetalCalculator.precalculate_rule_data;
-        } else {
-            console.error("[UploadViewComponent init] VardetalCalculator.precalculate_rule_data function not found on window object!");
+        if (window.Helpers?.load_css) {
+            await window.Helpers.load_css(CSS_PATH).catch(e => console.warn(e));
         }
     }
 
     function render() {
-        if (!app_container_ref || !window.Helpers || !window.Helpers.create_element) {
-            console.error("[UploadViewComponent] app_container_ref or Helpers.create_element is MISSING in render!");
-            if (app_container_ref) app_container_ref.innerHTML = "<p>Error rendering Upload View.</p>";
+        if (!app_container_ref || !window.Helpers?.create_element) {
+            console.error("[UploadViewComponent] render prerequisites missing.");
             return;
         }
         app_container_ref.innerHTML = '';
@@ -189,11 +135,10 @@ const UploadViewComponent_internal = (function () {
 
         if (global_message_element_ref) {
             app_container_ref.appendChild(global_message_element_ref);
-            if (window.NotificationComponent && typeof window.NotificationComponent.clear_global_message === 'function' &&
-                global_message_element_ref &&
+            if (window.NotificationComponent?.clear_global_message && 
                 !global_message_element_ref.classList.contains('message-error') &&
                 !global_message_element_ref.classList.contains('message-warning')) {
-                NotificationComponent.clear_global_message();
+                window.NotificationComponent.clear_global_message();
             }
         }
 
@@ -232,16 +177,17 @@ const UploadViewComponent_internal = (function () {
         app_container_ref.appendChild(rule_file_input_element);
         app_container_ref.appendChild(saved_audit_input_element);
 
-        start_new_audit_btn.addEventListener('click', () => { if(rule_file_input_element) rule_file_input_element.click(); });
-        if(rule_file_input_element) rule_file_input_element.addEventListener('change', handle_rule_file_select);
+        start_new_audit_btn.addEventListener('click', () => rule_file_input_element.click());
+        rule_file_input_element.addEventListener('change', handle_rule_file_select);
         
-        load_ongoing_audit_btn.addEventListener('click', () => { if(saved_audit_input_element) saved_audit_input_element.click(); });
-        if(saved_audit_input_element) saved_audit_input_element.addEventListener('change', handle_saved_audit_file_select);
+        load_ongoing_audit_btn.addEventListener('click', () => saved_audit_input_element.click());
+        saved_audit_input_element.addEventListener('change', handle_saved_audit_file_select);
     }
 
     function destroy() {
         if (rule_file_input_element) rule_file_input_element.removeEventListener('change', handle_rule_file_select);
         if (saved_audit_input_element) saved_audit_input_element.removeEventListener('change', handle_saved_audit_file_select);
+        
         rule_file_input_element = null;
         saved_audit_input_element = null;
         load_ongoing_audit_btn = null;
@@ -249,7 +195,6 @@ const UploadViewComponent_internal = (function () {
         local_getState = null; 
         local_dispatch = null;
         local_StoreActionTypes = null;
-        VardetalCalculator_precalculate_rule_data_func = null;
         global_message_element_ref = null;
     }
 
@@ -259,5 +204,3 @@ const UploadViewComponent_internal = (function () {
         destroy
     };
 })();
-
-export const UploadViewComponent = UploadViewComponent_internal;

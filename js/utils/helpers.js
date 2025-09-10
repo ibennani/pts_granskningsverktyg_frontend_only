@@ -125,8 +125,6 @@
         if (options.children) {
             options.children.forEach(child => { if (child) element.appendChild(child); });
         }
-        // --- START OF FIX ---
-        // Gör funktionen mer robust: hantera både style-objekt och style-strängar.
         if (options.style) {
             if (typeof options.style === 'object' && options.style !== null) {
                 Object.assign(element.style, options.style);
@@ -134,7 +132,6 @@
                 element.style.cssText = options.style;
             }
         }
-        // --- END OF FIX ---
         return element;
     }
 
@@ -166,7 +163,8 @@
             'cancel': `<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>`,
             'check': `<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>`,
             'close': `<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>`,
-            'update': `<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>`
+            'update': `<path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>`,
+            'info': `<path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>`
         };
 
         svg_path = base_paths[icon_name];
@@ -225,6 +223,29 @@
         }
         return 0;
     }
+    
+    function format_number_locally(number, lang_code = 'sv-SE', options = {}) {
+        if (typeof number !== 'number' || isNaN(number)) {
+            return '---'; // Return a placeholder for invalid input
+        }
+
+        const defaultOptions = {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
+        };
+
+        const finalOptions = { ...defaultOptions, ...options };
+
+        try {
+            // Use the browser's built-in Internationalization API
+            return new Intl.NumberFormat(lang_code, finalOptions).format(number);
+        } catch (e) {
+            console.error(`[Helpers] Error formatting number for locale "${lang_code}":`, e);
+            // Fallback to a simple period-based format if Intl fails
+            return number.toFixed(finalOptions.maximumFractionDigits);
+        }
+    }
+
 
     window.Helpers = {
         generate_uuid_v4,
@@ -238,6 +259,7 @@
         add_protocol_if_missing,
         init_auto_resize_for_textarea,
         sanitize_and_linkify_html,
-        natural_sort
+        natural_sort,
+        format_number_locally 
     };
 })();

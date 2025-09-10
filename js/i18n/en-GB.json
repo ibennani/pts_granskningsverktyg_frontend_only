@@ -347,5 +347,21 @@
   "sample_edit_confirm_data_loss_warning_header": "WARNING: You are about to permanently delete saved work!",
   "sample_edit_confirm_data_loss_warning_text": "The assessments and comments you have entered for the removed requirements listed above will be deleted. This action cannot be undone.",
   "sample_edit_confirm_action_button": "Confirm and Save Changes",
-  "sample_edit_discard_action_button": "Discard Changes and Return"
+  "sample_edit_discard_action_button": "Discard Changes and Return",
+  "result_summary_and_deficiency_analysis": "Result Summary & Deficiency Analysis",
+  "total_deficiency_score": "Total Deficiency Score",
+  "info_about_total_deficiency_score": "Information about Total Deficiency Score",
+  "total_score_explanation_text": "A weighted score based on the number and severity of deficiencies found. A lower score indicates a better result.",
+  "lower_is_better": "Lower is better",
+  "based_on_samples": "Based on {count} audited samples.",
+  "score_by_principle": "Breakdown by Principle",
+  "info_about_principle_scores": "Information about scores per principle",
+  "principle_scores_explanation_text": "Shows how deficiencies are distributed across the four core principles of accessibility. Indicates where the main problem areas are.",
+  "deficiency_index_for_principle": "Deficiency index for {principle}: {score} out of 100",
+  "deficiency_index": "Deficiency Index",
+  "total_score_explanation_text_0_100": "A normalized index from 0-100 representing the percentage of weighted deficiencies found, relative to what was audited. A lower score is better.",
+  "principle_scores_explanation_text_0_100": "Shows the deficiency index (0-100) for each of the four core accessibility principles.",
+  "total_requirements_audited_label": "Total Requirements Reviewed",
+  "deficiency_index": "Deficiency Index",
+  "info_about_deficiency_index": "Information about Deficiency Index"
 }

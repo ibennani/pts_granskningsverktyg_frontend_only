@@ -9,17 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <!-- FONT AWESOME - NU UPPDATERAD TILL 6.5.2 FÖR FULL KOMPATIBILITET -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
-    <!-- LÄNK TILL DEN NYA CSS-FILEN FÖR MARKDOWN-VERKTYGET -->
     <link rel="stylesheet" href="css/features/markdown_toolbar.css">
 
-    <!-- MARKDOWN PARSER BIBLIOTEK (marked.js) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- IIFE-MODULER FÖRST (vanliga script-taggar, körs i ordning) -->
-    <!-- Dessa är globala beroenden som dina komponenter och main.js kan använda -->
+    <!-- IIFE modules (dependencies) -->
     <script src="js/utils/helpers.js"></script>
     <script src="js/translation_logic.js"></script> 
     <script src="js/components/NotificationComponent.js"></script> 
@@ -28,36 +24,26 @@
     <script src="js/export_logic.js"></script> 
     <script src="js/logic/save_audit_logic.js"></script> 
     <script src="js/validation_logic.js"></script>
-    
-    <!-- *** NY SCRIPT-TAGG FÖR RULEFILE UPDATER LOGIC *** -->
     <script src="js/logic/rulefile_updater_logic.js"></script>
 
-    <!-- NY LOGIKFIL FÖR VÄRDETAL - Laddas INNAN komponenter som kan använda den -->
-    <script src="js/logic/VardetalCalculator.js"></script> 
+    <!-- **** UPDATED: Replaced RuleDataProcessor with ScoreCalculator **** -->
+    <script src="js/logic/ScoreCalculator.js"></script> 
     
-    <!-- NY FIL FÖR SCORE MANAGER -->
-    <script src="js/logic/ScoreManager.js"></script>
-
-    <!-- NY FIL FÖR MARKDOWN-VERKTYGET (laddas efter beroenden som helpers/translation) -->
     <script src="js/features/markdown_toolbar.js"></script>
 
-    <!-- Huvudapplikationslogiken, laddas som en ES6-modul -->
-    <!-- Denna kommer att importera state.js och komponenterna som ES6 moduler -->
+    <!-- Main application logic (ES6 module) -->
     <script type="module" src="js/main.js"></script>
     
-    <!-- Externt bibliotek, kan laddas sist eller där det passar -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 
 </head>
 <body>
-    <!-- NY PLATSHÅLLARE FÖR ÖVRE FUNKTIONSRAD -->
     <div id="global-action-bar-top"></div>
 
     <div id="app-container">
-        <!-- Vyer kommer att renderas här -->
+        <!-- Views will be rendered here -->
     </div>
 
-    <!-- NY PLATSHÅLLARE FÖR NEDRE FUNKTIONSRAD -->
     <div id="global-action-bar-bottom"></div>
 </body>
 </html>

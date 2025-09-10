@@ -1,4 +1,4 @@
-// file: js/logic/audit_logic.js
+// js/audit_logic.js
 (function () { 
     'use-strict';
 
@@ -128,7 +128,6 @@
         
         for (const check_definition of requirement_object.checks) {
             const checkResultForDef = requirement_result_object.checkResults[check_definition.id];
-            // **NY, SÄKRARE KONTROLL:** Använd calculate_check_status för att få den *beräknade* statusen
             const status = checkResultForDef 
                 ? calculate_check_status(check_definition, checkResultForDef.passCriteria, checkResultForDef.overallStatus)
                 : 'not_audited';
@@ -183,18 +182,28 @@
     }
 
     function calculate_overall_audit_progress(current_audit_data) {
-        if (!current_audit_data?.samples || !current_audit_data.ruleFileContent?.requirements) return { audited: 0, total: 0 };
-        let total_relevant = 0, total_completed = 0;
+        if (!current_audit_data?.samples || !current_audit_data.ruleFileContent?.requirements) {
+            return { audited: 0, total: 0 };
+        }
+
+        let total_possible_assessments = 0;
+        let total_completed_assessments = 0;
+
         current_audit_data.samples.forEach(sample => {
             const relevant_reqs = get_relevant_requirements_for_sample(current_audit_data.ruleFileContent, sample);
-            total_relevant += relevant_reqs.length;
+            total_possible_assessments += relevant_reqs.length;
+
             relevant_reqs.forEach(req_def => {
                 const status = calculate_requirement_status(req_def, sample.requirementResults?.[req_def.key || req_def.id]);
-                if (status === 'passed' || status === 'failed') total_completed++;
+                if (status === 'passed' || status === 'failed') {
+                    total_completed_assessments++;
+                }
             });
         });
-        return { audited: total_completed, total: total_relevant };
+
+        return { audited: total_completed_assessments, total: total_possible_assessments };
     }
+
 
     function find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object) {
         if (!sample_object || !rule_file_content?.requirements) return null;
@@ -215,8 +224,8 @@
         get_ordered_relevant_requirement_keys,
         calculate_overall_audit_progress,
         find_first_incomplete_requirement_key_for_sample,
-        assignSortedDeficiencyIdsOnLock: assignSortedDeficiencyIdsOnLock,
-        updateIncrementalDeficiencyIds: updateIncrementalDeficiencyIds
+        assignSortedDeficiencyIdsOnLock,
+        updateIncrementalDeficiencyIds
     };
 
     window.AuditLogic = public_api;
