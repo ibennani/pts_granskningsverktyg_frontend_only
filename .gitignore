@@ -1,0 +1,23 @@
+# Node.js dependencies
+/node_modules/
+
+# Build output from Vite
+/dist/
+
+# Log files
+npm-debug.log*
+yarn-error.log
+yarn-debug.log
+
+# Editor directories and files (optional but good practice)
+.vscode/
+.idea/
+
+# Environment variables (important for security if you add them later)
+.env
+.env.local
+.env.*.local
+
+# OS-generated files
+.DS_Store
+Thumbs.db
