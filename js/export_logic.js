@@ -1,3 +1,5 @@
+// js/export_logic.js
+
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
         return window.Translation.t;
@@ -16,22 +18,12 @@ function escape_for_csv(str) {
         return '';
     }
     let result = String(str);
-    // Ersätt citattecken med dubbla citattecken
     result = result.replace(/"/g, '""');
-    // Ta bort nyradstecken för att hålla varje post på en rad
     result = result.replace(/(\r\n|\n|\r)/gm, " ");
-    // Omslut fältet med citattecken om det innehåller kommatecken, semikolon eller citattecken
     if (/[",;]/.test(result)) {
         result = `"${result}"`;
     }
     return result;
-}
-
-function calculate_requirement_status_internal(requirement_object, requirement_result_object) {
-    if (typeof window.AuditLogic !== 'undefined' && typeof window.AuditLogic.calculate_requirement_status === 'function') {
-        return window.AuditLogic.calculate_requirement_status(requirement_object, requirement_result_object);
-    }
-    return 'not_audited';
 }
 
 function get_pass_criterion_text(req_definition, check_id, pc_id) {
@@ -42,9 +34,6 @@ function get_pass_criterion_text(req_definition, check_id, pc_id) {
     return pc ? pc.requirement : pc_id;
 }
 
-// ========================================================================
-// === NY, OMSKRIVEN FUNKTION FÖR CSV-EXPORT ===
-// ========================================================================
 function export_to_csv(current_audit) {
     const t = get_t_internal();
     if (!current_audit) {
@@ -54,7 +43,6 @@ function export_to_csv(current_audit) {
     
     let csv_content_array = [];
     
-    // Steg 1: Definiera rubrikerna
     const headers = [
         t('excel_col_deficiency_id'),
         t('excel_col_req_title'),
@@ -66,7 +54,6 @@ function export_to_csv(current_audit) {
     ];
     csv_content_array.push(headers.join(';'));
 
-    // Steg 2: Samla in data för brister (samma logik som för Excel)
     (current_audit.samples || []).forEach(sample => {
         const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
         all_reqs.forEach(req_definition => {
@@ -108,14 +95,12 @@ function export_to_csv(current_audit) {
         });
     });
 
-    // Steg 3: Skapa och ladda ner filen
     const csv_string = csv_content_array.join('\n');
     const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv_string], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
     
-    // Uppdaterat filnamn med översättningsnycklar
     const report_prefix = t('filename_audit_report_prefix');
     const deficiencies_suffix = t('filename_deficiencies_suffix');
     const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
@@ -147,10 +132,8 @@ async function export_to_excel(current_audit) {
         workbook.creator = 'PTS Granskningsverktyg';
         workbook.created = new Date();
 
-        // Flik 1: Allmän Information
         const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
         
-        // Hämta den aktiva språkkoden för datumformatering
         const lang_code = window.Translation.get_current_language_code();
 
         const general_info_data = [
@@ -158,24 +141,30 @@ async function export_to_excel(current_audit) {
             [t('actor_name'), current_audit.auditMetadata.actorName || ''],
             [t('actor_link'), current_audit.auditMetadata.actorLink || ''],
             [t('auditor_name'), current_audit.auditMetadata.auditorName || ''],
-            // --- START OF CHANGE ---
             [t('case_handler'), current_audit.auditMetadata.caseHandler || ''],
-            // --- END OF CHANGE ---
             [t('rule_file_title'), current_audit.ruleFileContent.metadata.title || ''],
             [t('version_rulefile'), current_audit.ruleFileContent.metadata.version || ''],
             [t('status'), t(`audit_status_${current_audit.auditStatus}`)],
             [t('start_time'), current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : ''],
             [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime, lang_code) : '']
         ];
-        const vardetalValue = current_audit.auditCalculations?.currentVardetal;
-        const displayVardetal = (vardetalValue !== null && vardetalValue !== undefined) ? vardetalValue : '---';
-        const vardetalString = `${displayVardetal}/500`;
-        general_info_data.push([t('overall_vardetal_label'), vardetalString]);
+        
+        // --- START OF CHANGE ---
+        // Anropa den nya beräkningsfunktionen för att få det färska resultatet
+        const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
+        const quality_index_value = score_analysis ? score_analysis.totalScore : null;
+        const display_quality_index = (quality_index_value !== null && quality_index_value !== undefined) 
+            ? window.Helpers.format_number_locally(quality_index_value, lang_code)
+            : '---';
+
+        // Lägg till den nya raden i rapporten
+        general_info_data.push([t('quality_index_title', {defaultValue: "Quality Index"}), `${display_quality_index} / 100`]);
+        // --- END OF CHANGE ---
+
         generalSheet.addRows(general_info_data);
         generalSheet.getColumn(1).width = 30;
         generalSheet.getColumn(2).width = 70;
 
-        // Flik 2: Brister
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
         deficienciesSheet.columns = [
             { header: t('excel_col_deficiency_id'), key: 'id', width: 20 },
@@ -268,7 +257,6 @@ async function export_to_excel(current_audit) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        // Uppdaterat filnamn med översättningsnycklar
         const report_prefix = t('filename_audit_report_prefix');
         const deficiencies_suffix = t('filename_deficiencies_suffix');
         const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');

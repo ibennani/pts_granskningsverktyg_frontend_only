@@ -20,35 +20,59 @@ export const ScoreAnalysisComponent = (function () {
         await Helpers.load_css(CSS_PATH);
     }
     
-    function _calculateRequirementWeight(requirement) {
-        const impact = requirement?.metadata?.impact;
-        if (!impact) return 0;
-
-        const isCriticalFactor = impact.isCritical === true ? 1.0 : 0.9;
-        const primaryScore = impact.primaryScore || 0;
-        const secondaryScore = impact.secondaryScore || 0;
-        
-        const scoreComponent = Math.sqrt(primaryScore + (0.5 * secondaryScore));
-        
-        return isCriticalFactor * scoreComponent;
-    }
-    
-    function _getRelevantRequirementsForSample(ruleFileContent, sample) {
-        if (!ruleFileContent?.requirements || !sample) return [];
-        const all_reqs = Object.values(ruleFileContent.requirements);
-
-        if (!sample.selectedContentTypes?.length) {
-            return [];
-        }
-        
-        return all_reqs.filter(req => {
-            if (!req.contentType || req.contentType.length === 0) return true;
-            return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
-        });
-    }
-
     function _performAnalysis() {
-        return ScoreCalculator.calculateDeficiencyScore(getState());
+        return ScoreCalculator.calculateQualityScore(getState());
+    }
+
+    function _createGaugeSVG(value, lang_code) {
+        const minAngle = -135;
+        const maxAngle = 135;
+        const angle = minAngle + (value / 100) * (maxAngle - minAngle);
+
+        const formattedValue = Helpers.format_number_locally(value, lang_code);
+
+        const gradientId = `gaugeGradient-${Helpers.generate_uuid_v4()}`;
+
+        const describeArc = (x, y, radius, startAngle, endAngle) => {
+            const start = polarToCartesian(x, y, radius, endAngle);
+            const end = polarToCartesian(x, y, radius, startAngle);
+            const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+            return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+        };
+
+        const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+            const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+            return {
+                x: centerX + (radius * Math.cos(angleInRadians)),
+                y: centerY + (radius * Math.sin(angleInRadians))
+            };
+        };
+
+        // --- START OF CHANGE ---
+        // Ersätter visaren med en roterande grupp som innehåller en prick (cirkel).
+        const svgContent = `
+            <svg viewBox="0 0 100 85" class="score-gauge-svg">
+                <defs>
+                    <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="var(--gradient-danger-color)" />
+                        <stop offset="50%" stop-color="var(--gradient-warning-color)" />
+                        <stop offset="100%" stop-color="var(--gradient-success-color)" />
+                    </linearGradient>
+                </defs>
+                
+                <path class="score-gauge__track" d="${describeArc(50, 50, 40, minAngle, maxAngle)}" />
+                <path class="score-gauge__bar" d="${describeArc(50, 50, 40, minAngle, maxAngle)}" stroke="url(#${gradientId})" />
+                
+                <text x="50" y="55" class="score-gauge__value">${formattedValue}</text>
+
+                <g class="score-gauge__marker-group" transform="rotate(${angle} 50 50)">
+                    <circle class="score-gauge__marker" cx="50" cy="10" r="4" />
+                </g>
+            </svg>
+        `;
+        // --- END OF CHANGE ---
+
+        return svgContent;
     }
 
     function render() {
@@ -65,66 +89,31 @@ export const ScoreAnalysisComponent = (function () {
 
         const main_container = Helpers.create_element('div', { class_name: 'score-analysis-content' });
 
-        // --- Total Score Part ---
         const totalScoreContainer = Helpers.create_element('div', { class_name: 'score-analysis-total' });
+        
         totalScoreContainer.appendChild(Helpers.create_element('h3', { 
             class_name: 'score-analysis-total__title',
-            text_content: t('deficiency_index', {defaultValue: "Deficiency Index"})
+            text_content: t('quality_index_title', {defaultValue: "Quality Index"})
         }));
-
-        let totalScoreStatusClass = 'status--low';
-        if (analysis.totalScore >= 50) totalScoreStatusClass = 'status--high';
-        else if (analysis.totalScore >= 10) totalScoreStatusClass = 'status--medium';
 
         const scoreVisualization = Helpers.create_element('div', { class_name: 'score-analysis-total__visualization' });
         
-        const svgNS = "http://www.w3.org/2000/svg";
-        const svgCircle = document.createElementNS(svgNS, "svg");
-        svgCircle.setAttribute("class", `score-analysis-total__score-svg ${totalScoreStatusClass}`);
-        svgCircle.setAttribute("viewBox", "0 0 100 100");
-
-        const circleElement = document.createElementNS(svgNS, "circle");
-        circleElement.setAttribute("cx", "50");
-        circleElement.setAttribute("cy", "50");
-        circleElement.setAttribute("r", "46");
-        circleElement.setAttribute("class", "score-analysis-total__score-svg-circle");
-        
-        const textElement = document.createElementNS(svgNS, "text");
-        textElement.setAttribute("x", "50");
-        textElement.setAttribute("y", "50");
-        textElement.setAttribute("dy", ".35em");
-        textElement.setAttribute("text-anchor", "middle");
-        textElement.setAttribute("class", "score-analysis-total__score-svg-text");
-        
-        const scoreText = Helpers.format_number_locally(analysis.totalScore, lang_code);
-        
-        let fontSize = 38;
-        if (scoreText.length === 4) {
-            fontSize = 32;
-        } else if (scoreText.length >= 5) {
-            fontSize = 28;
-        }
-        textElement.setAttribute("style", `font-size: ${fontSize}px;`);
-        
-        textElement.textContent = scoreText;
-
-        svgCircle.appendChild(circleElement);
-        svgCircle.appendChild(textElement);
+        const gaugeWrapper = Helpers.create_element('div', { class_name: 'score-gauge-wrapper' });
+        gaugeWrapper.innerHTML = _createGaugeSVG(analysis.totalScore, lang_code);
         
         const scoreContext = Helpers.create_element('div', { class_name: 'score-analysis-total__context' });
-        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('lower_is_better', {defaultValue: "Lower is better"})})` }));
+        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('higher_is_better', {defaultValue: "Higher is better"})})` }));
         scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: t('based_on_samples', { count: analysis.sampleCount, defaultValue: `Based on ${analysis.sampleCount} audited samples.`}) }));
         
-        scoreVisualization.appendChild(svgCircle);
+        scoreVisualization.appendChild(gaugeWrapper);
         scoreVisualization.appendChild(scoreContext);
         totalScoreContainer.appendChild(scoreVisualization);
         main_container.appendChild(totalScoreContainer);
 
-        // --- Score by Principle Part ---
         const principlesContainer = Helpers.create_element('div', { class_name: 'score-analysis-principles' });
         principlesContainer.appendChild(Helpers.create_element('h3', { 
             class_name: 'score-analysis-principles__title',
-            text_content: t('score_by_principle', {defaultValue: "Breakdown by Principle"})
+            text_content: t('score_by_principle_quality', {defaultValue: "Breakdown by Principle"})
         }));
 
         const dl = Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
@@ -137,23 +126,20 @@ export const ScoreAnalysisComponent = (function () {
             
             const dd = Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
             
-            let barStatusClass = 'status--low';
-            if (data.score > 25) barStatusClass = 'status--high';
-            else if (data.score > 5) barStatusClass = 'status--medium';
-            
             const formattedScoreForAria = Helpers.format_number_locally(data.score, lang_code);
             
             const bar = Helpers.create_element('div', {
-                class_name: ['principle-row__bar', barStatusClass],
+                class_name: 'principle-row__bar',
                 attributes: {
                     style: `width: ${Math.min(data.score, 100)}%;`,
                     role: 'meter',
                     'aria-valuenow': data.score,
                     'aria-valuemin': '0',
                     'aria-valuemax': '100',
-                    'aria-label': t('deficiency_index_for_principle', { principle: data.label, score: formattedScoreForAria, defaultValue: `Deficiency index for ${data.label}: ${formattedScoreForAria} out of 100` })
+                    'aria-label': t('quality_index_for_principle', { principle: data.label, score: formattedScoreForAria, defaultValue: `Quality index for ${data.label}: ${formattedScoreForAria} out of 100` })
                 }
             });
+            bar.style.setProperty('--score-percent', data.score);
 
             const valueSpan = Helpers.create_element('span', { class_name: 'principle-row__value', text_content: Helpers.format_number_locally(data.score, lang_code) });
             

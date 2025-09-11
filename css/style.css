@@ -69,14 +69,12 @@
     --button-info-text: #ffffff;
     --button-info-hover-bg: #35607c;
 
-    /* NYA FÄRGER FÖR VÄRDETAL PROGRESSBAR (LJUST LÄGE) */
-    --vardetal-green-light-start: #a8e6cf; /* Ljus mintgrön */
-    --vardetal-green-light-end: #66bb6a;   /* Medium grön */
-    --vardetal-yellow-light-start: #fff59d; /* Ljus citrongul */
-    --vardetal-yellow-light-end: #ffee58;  /* Solgul */
-    --vardetal-red-light-start: #ffccbc;   /* Ljus persika/korall */
-    --vardetal-red-light-end: #ef5350;   /* Medium röd */
-    --vardetal-marker-color: var(--text-color-muted);
+    /* --- START OF CHANGE --- */
+    /* NYA, LJUSARE FÄRGER FÖR GRADIENT I LJUS TEMA */
+    --gradient-danger-color: #f7797d; /* Ljusare röd */
+    --gradient-warning-color: #fbd786; /* Ljusare gul/orange */
+    --gradient-success-color: #84fab0; /* Ljusare grön */
+    /* --- END OF CHANGE --- */
 }
 
 [data-theme="dark"] {
@@ -129,14 +127,12 @@
     --button-warning-text: #1b2326;
     --button-info-text: #1b2326;
 
-    /* NYA FÄRGER FÖR VÄRDETAL PROGRESSBAR (MÖRKT LÄGE - som specificerat) */
-    --vardetal-green-dark-start: #49f785;
-    --vardetal-green-dark-end: #28c85e;
-    --vardetal-yellow-dark-start: #ffe966;
-    --vardetal-yellow-dark-end: #ffd600;
-    --vardetal-red-dark-start: #fa7067;
-    --vardetal-red-dark-end: #b70026;
-    --vardetal-marker-color: var(--border-color); /* Ljusare markör i mörkt läge */
+    /* --- START OF CHANGE --- */
+    /* FÖR MÖRKT TEMA ANVÄNDER VI DE EXISTERANDE STARKA FÄRGERNA */
+    --gradient-danger-color: var(--danger-color);
+    --gradient-warning-color: var(--warning-color);
+    --gradient-success-color: var(--success-color);
+    /* --- END OF CHANGE --- */
 }
 
 
@@ -292,7 +288,7 @@ a:hover, a:focus {
 }
 
 .button-warning {
-    background-color: var(--button-warning-bg);
+    background-color: var(--warning-color);
     color: var(--button-warning-text);
 }
 .button-warning:hover, .button-warning:focus {
@@ -300,7 +296,7 @@ a:hover, a:focus {
 }
 
 .button-info {
-    background-color: var(--button-info-bg);
+    background-color: var(--info-color);
     color: var(--button-info-text);
 }
 .button-info:hover, .button-info:focus {

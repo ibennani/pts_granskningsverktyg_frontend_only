@@ -33,58 +33,56 @@
         const all_reqs = Object.values(ruleFileContent.requirements);
 
         if (!sample.selectedContentTypes?.length) {
-            // If a sample has no content types, it is assumed no requirements are relevant.
-            // This prevents division by zero if a sample is added but not configured.
             return [];
         }
         
         return all_reqs.filter(req => {
-            if (!req.contentType || req.contentType.length === 0) return true; // Relevant for all if contentType is empty
+            if (!req.contentType || req.contentType.length === 0) return true;
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
     }
 
     /**
-     * The main function to calculate the deficiency score based on the new 0-100 model.
+     * The main function to calculate the Quality Index based on the 0-100 model.
      * @param {object} auditState - The complete current audit state.
      * @returns {object|null} An object with totalScore and a breakdown by principle, or null if calculation is not possible.
      */
-    function calculateDeficiencyScore(auditState) {
+    function calculateQualityScore(auditState) {
         if (!auditState?.ruleFileContent?.requirements || !auditState.ruleFileContent.metadata?.taxonomies || !auditState.samples?.length) {
             return null; // Not enough data to calculate a score.
         }
 
-        const requirements = auditState.ruleFileContent.requirements;
         const classifications = auditState.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
         if (!classifications) return null;
 
-        let totalActualScore = 0;
-        let totalPossibleScore = 0;
+        let totalMaxPerformance = 0;
+        let totalActualPerformance = 0;
         
         const principleScores = {};
         classifications.concepts.forEach(c => {
-            principleScores[c.id] = { actual: 0, possible: 0 };
+            principleScores[c.id] = { max: 0, actual: 0 };
         });
 
-        // 1. Iterate through each sample to calculate its contribution to the total scores.
+        // 1. Iterate through each sample to calculate contributions.
         auditState.samples.forEach(sample => {
             const relevantReqsForSample = _getRelevantRequirementsForSample(auditState.ruleFileContent, sample);
             
             relevantReqsForSample.forEach(reqDef => {
                 const reqKey = reqDef.key || reqDef.id;
-                const weight = _calculateRequirementWeight(reqDef);
+                const reqWeight = _calculateRequirementWeight(reqDef);
                 
-                // Add to the total possible score for this audit
-                totalPossibleScore += weight;
+                // Add to the total possible performance score for this audit
+                totalMaxPerformance += reqWeight;
 
-                // Add to the possible score for the requirement's principle
+                // Add to the possible performance for the requirement's principle
                 const principleId = reqDef.classifications?.find(c => c.taxonomyId === 'wcag22-pour')?.conceptId;
                 if (principleId && principleScores.hasOwnProperty(principleId)) {
-                    principleScores[principleId].possible += weight;
+                    principleScores[principleId].max += reqWeight;
                 }
 
-                // Now, check for actual failures in this sample for this requirement
+                // Now, calculate actual performance based on failures
                 const reqResult = sample.requirementResults?.[reqKey];
+                let actualDeficiencyPoints = 0;
                 if (reqResult?.checkResults) {
                     let failureCountForReq = 0;
                     Object.values(reqResult.checkResults).forEach(checkResult => {
@@ -96,14 +94,18 @@
                             });
                         }
                     });
+                    actualDeficiencyPoints = failureCountForReq * reqWeight;
+                }
 
-                    if (failureCountForReq > 0) {
-                        const actualFailureScore = failureCountForReq * weight;
-                        totalActualScore += actualFailureScore;
-                        if (principleId && principleScores.hasOwnProperty(principleId)) {
-                            principleScores[principleId].actual += actualFailureScore;
-                        }
-                    }
+                // Clamp the deficiency points to not exceed the requirement's weight
+                const adjustedDeficiencyPoints = Math.min(actualDeficiencyPoints, reqWeight);
+                
+                // Performance score is max score minus deductions for failures
+                const performanceScore = reqWeight - adjustedDeficiencyPoints;
+                
+                totalActualPerformance += performanceScore;
+                if (principleId && principleScores.hasOwnProperty(principleId)) {
+                    principleScores[principleId].actual += performanceScore;
                 }
             });
         });
@@ -113,14 +115,14 @@
         classifications.concepts.forEach(concept => {
             const id = concept.id;
             const data = principleScores[id];
-            const normalizedIndex = (data.possible > 0) ? (data.actual / data.possible) * 100 : 0;
+            const normalizedIndex = (data.max > 0) ? (data.actual / data.max) * 100 : 100; // Default to 100 if no relevant reqs
             finalPrincipleReport[id] = {
                 label: concept.label,
                 score: parseFloat(normalizedIndex.toFixed(1))
             };
         });
 
-        const finalTotalScore = (totalPossibleScore > 0) ? (totalActualScore / totalPossibleScore) * 100 : 0;
+        const finalTotalScore = (totalMaxPerformance > 0) ? (totalActualPerformance / totalMaxPerformance) * 100 : 100; // Default to 100
 
         return {
             totalScore: parseFloat(finalTotalScore.toFixed(1)),
@@ -131,7 +133,7 @@
     
     // Expose the public API to the window object
     window.ScoreCalculator = {
-        calculateDeficiencyScore
+        calculateQualityScore
     };
 
     console.log("[ScoreCalculator.js] ScoreCalculator loaded and exposed on window.");
