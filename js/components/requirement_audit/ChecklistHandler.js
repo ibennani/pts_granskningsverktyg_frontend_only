@@ -161,7 +161,28 @@ export const ChecklistHandler = (function () {
                 class_name: 'pass-criterion-item', 
                 attributes: {'data-pc-id': pc_def.id }
             });
-            pc_item_li.appendChild(Helpers_create_element('p', { class_name: 'pass-criterion-requirement', text_content: pc_def.requirement }));
+
+            // --- START OF CHANGE ---
+            const requirement_content_div = Helpers_create_element('div', {
+                class_name: ['pass-criterion-requirement', 'markdown-content']
+            });
+
+            if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
+                const renderer = new marked.Renderer();
+                renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                renderer.html = (html_token) => {
+                    const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                        ? html_token.text
+                        : String(html_token || '');
+                    return window.Helpers.escape_html(text_to_escape);
+                };
+                // Använd parseInline för att undvika att korta texter omges av <p>-taggar
+                requirement_content_div.innerHTML = marked.parseInline(pc_def.requirement || '', { renderer });
+            } else {
+                requirement_content_div.textContent = pc_def.requirement || '';
+            }
+            pc_item_li.appendChild(requirement_content_div);
+            // --- END OF CHANGE ---
             
             const pc_data = check_result_data?.passCriteria[pc_def.id] || {status: 'not_audited', observationDetail: ''};
             const current_pc_status = pc_data.status;
