@@ -213,7 +213,6 @@ export const SampleListComponent = (function () {
             const main_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-main' });
             const delete_actions_div = Helpers_create_element('div', { class_name: 'sample-actions-delete' });
             
-            // --- FÖRENKLAD LOGIK: Visa alltid knapparna om det är tillåtet ---
             if (can_edit_or_delete) {
                  if (on_edit_callback) {
                     main_actions_div.appendChild(Helpers_create_element('button', {
@@ -239,15 +238,19 @@ export const SampleListComponent = (function () {
                 }));
             }
 
+            // --- HÄR ÄR ÄNDRINGEN ---
             if (current_global_state.auditStatus === 'in_progress' && total_relevant_reqs > 0) {
                 const first_incomplete = AuditLogic_find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
-                const review_text_key = first_incomplete ? 'audit_next_incomplete_requirement' : 'view_audited_sample';
-                main_actions_div.appendChild(Helpers_create_element('button', {
-                    class_name: ['button', 'button-primary', 'button-small'],
-                    attributes: { 'data-action': 'review-sample', 'aria-label': `${t(review_text_key)}: ${sample.description}` },
-                    html_content: `<span>${t(review_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : '')
-                }));
+                // Visa bara knappen om det faktiskt FINNS ett ohanterat krav
+                if (first_incomplete) {
+                    main_actions_div.appendChild(Helpers_create_element('button', {
+                        class_name: ['button', 'button-primary', 'button-small'],
+                        attributes: { 'data-action': 'review-sample', 'aria-label': `${t('audit_next_incomplete_requirement')}: ${sample.description}` },
+                        html_content: `<span>${t('audit_next_incomplete_requirement')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('audit_sample', ['currentColor'], 16) : '')
+                    }));
+                }
             }
+            // --- SLUT PÅ ÄNDRINGEN ---
 
             if (main_actions_div.hasChildNodes()) actions_wrapper_div.appendChild(main_actions_div);
             if (delete_actions_div.hasChildNodes()) actions_wrapper_div.appendChild(delete_actions_div);
