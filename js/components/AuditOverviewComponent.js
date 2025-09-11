@@ -1,6 +1,7 @@
 // js/components/AuditOverviewComponent.js
 import { SampleListComponent } from './SampleListComponent.js';
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
+import { AuditInfoComponent } from './AuditInfoComponent.js'; // NY IMPORT
 
 export const AuditOverviewComponent = (function () {
     'use-strict';
@@ -16,7 +17,7 @@ export const AuditOverviewComponent = (function () {
 
     // Dependencies
     let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_format_iso_to_local_datetime, Helpers_escape_html, Helpers_load_css, Helpers_add_protocol_if_missing;
+    let Helpers_create_element, Helpers_get_icon_svg, Helpers_format_iso_to_local_datetime, Helpers_escape_html, Helpers_load_css, Helpers_add_protocol_if_missing, Helpers_format_number_locally;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
     let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
     let AuditLogic_calculate_overall_audit_progress;
@@ -25,6 +26,10 @@ export const AuditOverviewComponent = (function () {
     let global_message_element_ref;
     let sample_list_component_instance;
     let sample_list_container_element;
+    
+    // NYTT: Instans och container för AuditInfoComponent
+    let audit_info_component_instance = null;
+    let audit_info_container_element = null;
     
     let scoreAnalysisComponentInstance = null;
     let scoreAnalysisContainerElement = null;
@@ -41,6 +46,7 @@ export const AuditOverviewComponent = (function () {
         Helpers_escape_html = window.Helpers?.escape_html;
         Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
         Helpers_load_css = window.Helpers?.load_css;
+        Helpers_format_number_locally = window.Helpers?.format_number_locally;
         NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;
         NotificationComponent_clear_global_message = window.NotificationComponent?.clear_global_message;
         NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
@@ -113,30 +119,14 @@ export const AuditOverviewComponent = (function () {
         ExportLogic_export_to_excel(current_global_state);
     }
 
-    function create_info_item(label_key, value, is_html = false) {
-        const t = Translation_t;
-        const item_div = Helpers_create_element('div', { class_name: 'info-item' });
-        const strong = Helpers_create_element('strong', { text_content: t(label_key) });
-        item_div.appendChild(strong);
-        
-        const p = Helpers_create_element('p', { class_name: 'value' });
-        if (value || typeof value === 'number' || typeof value === 'boolean') {
-            if (is_html) {
-                p.innerHTML = value;
-            } else {
-                p.textContent = String(value);
-            }
-        } else {
-            p.textContent = '---';
-            p.classList.add('text-muted');
-        }
-        item_div.appendChild(p);
-        return item_div;
-    }
-
     async function init_sub_components() {
         assign_globals_once();
         
+        // NYTT: Initiera AuditInfoComponent
+        audit_info_container_element = Helpers_create_element('div', { id: 'audit-info-component-container', class_name: 'dashboard-panel' });
+        audit_info_component_instance = AuditInfoComponent;
+        await audit_info_component_instance.init(audit_info_container_element, router_ref, local_getState);
+
         sample_list_container_element = Helpers_create_element('div', { id: 'overview-sample-list-area-container' });
         sample_list_component_instance = SampleListComponent;
         await sample_list_component_instance.init(
@@ -205,65 +195,11 @@ export const AuditOverviewComponent = (function () {
         
         const dashboard_container = Helpers_create_element('div', { class_name: 'overview-dashboard' });
 
-        const info_panel = Helpers_create_element('div', { class_name: ['dashboard-panel', 'info-panel'] });
-        
-        // --- START: MODIFICATION FOR EDIT BUTTON ---
-        const info_panel_header = Helpers_create_element('div', {
-            style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }
-        });
-        info_panel_header.appendChild(Helpers_create_element('h2', { 
-            class_name: 'dashboard-panel__title',
-            style: { marginBottom: '0', borderBottom: 'none' }, // Remove default styles
-            text_content: t('audit_info_title') 
-        }));
-
-        if (current_global_state.auditStatus === 'in_progress') {
-            const edit_metadata_button = Helpers_create_element('button', {
-                class_name: ['button', 'button-default', 'button-small'],
-                attributes: { 'aria-label': t('edit_audit_metadata_aria_label', {defaultValue: 'Edit audit information'}) },
-                html_content: `<span>${t('edit_prefix')}</span>` + Helpers_get_icon_svg('edit', ['currentColor'], 16)
-            });
-            edit_metadata_button.addEventListener('click', () => router_ref('edit_metadata'));
-            info_panel_header.appendChild(edit_metadata_button);
+        // ANVÄND DEN NYA KOMPONENTEN
+        if (audit_info_component_instance) {
+            dashboard_container.appendChild(audit_info_container_element);
+            audit_info_component_instance.render();
         }
-        info_panel.appendChild(info_panel_header);
-        // --- END: MODIFICATION FOR EDIT BUTTON ---
-        
-        const md = current_global_state.auditMetadata || {};
-        const rf_meta = current_global_state.ruleFileContent.metadata || {};
-        const lang_code = window.Translation.get_current_language_code();
-
-        info_panel.appendChild(create_info_item('case_number', md.caseNumber));
-        info_panel.appendChild(create_info_item('actor_name', md.actorName));
-        if (md.actorLink) {
-            const safe_link = Helpers_add_protocol_if_missing(md.actorLink);
-            const link_html = `<a href="${Helpers_escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${Helpers_escape_html(md.actorLink)}</a>`;
-            info_panel.appendChild(create_info_item('actor_link', link_html, true));
-        } else {
-            info_panel.appendChild(create_info_item('actor_link', null));
-        }
-        info_panel.appendChild(create_info_item('auditor_name', md.auditorName));
-        info_panel.appendChild(create_info_item('rule_file_title', rf_meta.title));
-        info_panel.appendChild(create_info_item('version_rulefile', rf_meta.version));
-        info_panel.appendChild(create_info_item('status', t(`audit_status_${current_global_state.auditStatus}`)));
-        info_panel.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_global_state.startTime, lang_code)));
-        if (current_global_state.endTime) {
-            info_panel.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_global_state.endTime, lang_code)));
-        }
-        
-        if (md.internalComment) {
-            const comment_item = create_info_item('internal_comment', md.internalComment);
-            const comment_value_p = comment_item.querySelector('p.value');
-            if (comment_value_p) {
-                comment_value_p.classList.add('markdown-content');
-                if (typeof marked !== 'undefined') {
-                    comment_value_p.innerHTML = marked.parse(md.internalComment, { breaks: true });
-                }
-            }
-            info_panel.appendChild(comment_item);
-        }
-        
-        dashboard_container.appendChild(info_panel);
 
         const score_panel = Helpers_create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
         score_panel.appendChild(Helpers_create_element('h2', { 
@@ -289,9 +225,19 @@ export const AuditOverviewComponent = (function () {
             });
 
             const text_wrapper = Helpers_create_element('div', { class_name: 'progress-text-wrapper' });
-            const labelText = t('total_requirements_audited_label', {defaultValue: "Total requirements reviewed"});
-            const valueText = `${progress_data.audited} / ${progress_data.total}`;
-            text_wrapper.innerHTML = `<strong>${labelText}:</strong>&nbsp;<span class="value">${valueText}</span>`;
+            const labelText = t('total_requirements_audited_label');
+            const lang_code = window.Translation.get_current_language_code();
+            
+            const percentage = (progress_data.total > 0) ? (progress_data.audited / progress_data.total) * 100 : 0;
+            const formatted_percentage = Helpers_format_number_locally(
+                percentage, 
+                lang_code, 
+                { minimumFractionDigits: 1, maximumFractionDigits: 1 }
+            );
+
+            const valueText = `${progress_data.audited} / ${progress_data.total} &nbsp;(${formatted_percentage} %)`;
+            
+            text_wrapper.innerHTML = `<strong>${labelText}:</strong><span class="value">${valueText}</span>`;
             
             const overall_progress_bar = window.ProgressBarComponent.create(
                 progress_data.audited, 
@@ -382,6 +328,9 @@ export const AuditOverviewComponent = (function () {
         }
         if (sample_list_component_instance?.destroy) sample_list_component_instance.destroy();
         
+        // NYTT: Förstör AuditInfoComponent
+        if (audit_info_component_instance?.destroy) audit_info_component_instance.destroy();
+        
         if (scoreAnalysisComponentInstance?.destroy) {
             scoreAnalysisComponentInstance.destroy();
         }
@@ -390,6 +339,8 @@ export const AuditOverviewComponent = (function () {
         sample_list_component_instance = null;
         scoreAnalysisContainerElement = null;
         scoreAnalysisComponentInstance = null;
+        audit_info_container_element = null; // NYTT
+        audit_info_component_instance = null; // NYTT
         previously_focused_element = null;
     }
 

@@ -27,31 +27,6 @@
     border-bottom: 1px dashed var(--secondary-color);
 }
 
-/* --- Kompakt styling för informationspanelen (VÄNSTER) --- */
-.info-panel .info-item {
-    margin-bottom: 0.8rem;
-    word-break: break-word;
-}
-
-.info-panel .info-item strong {
-    display: block;
-    color: var(--text-color);
-    font-weight: 500;
-    margin-bottom: 0.1rem;
-    font-size: 0.9em;
-}
-
-.info-panel .info-item p.value {
-    margin: 0;
-    color: var(--text-color-muted);
-}
-
-.info-panel .info-item p.value.text-muted {
-    font-style: italic;
-}
-/* --- SLUT PÅ INFO-PANEL STYLING --- */
-
-
 /* --- ALLMÄNNA SEKTIONSSTILAR --- */
 .audit-overview-section {
     margin-bottom: 2rem;
@@ -85,7 +60,7 @@
 }
 
 .progress-text-wrapper span.value {
-    color: var(--text-color-muted);
+    color: var(--text-color);
     font-size: 0.9em;
 }
 

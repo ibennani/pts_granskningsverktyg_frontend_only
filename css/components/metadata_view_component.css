@@ -75,7 +75,8 @@
     background-color: rgba(255,255,255,0.05); /* Mycket ljus bakgrund på mörk botten */
 }
 
-.metadata-form-container .static-metadata-display .static-field strong {
+/* ÄNDRING HÄR: Mer specifik regel */
+.metadata-form-container .static-metadata-display .static-field > strong {
     display: block;
     margin-bottom: 0.25rem;
     color: var(--text-color);

@@ -372,5 +372,9 @@
   "return_without_saving_button_text": "Återgå utan att spara",
   "metadata_updated_successfully": "Granskningsinformationen har uppdaterats.",
   "edit_audit_metadata_aria_label": "Redigera granskningsinformation",
-  "audit_started_metadata_locked": "Granskningen har startat, så informationen kan inte längre ändras här. Använd 'Redigera'-knappen i granskningsöversikten."
+  "audit_started_metadata_locked": "Granskningen har startat, så informationen kan inte längre ändras här. Använd 'Redigera'-knappen i granskningsöversikten.",
+  "edit_audit_information": "Redigera granskningsinformationen",
+  "edit_button_label": "Redigera",
+  "save_metadata_changes_button": "Spara ändringar",
+  "return_to_overview_without_saving": "Återgå till översikten utan att spara"
 }

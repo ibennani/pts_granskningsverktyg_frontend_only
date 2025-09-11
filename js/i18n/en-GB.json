@@ -370,5 +370,9 @@
   "return_without_saving_button_text": "Return without saving",
   "metadata_updated_successfully": "The audit information has been updated.",
   "edit_audit_metadata_aria_label": "Edit audit information",
-  "audit_started_metadata_locked": "The audit has started, so this information can no longer be changed here. Use the 'Edit' button in the audit overview."
+  "audit_started_metadata_locked": "The audit has started, so this information can no longer be changed here. Use the 'Edit' button in the audit overview.",
+  "edit_audit_information": "Edit audit information",
+  "edit_button_label": "Edit",
+  "save_metadata_changes_button": "Save changes",
+  "return_to_overview_without_saving": "Return to overview without saving"
 }
