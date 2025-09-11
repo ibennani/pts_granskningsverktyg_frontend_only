@@ -13,7 +13,15 @@
         let actor_name_part = t_func('filename_fallback_actor');
 
         if (audit_data?.auditMetadata?.actorName) {
-            actor_name_part = audit_data.auditMetadata.actorName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || t_func('filename_fallback_actor');
+            // --- NY, FÖRBÄTTRAD LOGIK FÖR FILNAMN ---
+            const sanitized_name = audit_data.auditMetadata.actorName
+                .normalize('NFD') // Steg 1: Bryt ner tecken (t.ex. 'å' -> 'a' + '°')
+                .replace(/[\u0300-\u036f]/g, '') // Steg 2: Ta bort diakritiska tecken (accenterna)
+                .toLowerCase() // Steg 3: Konvertera till gemener
+                .replace(/\s+/g, '_') // Steg 4: Ersätt mellanslag med understreck
+                .replace(/[^a-z0-9_.-]/g, ''); // Steg 5: Ta bort alla återstående ogiltiga tecken
+
+            actor_name_part = sanitized_name || t_func('filename_fallback_actor');
         }
         
         return `${filename_prefix}_${actor_name_part}_${datetime_str}.json`;
