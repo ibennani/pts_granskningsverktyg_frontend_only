@@ -28,6 +28,7 @@ const initial_state = {
         actorName: '',
         actorLink: '',
         auditorName: '',
+        caseHandler: '', // <-- NYTT FÄLT TILLAGT
         internalComment: ''
     },
     auditStatus: 'not_started',

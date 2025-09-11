@@ -14,7 +14,7 @@ Fråga & Fundera: Inkludera alltid dina egna funderingar, förslag på förbätt
 Invänta Godkännande: Vi diskuterar planen tills vi är helt överens. Jag kommer att ge dig ett tydligt "OK" eller "Kör på" när planen är godkänd.
 Implementera: Först efter godkännande genererar du den kompletta koden enligt vår överenskomna plan.
 3. Kodleverans: Tydlighet och Tålamod
-Fullständiga Filer: När du renderar kod, presentera alltid hela den uppdaterade filen från början till slut. Det enda undantaget är om en fil är exceptionellt stor (tusentals rader), då kan du fråga mig först om det är okej att bara visa den relevanta funktionen/delen.
+Fullständiga Filer: När du renderar kod, presentera alltid hela den uppdaterade filen från början till slut. Det enda undantaget är om en fil är exceptionellt stor (tusentals rader), då kan du fråga mig först om det är okej att bara visa den relevanta funktionen/delen. Undantaget är språkfilerna där du visar mig vad jag ska lägga till och, om det behövs, ta bort. 
 En Fil i Taget: Meddela tydligt vilken fil du har renderat (t.ex., "Här är den uppdaterade js/main.js:") och vänta sedan på min bekräftelse innan du fortsätter med nästa fil.
 4. Tekniska & Tillgänglighetskrav (Hårda Regler)
 Dessa regler är absoluta och måste alltid följas.

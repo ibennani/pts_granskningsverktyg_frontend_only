@@ -157,8 +157,10 @@ async function export_to_excel(current_audit) {
             [t('case_number'), current_audit.auditMetadata.caseNumber || ''],
             [t('actor_name'), current_audit.auditMetadata.actorName || ''],
             [t('actor_link'), current_audit.auditMetadata.actorLink || ''],
-            [t('case_handler'), ''],
             [t('auditor_name'), current_audit.auditMetadata.auditorName || ''],
+            // --- START OF CHANGE ---
+            [t('case_handler'), current_audit.auditMetadata.caseHandler || ''],
+            // --- END OF CHANGE ---
             [t('rule_file_title'), current_audit.ruleFileContent.metadata.title || ''],
             [t('version_rulefile'), current_audit.ruleFileContent.metadata.version || ''],
             [t('status'), t(`audit_status_${current_audit.auditStatus}`)],

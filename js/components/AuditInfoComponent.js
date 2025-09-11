@@ -79,7 +79,7 @@ export const AuditInfoComponent = (function () {
                 html_content: `<span>${t('edit_button_label')}</span>` + Helpers_get_icon_svg('edit', ['currentColor'], 16)
             });
             edit_button.addEventListener('click', () => {
-                router_ref('metadata');
+                router_ref('edit_metadata');
             });
             header_wrapper.appendChild(edit_button);
         }
@@ -90,16 +90,29 @@ export const AuditInfoComponent = (function () {
         const rf_meta = current_state.ruleFileContent.metadata || {};
         const lang_code = window.Translation.get_current_language_code();
 
-        info_panel.appendChild(create_info_item('case_number', md.caseNumber));
+        // --- START OF CHANGE: Conditional Rendering Logic ---
+        if (md.caseNumber) {
+            info_panel.appendChild(create_info_item('case_number', md.caseNumber));
+        }
+
+        // Actor is mandatory, so it's always shown.
         info_panel.appendChild(create_info_item('actor_name', md.actorName));
+
         if (md.actorLink) {
             const safe_link = Helpers_add_protocol_if_missing(md.actorLink);
             const link_html = `<a href="${Helpers_escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${Helpers_escape_html(md.actorLink)}</a>`;
             info_panel.appendChild(create_info_item('actor_link', link_html, { is_html: true }));
-        } else {
-            info_panel.appendChild(create_info_item('actor_link', null));
         }
-        info_panel.appendChild(create_info_item('auditor_name', md.auditorName));
+
+        if (md.auditorName) {
+            info_panel.appendChild(create_info_item('auditor_name', md.auditorName));
+        }
+        
+        if (md.caseHandler) {
+            info_panel.appendChild(create_info_item('case_handler', md.caseHandler));
+        }
+        // --- END OF CHANGE ---
+
         info_panel.appendChild(create_info_item('rule_file_title', rf_meta.title));
         info_panel.appendChild(create_info_item('version_rulefile', rf_meta.version));
         info_panel.appendChild(create_info_item('status', t(`audit_status_${current_state.auditStatus}`)));
@@ -120,10 +133,7 @@ export const AuditInfoComponent = (function () {
                     return window.Helpers.escape_html(text_to_escape);
                 };
                 
-                // DEN DEFINITIVA FIXEN:
-                // 1. Ta bort nyradstecken
                 const singleLineComment = md.internalComment.replace(/(\r\n|\n|\r)/gm, " ");
-                // 2. Använd parseInline på den rensade strängen
                 parsed_comment = marked.parseInline(singleLineComment, { 
                     renderer: renderer,
                     gfm: true 
