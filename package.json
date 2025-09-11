@@ -1,0 +1,17 @@
+{
+  "name": "modulbaserad-kod-v02",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --open"
+  },
+  "devDependencies": {
+    "vite": "^7.1.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
