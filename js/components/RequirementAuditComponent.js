@@ -3,7 +3,7 @@
 // Import the new sub-components
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
-import { RequirementAuditNavigation } from './requirement_audit/RequirementAuditNavigation.js';
+import { RequirementAuditNavigationFactory } from './requirement_audit/RequirementAuditNavigation.js'; // Updated import
 
 export const RequirementAuditComponent = (function () { 
 
@@ -79,12 +79,10 @@ export const RequirementAuditComponent = (function () {
         
         const result_from_store = (current_sample.requirementResults || {})[params_ref.requirementId];
         
-        // Initialize or clone the result object
         current_result = result_from_store 
             ? JSON.parse(JSON.stringify(result_from_store)) 
             : { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, checkResults: {} };
 
-        // Ensure checkResults and passCriteria structures exist
         (current_requirement.checks || []).forEach(check_def => {
             if (!current_result.checkResults[check_def.id]) {
                 current_result.checkResults[check_def.id] = { status: 'not_audited', overallStatus: 'not_audited', passCriteria: {} };
@@ -105,8 +103,6 @@ export const RequirementAuditComponent = (function () {
         return true;
     }
 
-    // --- CALLBACKS & EVENT HANDLERS ---
-    
     function handle_checklist_status_change(change_info) {
         let modified_result = JSON.parse(JSON.stringify(current_result));
         const check_result = modified_result.checkResults[change_info.checkId];
@@ -122,7 +118,6 @@ export const RequirementAuditComponent = (function () {
             const pc_result = check_result.passCriteria[change_info.pcId];
             pc_result.status = pc_result.status === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             
-            // Auto-populate failure statement if applicable
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
                 const pc_def = check_definition.passCriteria.find(pc => pc.id === change_info.pcId);
                 if (pc_def?.failureStatementTemplate) {
@@ -162,7 +157,6 @@ export const RequirementAuditComponent = (function () {
     }
 
     function dispatch_result_update(modified_result_object) {
-        // Recalculate statuses before dispatching
         (current_requirement.checks || []).forEach(check_def => {
             const check_res = modified_result_object.checkResults[check_def.id];
             check_res.status = AuditLogic_calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
@@ -216,8 +210,6 @@ export const RequirementAuditComponent = (function () {
         }
     }
     
-    // --- RENDER FUNCTIONS ---
-
     function build_initial_dom() {
         app_container_ref.innerHTML = '';
         plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
@@ -226,11 +218,16 @@ export const RequirementAuditComponent = (function () {
             plate_element_ref.appendChild(global_message_element_ref);
         }
         
-        // Init sub-components
+        // --- START OF CHANGE: Create separate instances using the factory ---
         const top_nav_container = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
-        top_navigation_instance = RequirementAuditNavigation;
+        top_navigation_instance = RequirementAuditNavigationFactory();
         top_navigation_instance.init(top_nav_container, handle_navigation);
         
+        const bottom_nav_container = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
+        bottom_navigation_instance = RequirementAuditNavigationFactory();
+        bottom_navigation_instance.init(bottom_nav_container, handle_navigation);
+        // --- END OF CHANGE ---
+
         const info_sections_container = Helpers_create_element('div');
         info_sections_instance = RequirementInfoSections;
         info_sections_instance.init(info_sections_container);
@@ -238,19 +235,16 @@ export const RequirementAuditComponent = (function () {
         const checklist_container = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
         checklist_handler_instance = ChecklistHandler;
         checklist_handler_instance.init(checklist_container, { onStatusChange: handle_checklist_status_change, onAutosave: handle_autosave });
-
-        const bottom_nav_container = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
-        bottom_navigation_instance = RequirementAuditNavigation;
-        bottom_navigation_instance.init(bottom_nav_container, handle_navigation);
-
+        
         plate_element_ref.append(
             Helpers_create_element('div', { class_name: 'requirement-audit-header' }),
-            top_nav_container,
             info_sections_container,
+            top_nav_container,
             checklist_container,
             build_comment_fields(),
             bottom_nav_container
         );
+        
         app_container_ref.appendChild(plate_element_ref);
     }
     
@@ -280,17 +274,15 @@ export const RequirementAuditComponent = (function () {
         const state = local_getState();
         const is_locked = state.auditStatus === 'locked';
 
-        // Header
         const header = plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';
         header.append(
             Helpers_create_element('h1', { text_content: current_requirement.title }),
             create_header_paragraph('standard-reference', t('requirement_standard_reference_label'), current_requirement.standardReference),
-            create_header_paragraph('audited-page-link', t('audited_page_label'), null, true), // Special handling
-            create_header_paragraph('overall-requirement-status-display', t('overall_requirement_status')) // Special handling
+            create_header_paragraph('audited-page-link', t('audited_page_label'), null, true),
+            create_header_paragraph('overall-requirement-status-display', t('overall_requirement_status'))
         );
         
-        // Navigation
         const nav_options = {
             is_audit_locked: is_locked,
             is_first_requirement: ordered_requirement_keys.indexOf(params_ref.requirementId) === 0,
@@ -302,13 +294,9 @@ export const RequirementAuditComponent = (function () {
         top_navigation_instance.render(nav_options);
         bottom_navigation_instance.render(nav_options);
 
-        // Info Sections
         info_sections_instance.render(current_requirement, current_sample, state.ruleFileContent.metadata);
-
-        // Checklist
         checklist_handler_instance.render(current_requirement, current_result, is_locked);
         
-        // Comments
         comment_to_auditor_input.value = current_result.commentToAuditor || '';
         comment_to_actor_input.value = current_result.commentToActor || '';
         [comment_to_auditor_input, comment_to_actor_input].forEach(input => {
@@ -319,7 +307,6 @@ export const RequirementAuditComponent = (function () {
             }
         });
         
-        // Notifications
         if (current_result?.needsReview === true) {
             NotificationComponent_show_global_message(t('requirement_updated_needs_review'), 'info');
         } else {

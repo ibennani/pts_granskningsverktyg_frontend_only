@@ -389,13 +389,16 @@
     gap: 1rem;
 }
 
+/* --- START OF CHANGE: Updated top-nav styling --- */
 .audit-navigation-buttons.top-nav {
     border-top: none;
     border-bottom: 1px solid var(--border-color);
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    margin-top: 1.5rem;
+    margin-top: 0; /* Remove top margin */
+    margin-bottom: 2rem; /* Keep bottom margin */
+    padding-top: 0; /* Remove top padding */
+    padding-bottom: 1.5rem; /* Keep bottom padding */
 }
+/* --- END OF CHANGE --- */
 
 .audit-navigation-buttons .nav-group-left,
 .audit-navigation-buttons .nav-group-right {

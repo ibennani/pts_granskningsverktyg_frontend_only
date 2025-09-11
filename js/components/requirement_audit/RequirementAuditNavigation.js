@@ -1,6 +1,6 @@
 // js/components/requirement_audit/RequirementAuditNavigation.js
 
-export const RequirementAuditNavigation = (function () {
+export const RequirementAuditNavigationFactory = function () { // Ändrad till Factory
     'use-strict';
 
     let container_ref;
@@ -108,9 +108,10 @@ export const RequirementAuditNavigation = (function () {
         if (container_ref) container_ref.innerHTML = '';
     }
 
+    // Return an object for this specific instance
     return {
         init,
         render,
         destroy
     };
-})();
+};
