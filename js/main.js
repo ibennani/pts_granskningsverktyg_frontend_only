@@ -1,8 +1,8 @@
 // js/main.js
 
 import { UploadViewComponent } from './components/UploadViewComponent.js';
-import { MetadataViewComponent } from './components/MetadataViewComponent.js';
-import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; // NY IMPORT
+// MetadataViewComponent tas bort
+import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
 import { SampleFormViewComponent } from './components/SampleFormViewComponent.js';
 import { ConfirmSampleEditViewComponent } from './components/ConfirmSampleEditViewComponent.js';
@@ -58,10 +58,10 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'upload':
                     title_prefix = t('start_or_load_audit_title');
                     break;
-                case 'metadata':
-                    title_prefix = t('enter_metadata_title');
+                case 'metadata': // Denna kommer nu använda EditMetadataViewComponent
+                    title_prefix = t('audit_metadata_title');
                     break;
-                case 'edit_metadata': // NYTT CASE
+                case 'edit_metadata':
                     title_prefix = t('edit_audit_metadata_title');
                     break;
                 case 'sample_management':
@@ -180,7 +180,7 @@ window.StoreActionTypes = StoreActionTypes;
 
         updatePageTitle(view_name_to_render, params_to_render);
 
-        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'edit_metadata']; // NYTT TILLÄGG
+        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata'];
         top_action_bar_instance.render();
         if (views_without_bottom_bar.includes(view_name_to_render)) {
             bottom_action_bar_container.style.display = 'none';
@@ -207,11 +207,12 @@ window.StoreActionTypes = StoreActionTypes;
         current_view_component_instance = null;
 
         let ComponentClass;
-        // NYTT CASE I SWITCH-SATSEN
+        
+        // --- START OF ROUTER CHANGE ---
         switch (view_name_to_render) {
             case 'upload': ComponentClass = UploadViewComponent; break;
-            case 'metadata': ComponentClass = MetadataViewComponent; break;
-            case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break; // NY RAD
+            case 'metadata': ComponentClass = EditMetadataViewComponent; break; // Dirigeras om till den nya komponenten
+            case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
             case 'sample_form': ComponentClass = SampleFormViewComponent; break;
             case 'confirm_sample_edit': ComponentClass = ConfirmSampleEditViewComponent; break; 
@@ -226,6 +227,7 @@ window.StoreActionTypes = StoreActionTypes;
                 set_focus_to_h1();
                 return;
         }
+        // --- END OF ROUTER CHANGE ---
 
         try {
             current_view_component_instance = ComponentClass; 
@@ -306,7 +308,7 @@ window.StoreActionTypes = StoreActionTypes;
             }
         });
         subscribe((new_state) => { 
-            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'edit_metadata']; // NYTT TILLÄGG
+            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata'];
             top_action_bar_instance.render();
             if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
                 bottom_action_bar_instance.render();
@@ -316,7 +318,6 @@ window.StoreActionTypes = StoreActionTypes;
             const [view_name_from_hash,] = hash.split('?');
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                // Avstå från att rendera om det är confirm-vyn, för att undvika att tappa state
                 if (current_view_name_rendered !== 'confirm_sample_edit') {
                     current_view_component_instance.render();
                 }
@@ -332,7 +333,6 @@ window.StoreActionTypes = StoreActionTypes;
         await window.Translation.ensure_initial_load();
         initState();
 
-        // Rensa eventuella gamla "staged" ändringar om sidan laddas om
         dispatch({ type: StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 
         const active_session_state = getState();
