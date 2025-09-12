@@ -366,5 +366,10 @@
   "quality_index_title": "Quality Index",
   "higher_is_better": "Higher is better",
   "score_by_principle_quality": "Breakdown by Principle",
-  "quality_index_for_principle": "Quality index for {principle}: {score} out of 100"
+  "quality_index_for_principle": "Quality index for {principle}: {score} out of 100",
+  "deficiency_index_for_principle": "Deficiency index for {principle}: {score} out of 100",
+  "deficiency_index_title": "Deficiency Index",
+  "lower_is_better": "Lower is better",
+  "score_by_principle_deficiency": "Breakdown by Principle",
+  "quality_index_title": "Quality Index"
 }

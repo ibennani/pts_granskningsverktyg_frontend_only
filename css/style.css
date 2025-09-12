@@ -69,11 +69,11 @@
     --button-info-text: #ffffff;
     --button-info-hover-bg: #35607c;
 
-    /* --- START OF CHANGE --- */
-    /* NYA, LJUSARE FÄRGER FÖR GRADIENT I LJUS TEMA */
-    --gradient-danger-color: #f7797d; /* Ljusare röd */
-    --gradient-warning-color: #fbd786; /* Ljusare gul/orange */
-    --gradient-success-color: #84fab0; /* Ljusare grön */
+    /* --- START OF CHANGE: Inverted Gradient Colors --- */
+    /* Light Theme: Bright, clear colors for the gradient */
+    --gradient-success-color: #84fab0; /* Bright Green */
+    --gradient-warning-color: #fbd786; /* Bright Yellow/Orange */
+    --gradient-danger-color: #f7797d;  /* Bright Red */
     /* --- END OF CHANGE --- */
 }
 
@@ -127,11 +127,11 @@
     --button-warning-text: #1b2326;
     --button-info-text: #1b2326;
 
-    /* --- START OF CHANGE --- */
-    /* FÖR MÖRKT TEMA ANVÄNDER VI DE EXISTERANDE STARKA FÄRGERNA */
-    --gradient-danger-color: var(--danger-color);
-    --gradient-warning-color: var(--warning-color);
+    /* --- START OF CHANGE: Inverted Gradient Colors --- */
+    /* Dark Theme: Use the existing strong theme colors for the gradient */
     --gradient-success-color: var(--success-color);
+    --gradient-warning-color: var(--warning-color);
+    --gradient-danger-color: var(--danger-color);
     /* --- END OF CHANGE --- */
 }
 

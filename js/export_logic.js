@@ -150,15 +150,13 @@ async function export_to_excel(current_audit) {
         ];
         
         // --- START OF CHANGE ---
-        // Anropa den nya beräkningsfunktionen för att få det färska resultatet
         const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
-        const quality_index_value = score_analysis ? score_analysis.totalScore : null;
-        const display_quality_index = (quality_index_value !== null && quality_index_value !== undefined) 
-            ? window.Helpers.format_number_locally(quality_index_value, lang_code)
+        const deficiency_index_value = score_analysis ? score_analysis.totalScore : null;
+        const display_deficiency_index = (deficiency_index_value !== null && deficiency_index_value !== undefined) 
+            ? window.Helpers.format_number_locally(deficiency_index_value, lang_code)
             : '---';
 
-        // Lägg till den nya raden i rapporten
-        general_info_data.push([t('quality_index_title', {defaultValue: "Quality Index"}), `${display_quality_index} / 100`]);
+        general_info_data.push([t('deficiency_index_title', {defaultValue: "Deficiency Index"}), `${display_deficiency_index} / 100`]);
         // --- END OF CHANGE ---
 
         generalSheet.addRows(general_info_data);

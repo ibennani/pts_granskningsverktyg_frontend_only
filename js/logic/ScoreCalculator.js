@@ -43,7 +43,9 @@
     }
 
     /**
-     * The main function to calculate the Quality Index based on the 0-100 model.
+     * The main function to calculate the score based on the 0-100 model.
+     * NOTE: This function calculates a DEFICIENCY index (0=best, 100=worst)
+     * but retains its original name for API compatibility within the app.
      * @param {object} auditState - The complete current audit state.
      * @returns {object|null} An object with totalScore and a breakdown by principle, or null if calculation is not possible.
      */
@@ -55,12 +57,12 @@
         const classifications = auditState.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
         if (!classifications) return null;
 
-        let totalMaxPerformance = 0;
-        let totalActualPerformance = 0;
+        let totalMaxWeight = 0;
+        let totalDeductions = 0;
         
         const principleScores = {};
         classifications.concepts.forEach(c => {
-            principleScores[c.id] = { max: 0, actual: 0 };
+            principleScores[c.id] = { maxWeight: 0, deductions: 0 };
         });
 
         // 1. Iterate through each sample to calculate contributions.
@@ -71,18 +73,15 @@
                 const reqKey = reqDef.key || reqDef.id;
                 const reqWeight = _calculateRequirementWeight(reqDef);
                 
-                // Add to the total possible performance score for this audit
-                totalMaxPerformance += reqWeight;
+                totalMaxWeight += reqWeight;
 
-                // Add to the possible performance for the requirement's principle
                 const principleId = reqDef.classifications?.find(c => c.taxonomyId === 'wcag22-pour')?.conceptId;
                 if (principleId && principleScores.hasOwnProperty(principleId)) {
-                    principleScores[principleId].max += reqWeight;
+                    principleScores[principleId].maxWeight += reqWeight;
                 }
 
-                // Now, calculate actual performance based on failures
                 const reqResult = sample.requirementResults?.[reqKey];
-                let actualDeficiencyPoints = 0;
+                let deficiencyPointsForReq = 0;
                 if (reqResult?.checkResults) {
                     let failureCountForReq = 0;
                     Object.values(reqResult.checkResults).forEach(checkResult => {
@@ -94,38 +93,35 @@
                             });
                         }
                     });
-                    actualDeficiencyPoints = failureCountForReq * reqWeight;
+                    deficiencyPointsForReq = failureCountForReq * reqWeight;
                 }
 
-                // Clamp the deficiency points to not exceed the requirement's weight
-                const adjustedDeficiencyPoints = Math.min(actualDeficiencyPoints, reqWeight);
+                const adjustedDeductions = Math.min(deficiencyPointsForReq, reqWeight);
                 
-                // Performance score is max score minus deductions for failures
-                const performanceScore = reqWeight - adjustedDeficiencyPoints;
-                
-                totalActualPerformance += performanceScore;
+                totalDeductions += adjustedDeductions;
                 if (principleId && principleScores.hasOwnProperty(principleId)) {
-                    principleScores[principleId].actual += performanceScore;
+                    principleScores[principleId].deductions += adjustedDeductions;
                 }
             });
         });
 
-        // 2. Calculate the final normalized indexes
+        // 2. Calculate the final normalized deficiency indexes
         const finalPrincipleReport = {};
         classifications.concepts.forEach(concept => {
             const id = concept.id;
             const data = principleScores[id];
-            const normalizedIndex = (data.max > 0) ? (data.actual / data.max) * 100 : 100; // Default to 100 if no relevant reqs
+            // Deficiency Index = (Total Deductions / Max Possible Weight) * 100
+            const deficiencyIndex = (data.maxWeight > 0) ? (data.deductions / data.maxWeight) * 100 : 0;
             finalPrincipleReport[id] = {
                 label: concept.label,
-                score: parseFloat(normalizedIndex.toFixed(1))
+                score: parseFloat(deficiencyIndex.toFixed(1))
             };
         });
 
-        const finalTotalScore = (totalMaxPerformance > 0) ? (totalActualPerformance / totalMaxPerformance) * 100 : 100; // Default to 100
+        const finalTotalDeficiencyIndex = (totalMaxWeight > 0) ? (totalDeductions / totalMaxWeight) * 100 : 0;
 
         return {
-            totalScore: parseFloat(finalTotalScore.toFixed(1)),
+            totalScore: parseFloat(finalTotalDeficiencyIndex.toFixed(1)),
             principles: finalPrincipleReport,
             sampleCount: auditState.samples.length
         };

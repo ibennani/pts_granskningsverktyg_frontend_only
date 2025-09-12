@@ -119,24 +119,20 @@
     fill: var(--text-color);
 }
 
-/* --- START OF CHANGE --- */
-/* Ny stil för prick-markören */
 .score-gauge__marker-group {
     transition: transform 0.7s ease-out;
 }
 
 .score-gauge__marker {
-    fill: var(--text-color); /* Mörk prick i ljust läge */
-    stroke: var(--plate-background-color); /* Ljus kantlinje för kontrast */
+    fill: var(--text-color); 
+    stroke: var(--plate-background-color); 
     stroke-width: 1.5;
 }
 
 [data-theme="dark"] .score-gauge__marker {
-    fill: var(--text-color); /* Ljus prick i mörkt läge */
-    stroke: var(--background-color); /* Mörk kantlinje för kontrast */
+    fill: var(--text-color); 
+    stroke: var(--background-color); 
 }
-/* --- END OF CHANGE --- */
-
 
 .score-analysis-total__context p {
     margin: 0;
@@ -186,16 +182,19 @@
     overflow: hidden;
 }
 
+/* --- START OF CHANGE: Inverted Gradient --- */
 .principle-row__bar {
     height: 100%;
     transition: width 0.5s ease-out;
     background: linear-gradient(to right, 
-        var(--gradient-danger-color) 0%, 
+        var(--gradient-success-color) 0%, 
         var(--gradient-warning-color) 50%, 
-        var(--gradient-success-color) 100%
+        var(--gradient-danger-color) 100%
     );
     background-size: calc(100% / (var(--score-percent, 0.01) / 100)) 100%;
 }
+/* --- END OF CHANGE --- */
+
 
 .principle-row__value {
     position: absolute;

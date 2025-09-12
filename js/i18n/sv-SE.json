@@ -366,5 +366,10 @@
   "quality_index_title": "Kvalitetsindex",
   "higher_is_better": "Ju högre, desto bättre",
   "score_by_principle_quality": "Uppdelning per princip",
-  "quality_index_for_principle": "Kvalitetsindex för {principle}: {score} av 100"
+  "quality_index_for_principle": "Kvalitetsindex för {principle}: {score} av 100",
+  "deficiency_index_for_principle": "Bristindex för {principle}: {score} av 100",
+  "deficiency_index_title": "Bristindex",
+  "lower_is_better": "Ju lägre, desto bättre",
+  "score_by_principle_deficiency": "Uppdelning per princip",
+  "quality_index_title": "Kvalitetsindex"
 }

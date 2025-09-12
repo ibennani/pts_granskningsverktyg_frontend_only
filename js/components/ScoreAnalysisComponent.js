@@ -21,12 +21,14 @@ export const ScoreAnalysisComponent = (function () {
     }
     
     function _performAnalysis() {
+        // Function name is kept for compatibility, but it now returns a deficiency index
         return ScoreCalculator.calculateQualityScore(getState());
     }
 
     function _createGaugeSVG(value, lang_code) {
         const minAngle = -135;
         const maxAngle = 135;
+        // Invert the angle calculation for deficiency index
         const angle = minAngle + (value / 100) * (maxAngle - minAngle);
 
         const formattedValue = Helpers.format_number_locally(value, lang_code);
@@ -48,15 +50,13 @@ export const ScoreAnalysisComponent = (function () {
             };
         };
 
-        // --- START OF CHANGE ---
-        // Ersätter visaren med en roterande grupp som innehåller en prick (cirkel).
         const svgContent = `
             <svg viewBox="0 0 100 85" class="score-gauge-svg">
                 <defs>
                     <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="var(--gradient-danger-color)" />
+                        <stop offset="0%" stop-color="var(--gradient-success-color)" />
                         <stop offset="50%" stop-color="var(--gradient-warning-color)" />
-                        <stop offset="100%" stop-color="var(--gradient-success-color)" />
+                        <stop offset="100%" stop-color="var(--gradient-danger-color)" />
                     </linearGradient>
                 </defs>
                 
@@ -70,7 +70,6 @@ export const ScoreAnalysisComponent = (function () {
                 </g>
             </svg>
         `;
-        // --- END OF CHANGE ---
 
         return svgContent;
     }
@@ -93,7 +92,7 @@ export const ScoreAnalysisComponent = (function () {
         
         totalScoreContainer.appendChild(Helpers.create_element('h3', { 
             class_name: 'score-analysis-total__title',
-            text_content: t('quality_index_title', {defaultValue: "Quality Index"})
+            text_content: t('deficiency_index_title', {defaultValue: "Deficiency Index"})
         }));
 
         const scoreVisualization = Helpers.create_element('div', { class_name: 'score-analysis-total__visualization' });
@@ -102,7 +101,7 @@ export const ScoreAnalysisComponent = (function () {
         gaugeWrapper.innerHTML = _createGaugeSVG(analysis.totalScore, lang_code);
         
         const scoreContext = Helpers.create_element('div', { class_name: 'score-analysis-total__context' });
-        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('higher_is_better', {defaultValue: "Higher is better"})})` }));
+        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('lower_is_better', {defaultValue: "Lower is better"})})` }));
         scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: t('based_on_samples', { count: analysis.sampleCount, defaultValue: `Based on ${analysis.sampleCount} audited samples.`}) }));
         
         scoreVisualization.appendChild(gaugeWrapper);
@@ -113,7 +112,7 @@ export const ScoreAnalysisComponent = (function () {
         const principlesContainer = Helpers.create_element('div', { class_name: 'score-analysis-principles' });
         principlesContainer.appendChild(Helpers.create_element('h3', { 
             class_name: 'score-analysis-principles__title',
-            text_content: t('score_by_principle_quality', {defaultValue: "Breakdown by Principle"})
+            text_content: t('score_by_principle_deficiency', {defaultValue: "Breakdown by Principle"})
         }));
 
         const dl = Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
@@ -136,7 +135,7 @@ export const ScoreAnalysisComponent = (function () {
                     'aria-valuenow': data.score,
                     'aria-valuemin': '0',
                     'aria-valuemax': '100',
-                    'aria-label': t('quality_index_for_principle', { principle: data.label, score: formattedScoreForAria, defaultValue: `Quality index for ${data.label}: ${formattedScoreForAria} out of 100` })
+                    'aria-label': t('deficiency_index_for_principle', { principle: data.label, score: formattedScoreForAria, defaultValue: `Deficiency index for ${data.label}: ${formattedScoreForAria} out of 100` })
                 }
             });
             bar.style.setProperty('--score-percent', data.score);
