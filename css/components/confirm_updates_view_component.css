@@ -1,0 +1,22 @@
+/* css/components/confirm_updates_view_component.css */
+
+/*
+   Denna klass ärver mycket från den globala .item-list-item,
+   men gör specifika justeringar för att minska den vertikala höjden.
+*/
+.compact-review-item {
+    /* Minska den vertikala paddingen avsevärt */
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+
+    /* Minska marginalen mellan listelementen */
+    margin-bottom: 0.5rem;
+}
+
+/* Anpassa länken inuti listelementet för bättre läsbarhet */
+.compact-review-item a {
+    /* Om länken blir för lång, låt den brytas till nästa rad */
+    white-space: normal;
+    /* Ge lite andrum till knappen, speciellt om texten bryts */
+    margin-right: 1rem;
+}

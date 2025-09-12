@@ -1,7 +1,6 @@
 // js/main.js
 
 import { UploadViewComponent } from './components/UploadViewComponent.js';
-// MetadataViewComponent tas bort
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
 import { SampleFormViewComponent } from './components/SampleFormViewComponent.js';
@@ -11,6 +10,10 @@ import { RequirementListComponent } from './components/RequirementListComponent.
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
 import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js'; 
 import { RestoreSessionViewComponent } from './components/RestoreSessionViewComponent.js'; 
+// --- START OF CHANGE: Import new components ---
+import { ConfirmUpdatesViewComponent } from './components/ConfirmUpdatesViewComponent.js';
+import { FinalConfirmUpdatesViewComponent } from './components/FinalConfirmUpdatesViewComponent.js';
+// --- END OF CHANGE ---
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
@@ -58,7 +61,7 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'upload':
                     title_prefix = t('start_or_load_audit_title');
                     break;
-                case 'metadata': // Denna kommer nu använda EditMetadataViewComponent
+                case 'metadata':
                     title_prefix = t('audit_metadata_title');
                     break;
                 case 'edit_metadata':
@@ -85,6 +88,14 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'restore_session':
                     title_prefix = t('restore_session_title');
                     break;
+                // --- START OF CHANGE: Add titles for new views ---
+                case 'confirm_updates':
+                    title_prefix = t('handle_updated_assessments_title', {count: ''}).trim(); // count is dynamic in view
+                    break;
+                case 'final_confirm_updates':
+                    title_prefix = t('final_confirm_updates_title');
+                    break;
+                // --- END OF CHANGE ---
                 case 'requirement_audit':
                     const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
                     const requirementTitle = requirement?.title;
@@ -211,7 +222,7 @@ window.StoreActionTypes = StoreActionTypes;
         // --- START OF ROUTER CHANGE ---
         switch (view_name_to_render) {
             case 'upload': ComponentClass = UploadViewComponent; break;
-            case 'metadata': ComponentClass = EditMetadataViewComponent; break; // Dirigeras om till den nya komponenten
+            case 'metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
             case 'sample_form': ComponentClass = SampleFormViewComponent; break;
@@ -221,6 +232,8 @@ window.StoreActionTypes = StoreActionTypes;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
             case 'restore_session': ComponentClass = RestoreSessionViewComponent; break;
+            case 'confirm_updates': ComponentClass = ConfirmUpdatesViewComponent; break;
+            case 'final_confirm_updates': ComponentClass = FinalConfirmUpdatesViewComponent; break;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;

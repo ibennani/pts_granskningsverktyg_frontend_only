@@ -13,11 +13,15 @@ export const ActionTypes = {
     DELETE_SAMPLE: 'DELETE_SAMPLE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
-    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT', // Maintained for potential future use
+    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
-    CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES'
+    CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
+    // --- START OF CHANGE: Add new action types ---
+    CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
+    CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS'
+    // --- END OF CHANGE ---
 };
 
 const initial_state = {
@@ -28,7 +32,7 @@ const initial_state = {
         actorName: '',
         actorLink: '',
         auditorName: '',
-        caseHandler: '', // <-- NYTT FÄLT TILLAGT
+        caseHandler: '',
         internalComment: ''
     },
     auditStatus: 'not_started',
@@ -49,8 +53,6 @@ const initial_state = {
             }
         }
     },
-    // This part is now simplified. The score is calculated on-the-fly by the component.
-    // We no longer store pre-calculated data or the score itself in the central state.
     auditCalculations: {}, 
     pendingSampleChanges: null
 };
@@ -67,6 +69,44 @@ function root_reducer(current_state, action) {
     let new_state;
 
     switch (action.type) {
+        // --- START OF CHANGE: Add new reducer cases ---
+        case ActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT:
+            const { sampleId, requirementId } = action.payload;
+            return {
+                ...current_state,
+                samples: current_state.samples.map(sample => {
+                    if (sample.id === sampleId && sample.requirementResults?.[requirementId]?.needsReview) {
+                        const newResults = { ...sample.requirementResults };
+                        const newReqResult = { ...newResults[requirementId] };
+                        delete newReqResult.needsReview;
+                        newResults[requirementId] = newReqResult;
+                        return { ...sample, requirementResults: newResults };
+                    }
+                    return sample;
+                })
+            };
+
+        case ActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
+            return {
+                ...current_state,
+                samples: current_state.samples.map(sample => {
+                    const newResults = {};
+                    let hasChanged = false;
+                    Object.keys(sample.requirementResults || {}).forEach(reqId => {
+                        const originalResult = sample.requirementResults[reqId];
+                        if (originalResult?.needsReview) {
+                            hasChanged = true;
+                            newResults[reqId] = { ...originalResult };
+                            delete newResults[reqId].needsReview;
+                        } else {
+                            newResults[reqId] = originalResult;
+                        }
+                    });
+                    return hasChanged ? { ...sample, requirementResults: newResults } : sample;
+                })
+            };
+        // --- END OF CHANGE ---
+
         case ActionTypes.STAGE_SAMPLE_CHANGES:
             return {
                 ...current_state,
@@ -151,14 +191,14 @@ function root_reducer(current_state, action) {
             return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.UPDATE_REQUIREMENT_RESULT:
-            const { sampleId, requirementId, newRequirementResult } = action.payload;
+            const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
             const result_to_save = { ...newRequirementResult };
             delete result_to_save.needsReview;
             new_state = {
                 ...current_state,
                 samples: current_state.samples.map(sample => 
-                    (sample.id === sampleId)
-                        ? { ...sample, requirementResults: { ...(sample.requirementResults || {}), [requirementId]: result_to_save }}
+                    (sample.id === updateSampleId)
+                        ? { ...sample, requirementResults: { ...(sample.requirementResults || {}), [updateRequirementId]: result_to_save }}
                         : sample
                 )
             };

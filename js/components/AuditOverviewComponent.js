@@ -1,7 +1,7 @@
 // js/components/AuditOverviewComponent.js
 import { SampleListComponent } from './SampleListComponent.js';
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
-import { AuditInfoComponent } from './AuditInfoComponent.js'; // NY IMPORT
+import { AuditInfoComponent } from './AuditInfoComponent.js'; 
 
 export const AuditOverviewComponent = (function () {
     'use-strict';
@@ -22,12 +22,10 @@ export const AuditOverviewComponent = (function () {
     let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
     let AuditLogic_calculate_overall_audit_progress;
     
-    // Sub-component instances and containers
     let global_message_element_ref;
     let sample_list_component_instance;
     let sample_list_container_element;
     
-    // NYTT: Instans och container för AuditInfoComponent
     let audit_info_component_instance = null;
     let audit_info_container_element = null;
     
@@ -122,7 +120,6 @@ export const AuditOverviewComponent = (function () {
     async function init_sub_components() {
         assign_globals_once();
         
-        // NYTT: Initiera AuditInfoComponent
         audit_info_container_element = Helpers_create_element('div', { id: 'audit-info-component-container', class_name: 'dashboard-panel' });
         audit_info_component_instance = AuditInfoComponent;
         await audit_info_component_instance.init(audit_info_container_element, router_ref, local_getState);
@@ -174,6 +171,63 @@ export const AuditOverviewComponent = (function () {
         }
     }
 
+    function create_actions_bar(state) {
+        const t = Translation_t;
+        const actions_div = Helpers_create_element('div', { class_name: 'audit-overview-actions' });
+        const left_group = Helpers_create_element('div', { class_name: 'action-group-left' });
+        const right_group = Helpers_create_element('div', { class_name: 'action-group-right' });
+
+        if (state.auditStatus === 'in_progress') {
+            left_group.appendChild(Helpers_create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t('update_rulefile_button')}</span>` + Helpers_get_icon_svg('update', ['currentColor'], 18),
+                event_listeners: { click: () => router_ref('update_rulefile') }
+            }));
+
+            const updated_reqs_count = state.samples.flatMap(s => Object.values(s.requirementResults || {})).filter(r => r.needsReview === true).length;
+            if (updated_reqs_count > 0) {
+                left_group.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-info'],
+                    html_content: `<span>${t('handle_updated_assessments', { count: updated_reqs_count })}</span>` + Helpers_get_icon_svg('info', ['currentColor'], 18),
+                    event_listeners: { click: () => router_ref('confirm_updates') }
+                }));
+            }
+
+            right_group.appendChild(Helpers_create_element('button', {
+                class_name: ['button', 'button-warning'],
+                html_content: `<span>${t('lock_audit')}</span>` + Helpers_get_icon_svg('lock_audit', ['currentColor'], 18),
+                event_listeners: { click: handle_lock_audit }
+            }));
+        }
+
+        if (state.auditStatus === 'locked') {
+            left_group.appendChild(Helpers_create_element('button', {
+                class_name: ['button', 'button-secondary'],
+                html_content: `<span>${t('unlock_audit')}</span>` + Helpers_get_icon_svg('unlock_audit', ['currentColor'], 18),
+                event_listeners: { click: handle_unlock_audit }
+            }));
+            if (ExportLogic_export_to_csv) {
+                left_group.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_csv')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18),
+                    event_listeners: { click: handle_export_csv }
+                }));
+            }
+            if (ExportLogic_export_to_excel) {
+                left_group.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_excel')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18),
+                    event_listeners: { click: handle_export_excel }
+                }));
+            }
+        }
+
+        if (left_group.hasChildNodes()) actions_div.appendChild(left_group);
+        if (right_group.hasChildNodes()) actions_div.appendChild(right_group);
+        
+        return actions_div;
+    }
+
     function render() {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
@@ -195,7 +249,6 @@ export const AuditOverviewComponent = (function () {
         
         const dashboard_container = Helpers_create_element('div', { class_name: 'overview-dashboard' });
 
-        // ANVÄND DEN NYA KOMPONENTEN
         if (audit_info_component_instance) {
             dashboard_container.appendChild(audit_info_container_element);
             audit_info_component_instance.render();
@@ -204,8 +257,33 @@ export const AuditOverviewComponent = (function () {
         const score_panel = Helpers_create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
         score_panel.appendChild(Helpers_create_element('h2', { 
             class_name: 'dashboard-panel__title',
-            text_content: t('result_summary_and_deficiency_analysis', {defaultValue: "Result Summary & Deficiency Analysis"})
+            text_content: t('result_summary_and_deficiency_analysis', {defaultValue: "Result Summary"})
         }));
+        
+        const progress_data = AuditLogic_calculate_overall_audit_progress(current_global_state);
+        const lang_code = window.Translation.get_current_language_code();
+        const percentage = (progress_data.total > 0) ? (progress_data.audited / progress_data.total) * 100 : 0;
+        const formatted_percentage = Helpers_format_number_locally(percentage, lang_code, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const valueText = `${progress_data.audited} / ${progress_data.total} (${formatted_percentage} %)`;
+
+        score_panel.appendChild(Helpers_create_element('h3', { 
+            class_name: 'dashboard-panel__subtitle',
+            text_content: t('total_audit_progress_header', { defaultValue: "Klart hittills" })
+        }));
+        const progress_container = Helpers_create_element('div', { class_name: 'info-item--progress-container' });
+        progress_container.appendChild(Helpers_create_element('p', { class_name: 'progress-text-wrapper', html_content: `<strong>${t('total_requirements_audited_label')}:</strong><span class="value">${valueText}</span>` }));
+        progress_container.appendChild(window.ProgressBarComponent.create(progress_data.audited, progress_data.total));
+        score_panel.appendChild(progress_container);
+        
+        // --- START OF CHANGE: Add divider ---
+        const divider = Helpers_create_element('div', {
+            style: {
+                borderBottom: '1px dashed var(--secondary-color)',
+                margin: '1.5rem 0'
+            }
+        });
+        score_panel.appendChild(divider);
+        // --- END OF CHANGE ---
         
         if (scoreAnalysisComponentInstance) {
             score_panel.appendChild(scoreAnalysisContainerElement);
@@ -215,44 +293,12 @@ export const AuditOverviewComponent = (function () {
         
         plate_element.appendChild(dashboard_container);
         
-        if (AuditLogic_calculate_overall_audit_progress && window.ProgressBarComponent) {
-            const overall_progress_section = Helpers_create_element('section', { class_name: 'audit-overview-section' });
-            
-            const progress_data = AuditLogic_calculate_overall_audit_progress(current_global_state);
-            
-            const progress_container = Helpers_create_element('div', { 
-                class_name: 'info-item info-item--progress-container'
-            });
-
-            const text_wrapper = Helpers_create_element('div', { class_name: 'progress-text-wrapper' });
-            const labelText = t('total_requirements_audited_label');
-            const lang_code = window.Translation.get_current_language_code();
-            
-            const percentage = (progress_data.total > 0) ? (progress_data.audited / progress_data.total) * 100 : 0;
-            const formatted_percentage = Helpers_format_number_locally(
-                percentage, 
-                lang_code, 
-                { minimumFractionDigits: 1, maximumFractionDigits: 1 }
-            );
-
-            const valueText = `${progress_data.audited} / ${progress_data.total} &nbsp;(${formatted_percentage} %)`;
-            
-            text_wrapper.innerHTML = `<strong>${labelText}:</strong><span class="value">${valueText}</span>`;
-            
-            const overall_progress_bar = window.ProgressBarComponent.create(
-                progress_data.audited, 
-                progress_data.total, 
-                { id: 'overall-audit-progress-bar' }
-            );
-
-            progress_container.appendChild(text_wrapper);
-            progress_container.appendChild(overall_progress_bar);
-
-            overall_progress_section.appendChild(progress_container);
-            plate_element.appendChild(overall_progress_section);
-        }
+        const top_actions_section = Helpers_create_element('section', { class_name: 'audit-overview-section' });
+        top_actions_section.appendChild(Helpers_create_element('h2', { text_content: t('audit_actions_title') }));
+        top_actions_section.appendChild(create_actions_bar(current_global_state));
+        plate_element.appendChild(top_actions_section);
         
-        const section2 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
+        const sample_section = Helpers_create_element('section', { class_name: 'audit-overview-section' });
         const sample_management_header_div = Helpers_create_element('div', { class_name: 'sample-list-header' });
         const number_of_samples = current_global_state.samples ? current_global_state.samples.length : 0;
         sample_management_header_div.appendChild(Helpers_create_element('h2', { text_content: t('sample_list_title_with_count', { count: number_of_samples }) }));
@@ -264,61 +310,17 @@ export const AuditOverviewComponent = (function () {
             add_sample_button.addEventListener('click', () => { router_ref('sample_form'); });
             sample_management_header_div.appendChild(add_sample_button);
         }
-        section2.appendChild(sample_management_header_div);
+        sample_section.appendChild(sample_management_header_div);
         if (sample_list_container_element) {
-            section2.appendChild(sample_list_container_element);
+            sample_section.appendChild(sample_list_container_element);
             sample_list_component_instance.render(); 
         }
-        plate_element.appendChild(section2);
+        plate_element.appendChild(sample_section);
 
-        const section3 = Helpers_create_element('section', { class_name: 'audit-overview-section' });
-        section3.appendChild(Helpers_create_element('h2', { text_content: t('audit_actions_title') }));
-        const actions_div = Helpers_create_element('div', { class_name: 'audit-overview-actions' });
-        const left_actions_group = Helpers_create_element('div', { class_name: 'action-group-left' });
-        const right_actions_group = Helpers_create_element('div', { class_name: 'action-group-right' });
-        if (current_global_state.auditStatus === 'in_progress') {
-            const update_rulefile_btn = Helpers_create_element('button', {
-                class_name: ['button', 'button-default'],
-                html_content: `<span>${t('update_rulefile_button')}</span>` + Helpers_get_icon_svg('update', ['currentColor'], 18)
-            });
-            update_rulefile_btn.addEventListener('click', () => router_ref('update_rulefile'));
-            left_actions_group.appendChild(update_rulefile_btn);
-            const lock_btn = Helpers_create_element('button', {
-                class_name: ['button', 'button-warning'],
-                html_content: `<span>${t('lock_audit')}</span>` + Helpers_get_icon_svg('lock_audit', ['currentColor'], 18)
-            });
-            lock_btn.addEventListener('click', handle_lock_audit);
-            right_actions_group.appendChild(lock_btn);
-        }
-        if (current_global_state.auditStatus === 'locked') {
-            const unlock_btn = Helpers_create_element('button', {
-                class_name: ['button', 'button-secondary'],
-                html_content: `<span>${t('unlock_audit')}</span>` + Helpers_get_icon_svg('unlock_audit', ['currentColor'], 18)
-            });
-            unlock_btn.addEventListener('click', handle_unlock_audit);
-            left_actions_group.appendChild(unlock_btn);
-            if (ExportLogic_export_to_csv) {
-                const csv_btn = Helpers_create_element('button', {
-                    class_name: ['button', 'button-default'],
-                    html_content: `<span>${t('export_to_csv')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18)
-                });
-                csv_btn.addEventListener('click', handle_export_csv);
-                left_actions_group.appendChild(csv_btn);
-            }
-            if (ExportLogic_export_to_excel) {
-                const excel_btn = Helpers_create_element('button', {
-                    class_name: ['button', 'button-default'],
-                    html_content: `<span>${t('export_to_excel')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18)
-                });
-                excel_btn.addEventListener('click', handle_export_excel);
-                left_actions_group.appendChild(excel_btn);
-            }
-        }
-        if (left_actions_group.hasChildNodes()) actions_div.appendChild(left_actions_group);
-        if (right_actions_group.hasChildNodes()) actions_div.appendChild(right_actions_group);
-        if (actions_div.hasChildNodes()) section3.appendChild(actions_div);
-
-        plate_element.appendChild(section3);
+        const bottom_actions_section = Helpers_create_element('section', { class_name: 'audit-overview-section' });
+        bottom_actions_section.appendChild(Helpers_create_element('h2', { text_content: t('audit_actions_title') }));
+        bottom_actions_section.appendChild(create_actions_bar(current_global_state));
+        plate_element.appendChild(bottom_actions_section);
     }
 
     function destroy() {
@@ -328,7 +330,6 @@ export const AuditOverviewComponent = (function () {
         }
         if (sample_list_component_instance?.destroy) sample_list_component_instance.destroy();
         
-        // NYTT: Förstör AuditInfoComponent
         if (audit_info_component_instance?.destroy) audit_info_component_instance.destroy();
         
         if (scoreAnalysisComponentInstance?.destroy) {
@@ -339,8 +340,8 @@ export const AuditOverviewComponent = (function () {
         sample_list_component_instance = null;
         scoreAnalysisContainerElement = null;
         scoreAnalysisComponentInstance = null;
-        audit_info_container_element = null; // NYTT
-        audit_info_component_instance = null; // NYTT
+        audit_info_container_element = null;
+        audit_info_component_instance = null;
         previously_focused_element = null;
     }
 
