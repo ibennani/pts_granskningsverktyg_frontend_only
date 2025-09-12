@@ -5,19 +5,23 @@
     --primary-color-dark: #21867c;
     --button-primary-bg: #2a9d8f;
     --button-primary-text: #ffffff;
+    --button-primary-border: #21867c; /* Darker shade for border */
+    --button-primary-hover-bg: var(--primary-color-dark);
 
     --secondary-color: #b5e3d8;
     --accent-color: #e76f51;
     --accent-color-light: #ffebe4;
 
+    /* --- START OF CHANGE: Updated vars to align with new button theme --- */
     --danger-color: #e63946;
-    --danger-color-light: #fce8e9;
+    --danger-color-light: #f8d7da;
     --warning-color: #f4a261;
-    --warning-color-light: #fef4eb;
+    --warning-color-light: #fff3cd;
     --info-color: #457b9d;
-    --info-color-light: #e7f0f5;
+    --info-color-light: #cff4fc;
     --success-color: #4caf50;
-    --success-color-light: #e9f7ea;
+    --success-color-light: #d1eabc;
+    /* --- END OF CHANGE --- */
 
     --text-color: #1e2a2b;
     --text-color-muted: #4a5a5c;
@@ -34,10 +38,8 @@
     --font-size-base: 1rem;
     --line-height-base: 1.6;
     
-    /* Gammal fokusfärg, behålls om den används någonstans */
     --focus-ring-color: rgba(42, 157, 143, 0.4);
-    /* NY, NEUTRAL FOKUSFÄRG FÖR HYBRID-METODEN */
-    --focus-ring-color-outer: #007bff; /* En neutral, högkontrast-blå för ljust tema */
+    --focus-ring-color-outer: #007bff;
 
     --container-max-width: 1080px;
     --spacing-unit: 1rem;
@@ -46,35 +48,35 @@
     --button-default-text: var(--primary-color-dark);
     --button-default-hover-bg: #cce8e4;
     --button-default-border: var(--secondary-color);
+    
+    --button-accent-bg: #fdd8c5;
+    --button-accent-text: #7b2c00;
+    --button-accent-border: #e7b59a;
+    --button-accent-hover-bg: #fcc2a3;
 
-    --button-primary-hover-bg: var(--primary-color-dark);
+    --button-success-bg: #d1eabc;
+    --button-success-text: #395123;
+    --button-success-border: #a8c78a;
+    --button-success-hover-bg: #c1dda4;
 
-    --button-accent-bg: var(--accent-color);
-    --button-accent-text: #ffffff;
-    --button-accent-hover-bg: #d05a3a;
+    --button-danger-bg: #f8d7da;
+    --button-danger-text: #58151c;
+    --button-danger-border: #e2b7bb;
+    --button-danger-hover-bg: #f1c2c7;
 
-    --button-success-bg: var(--success-color);
-    --button-success-text: #ffffff;
-    --button-success-hover-bg: #3e8e41;
+    --button-warning-bg: #fff3cd;
+    --button-warning-text: #664d03;
+    --button-warning-border: #e6dca7;
+    --button-warning-hover-bg: #f7e9b9;
 
-    --button-danger-bg: var(--danger-color);
-    --button-danger-text: #ffffff;
-    --button-danger-hover-bg: #c22a36;
-
-    --button-warning-bg: var(--warning-color);
-    --button-warning-text: #2a1e14;
-    --button-warning-hover-bg: #e08b4a;
-
-    --button-info-bg: var(--info-color);
-    --button-info-text: #ffffff;
-    --button-info-hover-bg: #35607c;
-
-    /* --- START OF CHANGE: Inverted Gradient Colors --- */
-    /* Light Theme: Bright, clear colors for the gradient */
-    --gradient-success-color: #84fab0; /* Bright Green */
-    --gradient-warning-color: #fbd786; /* Bright Yellow/Orange */
-    --gradient-danger-color: #f7797d;  /* Bright Red */
-    /* --- END OF CHANGE --- */
+    --button-info-bg: #cff4fc;
+    --button-info-text: #055160;
+    --button-info-border: #a9dbe3;
+    --button-info-hover-bg: #bae8f4;
+    
+    --gradient-success-color: #84fab0;
+    --gradient-warning-color: #fbd786;
+    --gradient-danger-color: #f7797d;
 }
 
 [data-theme="dark"] {
@@ -83,19 +85,23 @@
     --primary-color-dark: #21bdb0;
     --button-primary-bg: #178176;
     --button-primary-text: #eafaf9;
+    --button-primary-border: #36e2d5;
+    --button-primary-hover-bg: #126a5f;
 
     --secondary-color: #35617a;
     --accent-color: #cc6e52;
     --accent-color-light: rgba(204, 110, 82, 0.1);
 
+    /* --- START OF CHANGE: Updated vars to align with new button theme --- */
     --danger-color: #c94a4a;
-    --danger-color-light: rgba(201, 74, 74, 0.1);
+    --danger-color-light: rgba(138, 52, 58, 0.2);
     --warning-color: #c9953d;
-    --warning-color-light: rgba(201, 149, 61, 0.1);
+    --warning-color-light: rgba(142, 109, 42, 0.2);
     --info-color: #4b94b8;
-    --info-color-light: rgba(75, 148, 184, 0.1);
+    --info-color-light: rgba(53, 106, 131, 0.2);
     --success-color: #58a47a;
-    --success-color-light: rgba(88, 164, 122, 0.1);
+    --success-color-light: rgba(64, 117, 88, 0.2);
+    /* --- END OF CHANGE --- */
 
     --text-color: #eafaf9;
     --text-color-muted: #a6c1bd;
@@ -106,33 +112,42 @@
 
     --border-color: #6fa6a1;
     
-    /* Gammal fokusfärg */
     --focus-ring-color: rgba(54, 226, 213, 0.4);
-    /* NY, NEUTRAL FOKUSFÄRG FÖR HYBRID-METODEN */
-    --focus-ring-color-outer: #4dabf7; /* En ljusare blå för mörkt tema */
+    --focus-ring-color-outer: #4dabf7;
 
     --button-default-bg: #37474f;
     --button-default-text: var(--text-color);
     --button-default-hover-bg: #455a64;
     --button-default-border: var(--secondary-color);
 
-    --button-primary-hover-bg: #126a5f;
+    --button-accent-bg: #8c4d38;
+    --button-accent-text: var(--text-color);
+    --button-accent-border: #ab6a51;
+    --button-accent-hover-bg: #a35f49;
 
-    --button-accent-bg: var(--accent-color);
-    --button-accent-text: #1b2326;
-    --button-accent-hover-bg: #b85e42;
+    --button-success-bg: #407558;
+    --button-success-text: var(--text-color);
+    --button-success-border: #60a37e;
+    --button-success-hover-bg: #52916f;
 
-    --button-success-text: #1b2326;
-    --button-danger-text: #ffffff;
-    --button-warning-text: #1b2326;
-    --button-info-text: #1b2326;
+    --button-danger-bg: #8a343a;
+    --button-danger-text: var(--text-color);
+    --button-danger-border: #b15258;
+    --button-danger-hover-bg: #a1474d;
 
-    /* --- START OF CHANGE: Inverted Gradient Colors --- */
-    /* Dark Theme: Use the existing strong theme colors for the gradient */
+    --button-warning-bg: #8e6d2a;
+    --button-warning-text: var(--text-color);
+    --button-warning-border: #b89547;
+    --button-warning-hover-bg: #a8833c;
+
+    --button-info-bg: #356a83;
+    --button-info-text: var(--text-color);
+    --button-info-border: #5a96b3;
+    --button-info-hover-bg: #4989a3;
+    
     --gradient-success-color: var(--success-color);
     --gradient-warning-color: var(--warning-color);
     --gradient-danger-color: var(--danger-color);
-    /* --- END OF CHANGE --- */
 }
 
 
@@ -222,7 +237,7 @@ a:hover, a:focus {
     vertical-align: middle;
     cursor: pointer;
     user-select: none;
-    border: none;
+    border: 1px solid transparent;
     border-radius: var(--border-radius);
     gap: 0.5rem;
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
@@ -238,7 +253,7 @@ a:hover, a:focus {
 .button-default {
     color: var(--button-default-text);
     background-color: var(--button-default-bg);
-    border: 1px solid var(--button-default-border);
+    border-color: var(--button-default-border);
 }
 .button-default:hover, .button-default:focus {
     background-color: var(--button-default-hover-bg);
@@ -247,6 +262,7 @@ a:hover, a:focus {
 .button-primary {
     background-color: var(--button-primary-bg);
     color: var(--button-primary-text);
+    border-color: var(--button-primary-border);
 }
 .button-primary:hover, .button-primary:focus {
     background-color: var(--button-primary-hover-bg);
@@ -255,9 +271,11 @@ a:hover, a:focus {
 .button-secondary {
     background-color: var(--secondary-color);
     color: var(--primary-color-dark);
+    border-color: color-mix(in srgb, var(--secondary-color) 80%, black);
 }
 [data-theme="dark"] .button-secondary {
     color: var(--text-color);
+    border-color: color-mix(in srgb, var(--secondary-color) 80%, white);
 }
 .button-secondary:hover, .button-secondary:focus {
     background-color: color-mix(in srgb, var(--secondary-color) 85%, black);
@@ -266,38 +284,43 @@ a:hover, a:focus {
 .button-accent {
     background-color: var(--button-accent-bg);
     color: var(--button-accent-text);
+    border-color: var(--button-accent-border);
 }
 .button-accent:hover, .button-accent:focus {
     background-color: var(--button-accent-hover-bg);
 }
 
 .button-success {
-    background-color: var(--success-color);
+    background-color: var(--button-success-bg);
     color: var(--button-success-text);
+    border-color: var(--button-success-border);
 }
 .button-success:hover, .button-success:focus {
     background-color: var(--button-success-hover-bg);
 }
 
 .button-danger {
-    background-color: var(--danger-color);
+    background-color: var(--button-danger-bg);
     color: var(--button-danger-text);
+    border-color: var(--button-danger-border);
 }
 .button-danger:hover, .button-danger:focus {
     background-color: var(--button-danger-hover-bg);
 }
 
 .button-warning {
-    background-color: var(--warning-color);
+    background-color: var(--button-warning-bg);
     color: var(--button-warning-text);
+    border-color: var(--button-warning-border);
 }
 .button-warning:hover, .button-warning:focus {
     background-color: var(--button-warning-hover-bg);
 }
 
 .button-info {
-    background-color: var(--info-color);
+    background-color: var(--button-info-bg);
     color: var(--button-info-text);
+    border-color: var(--button-info-border);
 }
 .button-info:hover, .button-info:focus {
     background-color: var(--button-info-hover-bg);
@@ -403,22 +426,15 @@ textarea.form-control, textarea {
     padding-left: 0;
 }
 
-/* --- FIX HÄR: Ta bort fokusmarkering för tabindex="-1" --- */
 [tabindex="-1"]:focus-visible,
 [tabindex="-1"]:focus {
     outline: none;
 }
-/* --- SLUT PÅ FIX --- */
 
-/* --- NYA, FÖRBÄTTRADE FOKUS-STILAR (HYBRIDMETODEN MED 2PX MELLANRUM) --- */
-
-/* Steg A: Ta bort webbläsarens standard-outline. */
 :focus-visible {
   outline: none;
 }
 
-/* Steg B: Generell fokusstil för de flesta element. */
-/* 1:a skuggan är en 2px lucka. 2:a är den inre ringen. 3:e är den yttre. */
 a:focus-visible,
 .form-control:focus-visible,
 input[type="text"]:focus-visible,
@@ -431,7 +447,6 @@ select:focus-visible,
     box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--primary-color), 0 0 0 6px var(--focus-ring-color-outer);
 }
 
-/* Steg C: Specifika fokusstilar för färgade knappar. */
 .button-primary:focus-visible {
     box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-primary-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
@@ -451,14 +466,10 @@ select:focus-visible,
     box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-info-bg), 0 0 0 6px var(--focus-ring-color-outer);
 }
 
-/* Steg D: Specialregel för checkboxes. */
 .form-check-input:focus-visible + .form-check-label {
     border-radius: var(--border-radius);
     box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--primary-color), 0 0 0 6px var(--focus-ring-color-outer);
 }
-
-/* --- SLUT PÅ NYA FOKUS-STILAR --- */
-
 
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -597,13 +608,13 @@ input[type="text"], input[type="url"], input[type="email"], textarea, select,
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Global Message Area Styles (flyttad från notification_component.css) */
+/* --- START OF CHANGE: Updated Notification Message Styles --- */
 #global-message-area {
     padding: 1rem;
-    margin-bottom: 1.5rem; /* Utrymme till H1 eller annat innehåll */
+    margin-bottom: 1.5rem;
     border: 1px solid transparent;
     border-radius: var(--border-radius);
-    position: relative; /* För att positionera stängningsknappen absolut */
+    position: relative;
 }
 #global-message-area[hidden] { display: none; }
 .global-message-close-btn {
@@ -617,66 +628,67 @@ input[type="text"], input[type="url"], input[type="email"], textarea, select,
 .global-message-close-btn:focus { opacity: 1; }
 
 #global-message-area.message-info {
-    background-color: var(--info-color-light);
-    border-color: var(--info-color);
-    color: #004085; /* Mörk text på ljusblå bakgrund */
+    background-color: var(--button-info-bg);
+    border-color: var(--button-info-border);
+    color: var(--button-info-text);
 }
-#global-message-area.message-info .global-message-close-btn { color: #004085; }
+#global-message-area.message-info .global-message-close-btn { color: var(--button-info-text); }
 [data-theme="dark"] #global-message-area.message-info {
-    background-color: #0c5460; /* Mörkare info-bakgrund */
-    border-color: var(--info-color); /* Använder den ljusare info-färgen för kanten */
-    color: var(--text-color); /* Ljus text på mörk bakgrund */
+    background-color: var(--info-color-light); 
+    border-color: var(--button-info-border);
+    color: var(--button-info-text);
 }
-[data-theme="dark"] #global-message-area.message-info .global-message-close-btn { color: var(--text-color); }
+[data-theme="dark"] #global-message-area.message-info .global-message-close-btn { color: var(--button-info-text); }
 
 #global-message-area.message-success {
-    background-color: var(--success-color-light);
-    border-color: var(--success-color);
-    color: #155724; /* Mörk text på ljusgrön bakgrund */
+    background-color: var(--button-success-bg);
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
 }
-#global-message-area.message-success .global-message-close-btn { color: #155724; }
+#global-message-area.message-success .global-message-close-btn { color: var(--button-success-text); }
 [data-theme="dark"] #global-message-area.message-success {
-    background-color: #126128; /* Mörkare success-bakgrund */
-    border-color: var(--success-color);
-    color: var(--text-color);
+    background-color: var(--success-color-light); 
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
 }
-[data-theme="dark"] #global-message-area.message-success .global-message-close-btn { color: var(--text-color); }
+[data-theme="dark"] #global-message-area.message-success .global-message-close-btn { color: var(--button-success-text); }
 
 #global-message-area.message-warning {
-    background-color: var(--warning-color-light);
-    border-color: var(--warning-color);
-    color: #856404; /* Mörk text på ljusgul bakgrund */
+    background-color: var(--button-warning-bg);
+    border-color: var(--button-warning-border);
+    color: var(--button-warning-text);
 }
-#global-message-area.message-warning .global-message-close-btn { color: #856404; }
+#global-message-area.message-warning .global-message-close-btn { color: var(--button-warning-text); }
 [data-theme="dark"] #global-message-area.message-warning {
-    background-color: #806600; /* Mörkare warning-bakgrund */
-    border-color: var(--warning-color);
-    color: var(--text-color);
+    background-color: var(--warning-color-light); 
+    border-color: var(--button-warning-border);
+    color: var(--button-warning-text);
 }
-[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn { color: var(--text-color); }
+[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn { color: var(--button-warning-text); }
 
 #global-message-area.message-error {
-    background-color: var(--danger-color-light);
-    border-color: var(--danger-color);
-    color: #721c24; /* Mörk text på ljusröd bakgrund */
+    background-color: var(--button-danger-bg);
+    border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
 }
-#global-message-area.message-error .global-message-close-btn { color: #721c24; }
+#global-message-area.message-error .global-message-close-btn { color: var(--button-danger-text); }
 [data-theme="dark"] #global-message-area.message-error {
-    background-color: #5a1219;
-    border-color: var(--danger-color);
-    color: var(--text-color);
+    background-color: var(--danger-color-light);
+    border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
 }
-[data-theme="dark"] #global-message-area.message-error .global-message-close-btn { color: var(--text-color); }
+[data-theme="dark"] #global-message-area.message-error .global-message-close-btn { color: var(--button-danger-text); }
+/* --- END OF CHANGE --- */
 
 .form-actions,
 .item-list-item .sample-actions-wrapper,
 .item-list-item .sample-actions-main {
-    min-width: 0;   /* låt raden krympa inom containern */
+    min-width: 0;
 }
 
 .form-actions,
 .item-list-item .sample-actions-wrapper,
 .item-list-item .sample-actions-main,
 .button {
-    overflow-wrap: anywhere;  /* bryt långa strängar/URL om det behövs */
+    overflow-wrap: anywhere;
 }

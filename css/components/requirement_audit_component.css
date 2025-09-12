@@ -62,175 +62,152 @@
 /* KORRIGERAD SEKTIONSSTYLING FÖR JÄMN LUFT */
 .audit-section {
     margin-bottom: 2rem; /* Konsekvent avstånd mellan alla sektioner */
-    /* padding-bottom borttaget för att förlita sig på margin */
 }
 
 .audit-section:last-of-type {
     margin-bottom: 0;
 }
 
-/* Ta bort marginal på sista elementet i varje sektion för att undvika dubbel luft */
 .audit-section > :last-child {
     margin-bottom: 0;
 }
 
-.audit-section h2 { /* Rubriker för "Förväntad observation", "Instruktioner", "Kontrollpunkter" etc. */
-    font-size: 1.3rem; /* Större sektionsrubriker */
-    color: var(--primary-color); /* Använd primärfärg */
+.audit-section h2 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
     font-weight: 500;
-    margin-bottom: 1rem; /* Mer utrymme till innehållet */
+    margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px dashed var(--secondary-color);
-    text-transform: none; /* Ta bort uppercase om det är för mycket */
-    letter-spacing: normal; /* Normalt letter-spacing */
+    text-transform: none;
+    letter-spacing: normal;
 }
 
-/* Brödtext och listors typografi (marginaler justeras längre ned för listorna) */
 .audit-section p,
 .audit-section ul,
 .audit-section ol {
-    font-size: 1rem; /* Något större brödtext i sektionerna */
-    color: var(--text-color); /* Standard textfärg, inte muted överallt */
+    font-size: 1rem;
+    color: var(--text-color);
     margin-bottom: 1rem;
     line-height: 1.7;
 }
 
-/* === HÄNGANDE INDRAG FÖR LISTOR I .audit-section (lösning B) === */
-/* Nollställ standard för listor i .audit-section,
-   men undanta metadata-, pass-criteria- och instructions-listor. */
 .audit-section ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list),
 .audit-section ol:not(.instructions-list) {
     list-style: none;
     padding: 0;
-    margin: 0 0 1rem 0; /* behåll bara bottengapet */
+    margin: 0 0 1rem 0;
 }
 
-/* Hängande indrag: text linjerar snyggt, markör i padding-zonen */
 .audit-section ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li,
 .audit-section ol:not(.instructions-list) > li {
     position: relative;
-    padding-left: 1.25rem; /* justera efter smak */
+    padding-left: 1.25rem;
 }
 
-/* Punktlista: egen bullet */
 .audit-section ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li::before {
     content: "•";
     position: absolute;
     left: 0;
-    top: 0.25em; /* finjustera vertikal placering */
+    top: 0.25em;
     line-height: 1;
 }
 
-/* Numrerad lista: egen räknare */
 .audit-section ol:not(.instructions-list) { counter-reset: audit-ol; }
 .audit-section ol:not(.instructions-list) > li { counter-increment: audit-ol; }
 .audit-section ol:not(.instructions-list) > li::before {
     content: counter(audit-ol) ".";
     position: absolute;
     left: 0;
-    top: 0; /* ev. 0.05em för optisk balans */
+    top: 0;
 }
 
-/* === Instruktioner: vanliga bullets/numrering via .instructions-list === */
 .audit-section ul.instructions-list,
 .audit-section ol.instructions-list {
-    list-style: revert;          /* återställ browserns standard (disc/decimal) */
-    padding-left: 1.25rem;       /* konsekvent indrag */
+    list-style: revert;
+    padding-left: 1.25rem;
     margin: 0 0 1rem 0;
 }
 
 .audit-section ul.instructions-list > li,
 .audit-section ol.instructions-list > li {
-    position: static;            /* stäng av hängande indrag */
+    position: static;
     padding-left: 0;
 }
 
 .audit-section ul.instructions-list > li::before,
 .audit-section ol.instructions-list > li::before {
-    content: none;               /* inga custom markörer */
+    content: none;
 }
 
-/* Säkerställ att custom-OL-räknare inte slår in */
 .audit-section ol.instructions-list { counter-reset: none; }
 .audit-section ol.instructions-list > li { counter-increment: none; }
 
-/* Requirement Metadata */
 .requirement-metadata-list {
-    list-style: disc; /* Standard punktlista */
-    padding-left: 1.25rem; /* Standardindrag för punktlista */
-    margin-top: 0.5rem; /* Lite utrymme från H2-rubriken */
-    margin-bottom: 1rem; /* Utrymme efter listan */
-    line-height: 1.5; /* Standard radavstånd för läsbarhet */
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
 }
 
 .requirement-metadata-list li {
-    margin-bottom: 0.25rem; /* Minimalt med luft mellan punkterna */
+    margin-bottom: 0.25rem;
     color: var(--text-color);
 }
 
 .requirement-metadata-list li strong {
     color: var(--text-color);
-    font-weight: 500; /* Normal fetstil för etiketten */
+    font-weight: 500;
 }
 
-/* Styles for Checks Section */
 .checks-container {
-    margin-top: 2rem; /* Mer luft ovanför kontrollpunktssektionen */
+    margin-top: 2rem;
 }
 
-/* --- NY STYLING FÖR .check-item (KONTROLLPUNKTS-PLATTAN) --- */
 .check-item {
     padding: 1.25rem;
     margin-bottom: 1.5rem;
     border: 1px solid var(--border-color);
-    border-left-width: 5px; /* Behåll tjockare vänsterkant */
+    border-left-width: 5px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     box-shadow: 2px 2px 5px rgba(0,0,0,0.06);
-    transition: border-color 0.3s ease; /* Tog bort background-color från transition */
-    background-color: var(--plate-background-color); /* Sätt default bakgrund här */
+    transition: border-color 0.3s ease;
+    background-color: var(--plate-background-color);
 }
 
-/* Default/Not Audited State */
 .check-item.status-not_audited {
-    border-left-color: var(--border-color); /* Standard accentfärg (orange) */
-    /* background-color är nu i .check-item */
+    border-left-color: var(--border-color);
 }
 
-/* Passed State */
 .check-item.status-passed {
     border-left-color: var(--success-color);
 }
 
-/* Failed State */
 .check-item.status-failed {
     border-left-color: var(--danger-color);
 }
 
-/* Partially Audited State */
 .check-item.status-partially_audited {
     border-left-color: var(--warning-color);
 }
 
-/* Mörkt tema anpassningar */
-[data-theme="dark"] .check-item { /* Ny regel för dark theme default */
+[data-theme="dark"] .check-item {
     background-color: color-mix(in srgb, var(--plate-background-color) 92%, black);
 }
 [data-theme="dark"] .check-item.status-not_audited {
     border-left-color: color-mix(in srgb, var(--border-color) 80%, white);
-    /* background-color är nu i [data-theme="dark"] .check-item */
 }
-/* --- SLUT PÅ NY STYLING FÖR .check-item --- */
 
-
-.check-condition-title { /* H3 för check.condition */
-    font-size: 1.15rem; /* Något mindre än H2, men större än vanlig text */
+.check-condition-title {
+    font-size: 1.15rem;
     color: var(--text-color);
     margin-top: 0;
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
 
-.check-status-display { /* Visar beräknad status för en check */
+.check-status-display {
     font-size: 0.9rem;
     font-style: italic;
     color: var(--text-color-muted);
@@ -238,7 +215,7 @@
     padding: 0.3rem 0.6rem;
     background-color: var(--background-color);
     border-radius: var(--border-radius);
-    display: inline-block; /* Så att bakgrunden bara täcker texten */
+    display: inline-block;
 }
 
 [data-theme="dark"] .check-status-display {
@@ -248,7 +225,7 @@
 .pass-criteria-list {
     list-style: none;
     padding-left: 0;
-    margin-top: 1rem; /* Lite luft ovanför listan med pass criteria */
+    margin-top: 1rem;
 }
 
 .pass-criterion-item {
@@ -260,7 +237,7 @@
 }
 
 [data-theme="dark"] .pass-criterion-item {
-    background-color: color-mix(in srgb, var(--background-color) 95%, black); /* Lite mörkare än body för kontrast */
+    background-color: color-mix(in srgb, var(--background-color) 95%, black);
     border-color: var(--border-color);
 }
 
@@ -271,14 +248,14 @@
     line-height: 1.6;
 }
 
-.pass-criterion-status { /* Visar status för ett enskilt passCriterion */
+.pass-criterion-status {
     font-size: 0.9rem;
     color: var(--text-color-muted);
     margin-bottom: 0.75rem;
     font-style: italic;
 }
 
-/* --- STYLING FÖR AKTIONSKNAPPAR (GHOST BUTTONS) --- */
+/* --- START OF CHANGE: Updated Button Styling --- */
 .condition-actions,
 .pass-criterion-actions {
     display: flex;
@@ -291,59 +268,56 @@
     margin-bottom: 1rem;
 }
 
-/* Gemensam transition för alla knappar här */
 .condition-actions .button.button-small,
 .pass-criterion-actions .button.button-small {
     transition: all 0.2s ease-in-out;
-    border: 1px solid; /* Sätt en border som standard */
 }
 
 /* STATE 1: Inaktivt (ej valt) - "Ghost button" stil */
+.condition-actions .button:not(.active),
+.pass-criterion-actions .button:not(.active) {
+    background-color: transparent;
+}
+
+/* Specifika färger för ghost-knapparna */
 .condition-actions .button-success:not(.active),
 .pass-criterion-actions .button-success:not(.active) {
-    background-color: transparent;
-    border-color: var(--success-color);
-    color: var(--success-color);
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
 }
 
 .condition-actions .button-danger:not(.active),
 .pass-criterion-actions .button-danger:not(.active) {
-    background-color: transparent;
-    border-color: var(--danger-color);
-    color: var(--danger-color);
+    border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
 }
 
 /* Hover-effekt för inaktiva knappar (blir solida) */
 .condition-actions .button-success:not(.active):hover,
 .pass-criterion-actions .button-success:not(.active):hover {
-    background-color: var(--success-color);
-    color: var(--button-success-text, #fff); /* Fallback till vit */
+    background-color: var(--button-success-bg);
 }
 
 .condition-actions .button-danger:not(.active):hover,
 .pass-criterion-actions .button-danger:not(.active):hover {
-    background-color: var(--danger-color);
-    color: var(--button-danger-text, #fff); /* Fallback till vit */
+    background-color: var(--button-danger-bg);
 }
 
-/* STATE 2: Aktivt (valt) - Solid stil + den befintliga ramen */
-.condition-actions .button-small.active,
-.pass-criterion-actions .button-small.active {
-/*    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-    /* Säkerställ solid stil ifall hover-stilen skulle störa */
-    background-color: var(--success-color);
-    border-color: var(--success-color);
-    color: var(--button-success-text, #fff);
+/* STATE 2: Aktivt (valt) - Solid stil (ärver direkt från globala regler) */
+.condition-actions .button-success.active,
+.pass-criterion-actions .button-success.active {
+    background-color: var(--button-success-bg);
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
 }
 
 .condition-actions .button-danger.active,
 .pass-criterion-actions .button-danger.active {
-    background-color: var(--danger-color);
-    border-color: var(--danger-color);
-    color: var(--button-danger-text, #fff);
+    background-color: var(--button-danger-bg);
+    border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
 }
-/* --- SLUT PÅ KNAPP-STYLING --- */
+/* --- END OF CHANGE --- */
 
 
 /* Status textfärger */
@@ -352,7 +326,6 @@
 .status-text.status-partially_audited { color: var(--warning-color); font-weight: bold; }
 .status-text.status-not_audited { color: var(--text-color-muted); }
 
-/* Input Fields Section */
 .input-fields-container {
     margin-top: 2rem;
 }
@@ -378,7 +351,6 @@
     border-color: var(--secondary-color);
 }
 
-/* Navigation Buttons */
 .audit-navigation-buttons {
     margin-top: 2.5rem;
     padding-top: 1.5rem;
@@ -389,16 +361,14 @@
     gap: 1rem;
 }
 
-/* --- START OF CHANGE: Updated top-nav styling --- */
 .audit-navigation-buttons.top-nav {
     border-top: none;
     border-bottom: 1px solid var(--border-color);
-    margin-top: 0; /* Remove top margin */
-    margin-bottom: 2rem; /* Keep bottom margin */
-    padding-top: 0; /* Remove top padding */
-    padding-bottom: 1.5rem; /* Keep bottom padding */
+    margin-top: 0;
+    margin-bottom: 2rem;
+    padding-top: 0;
+    padding-bottom: 1.5rem;
 }
-/* --- END OF CHANGE --- */
 
 .audit-navigation-buttons .nav-group-left,
 .audit-navigation-buttons .nav-group-right {
@@ -409,6 +379,6 @@
 }
 
 .pc-observation-detail-wrapper label[for^="pc-observation-"] {
-    margin-top: 0.75rem; /* Eller t.ex. 1rem */
-    display: block; /* Säkerställ att den är block för att marginalen ska få effekt */
+    margin-top: 0.75rem;
+    display: block;
 }
