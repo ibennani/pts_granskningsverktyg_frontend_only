@@ -1,0 +1,173 @@
+[33m78873eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrescue-återställning[m[33m, [m[1;32mmain[m[33m)[m HEAD@{0}: checkout: moving from main to rescue-återställning
+[33m78873eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrescue-återställning[m[33m, [m[1;32mmain[m[33m)[m HEAD@{1}: reset: moving to HEAD~1
+[33ma66ede7[m HEAD@{2}: reset: moving to HEAD~1
+[33mca6e2d6[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{3}: commit: Första versionen av node.ja applikationen
+[33ma66ede7[m HEAD@{4}: Branch: renamed refs/heads/main to refs/heads/main
+[33ma66ede7[m HEAD@{6}: commit (amend): Lagt in några styrfiler för att kunna använda Cursor effektivt
+[33mcde743d[m HEAD@{7}: commit (amend): Lagt in några styrfiler för att kunna använda Cursor effektivt
+[33m5463f2e[m HEAD@{8}: commit: Lagt in några styrfiler för att kunna använda Cursor effektivt
+[33m78873eb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrescue-återställning[m[33m, [m[1;32mmain[m[33m)[m HEAD@{9}: commit: Lagt till en .cursorignore som första sak i Cursor
+[33m6a88551[m HEAD@{10}: checkout: moving from main to main
+[33m6a88551[m HEAD@{11}: commit: Förberedelse för utveckling i Cursor
+[33m4f0fb3b[m HEAD@{12}: commit: Bättre färgkontraster på UI-element.
+[33m3ac3321[m HEAD@{13}: commit: Ny vy + föbrättrad hantering av uppdaterade krav efter uppdatering av regeifilen
+[33mcd319cb[m HEAD@{14}: commit: Ändrat från kvalitetsindex tillbaka till bristindex efter önskemål
+[33m207ef9f[m HEAD@{15}: commit: Upppdaterat formulär för metadata vid ny granskning
+[33m0f5e887[m HEAD@{16}: commit: Från bristindex till kvailtetsindex + bättre grafik
+[33m819c70d[m HEAD@{17}: commit: har installerat npm
+[33mdbd52ef[m HEAD@{18}: reset: moving to HEAD
+[33mdbd52ef[m HEAD@{19}: reset: moving to HEAD
+[33mdbd52ef[m HEAD@{20}: commit: BF: Kunde inte skriva i en kommentar efter en kontrollpunkt
+[33ma7823c7[m HEAD@{21}: commit: Lade tillbaka en knapprad där man hanterar ett krav
+[33m66beeb1[m HEAD@{22}: commit: Gör fältet Aktör obligatoriskt och dölj tomma metadatafält i översikten
+[33m4d7a8cc[m HEAD@{23}: commit: feat: Rendera text för godkännandekriterier som Markdown för bättre formatering.
+[33m90d8882[m HEAD@{24}: pull --rebase origin main (finish): returning to refs/heads/main
+[33m90d8882[m HEAD@{25}: pull --rebase origin main (pick): Tog bort knappen Visa resultat när ett stickprov var färdigt
+[33m4746a29[m HEAD@{26}: pull --rebase origin main (start): checkout 4746a2936cb05f67b24ecf3d50ee73fd7cfbd495
+[33m5159d10[m HEAD@{27}: checkout: moving from main to main
+[33m5159d10[m HEAD@{28}: commit: Tog bort knappen Visa resultat när ett stickprov var färdigt
+[33ma2bb386[m HEAD@{29}: commit (amend): Refaktorering av kravhantering pga för stor fil
+[33m4746a29[m HEAD@{30}: commit: Ny hantering av specialtecken i filanmn när man sparar en granskning
+[33m404c48b[m HEAD@{31}: commit: Ny hantering av specialtecken i filanmn när man sparar en granskning
+[33m0b80bee[m HEAD@{32}: commit: Redigera info om granskningsöversikten
+[33m8dd755f[m HEAD@{33}: reset: moving to 8dd755f
+[33m8dd755f[m HEAD@{34}: reset: moving to HEAD
+[33m8dd755f[m HEAD@{35}: commit: Buggfix: Språkändringar i vissa knappar (redigera metadata)
+[33m9fb5739[m HEAD@{36}: commit: Redigera befintlig info om en granskning
+[33m75c19b4[m HEAD@{37}: reset: moving to 75c19b4
+[33m267223a[m HEAD@{38}: commit: Instruktion för AI-chattar
+[33m75c19b4[m HEAD@{39}: reset: moving to HEAD~1
+[33me81381a[m HEAD@{40}: commit: Lagt till en instruktion för AI.
+[33m75c19b4[m HEAD@{41}: commit: Mindre språkjusteringar
+[33md0fd009[m HEAD@{42}: cherry-pick: Redesign av granskningsöversikten
+[33m9e1bace[m HEAD@{43}: reset: moving to origin/main
+[33mf1c318f[m HEAD@{44}: checkout: moving from main to main
+[33mf1c318f[m HEAD@{45}: commit (merge): Merge branch 'Förbered-för-körning-med-NodeJs'
+[33mfd4f78d[m HEAD@{46}: commit: Redesign av granskningsöversikten
+[33m9e1bace[m HEAD@{47}: commit: Tog bort onödiga filer
+[33m14a4247[m HEAD@{48}: commit: Ny beräkning och visning av bristindes (värdetal)
+[33m9f52d6d[m HEAD@{49}: checkout: moving from main to main
+[33m9f52d6d[m HEAD@{50}: commit: Lägger till en .gitignore till main-branchen
+[33m07dc9cd[m HEAD@{51}: checkout: moving from feature/node-vite-refactor to main
+[33mc63e496[m[33m ([m[1;32mFörbered-för-körning-med-NodeJs[m[33m)[m HEAD@{52}: commit: feat: Refactor project to use Node.js, Vite, and ES modules
+[33m07dc9cd[m HEAD@{53}: checkout: moving from main to feature/node-vite-refactor
+[33m07dc9cd[m HEAD@{54}: reset: moving to HEAD
+[33m07dc9cd[m HEAD@{55}: commit: Fixa horisontell scroll i layout
+[33m6ddfbd5[m HEAD@{56}: commit: Ökat autospar till 5 sekunder efter inaktivitet
+[33m06941dd[m HEAD@{57}: commit: Förlängt autospar till 3 sekunder
+[33m4ca68a9[m HEAD@{58}: reset: moving to HEAD
+[33m4ca68a9[m HEAD@{59}: commit: Lagt till dependabot
+[33m0dc6b90[m HEAD@{60}: commit: Ny hantering av innehållstyper i stickprov
+[33m4220c21[m HEAD@{61}: commit: BF: Markdown fungerar korrekt överallt
+[33m62a22cc[m HEAD@{62}: commit: Fixat komplett och konsekvent språkhantering
+[33m70b8c84[m HEAD@{63}: commit: Snyggat till formulär för redigering av stickprov
+[33m105864d[m HEAD@{64}: commit: Tydligare hantering av stickprov
+[33me7ac477[m HEAD@{65}: commit: BF: Antal fixade krav visas igen
+[33m18818e1[m HEAD@{66}: commit: Hantering av stickprov
+[33maab972e[m HEAD@{67}: commit: Ny hantering av stickprov från 2025.8.r83
+[33md89a1f6[m HEAD@{68}: commit: BF: Fortsätt eller börja om efter stängd flik
+[33m41c7ccb[m HEAD@{69}: commit: BF: Markdown i kravhanteringsvyn
+[33m0b5975b[m HEAD@{70}: commit: Bättre autospar + restore vid stäng flik
+[33m8a2cd16[m HEAD@{71}: commit: Uppdaterad autosparfunktion (lite buggig)
+[33medf2f16[m HEAD@{72}: commit: Förbättrad sortering av kravlistan
+[33mab94f71[m HEAD@{73}: commit: Nytt format innehållstyper: nytt regelfilsformat
+[33m8778ab1[m HEAD@{74}: commit: Uppdaterade språkfiler
+[33m1a404ac[m HEAD@{75}: reset: moving to 1a404ac
+[33m92d2599[m HEAD@{76}: pull --tags origin main: Fast-forward
+[33m1a404ac[m HEAD@{77}: reset: moving to 1a404ac
+[33m92d2599[m HEAD@{78}: commit: Massa animatinoer (buggig del 1)
+[33m1a404ac[m HEAD@{79}: commit: Animation för filter (kryssrutorna)
+[33md1017bc[m HEAD@{80}: commit: Uppdaterade språkfiler
+[33me8bd31c[m HEAD@{81}: commit: Ny autosparfunktion
+[33m894cdca[m HEAD@{82}: commit: BF: Kravlistan visas rätt vid laddning 1:a gången
+[33md4f90f5[m HEAD@{83}: commit: Autosparfunktion
+[33mf790190[m HEAD@{84}: commit: Korerkt beräkning av värdetalet (Digg-style)
+[33m6d2e3f2[m HEAD@{85}: commit: Helt uppdaterad filterfunktion (kryssrutorna)
+[33m3308dc5[m HEAD@{86}: commit: Kraftigare ikonfärger i kravlistan
+[33mbf4d9bd[m HEAD@{87}: commit: Ref.text + länk visas åter i kravlistan
+[33m4dc2f54[m HEAD@{88}: commit: Visa krav: innehållstyper isf metadata visas
+[33mdd32000[m HEAD@{89}: commit: Ref.doc visas igen när ett krav hanteras
+[33m4c65399[m HEAD@{90}: commit: Ny sortering av kravlistan samt "nästa krav"
+[33mbcaef2a[m HEAD@{91}: commit: Ny rendeering av HTML och markdown i texter
+[33m78f717a[m HEAD@{92}: commit: Ny beräkning av brist-id
+[33m79bfbcf[m HEAD@{93}: commit: Snyggat till utseendet på rubriker i Excel-filen
+[33mf892162[m HEAD@{94}: commit: Nu med länkar i Excel-filen
+[33m7097a97[m HEAD@{95}: reset: moving to HEAD
+[33m7097a97[m HEAD@{96}: reset: moving to HEAD
+[33m7097a97[m HEAD@{97}: commit: Export till CSV: Samma bristlista som Excel-filen
+[33m458bf65[m HEAD@{98}: commit: Exportera resultat till Excel
+[33m0d41bb2[m HEAD@{99}: commit: Ytterligare designändringar i kravhanteringen
+[33m2c1c54e[m HEAD@{100}: commit: Designändringar på sidan där man kollar krav.
+[33m63d3fd4[m HEAD@{101}: commit: Diverse buggfixar och småförbättringar
+[33mb822716[m HEAD@{102}: commit: Uppdatera med ny regelfil: Bättre jämförelse
+[33m109d5be[m HEAD@{103}: commit: Uppdatera granskning med ny regelfil (fungerande)
+[33mc70de0e[m HEAD@{104}: commit: Uppdatera regelfil vid granskning (v2 buggig)
+[33mb9199f1[m HEAD@{105}: commit: Uppdatera granskning med ny regelfil (buggig)
+[33mb806768[m HEAD@{106}: commit: Sidans titel visar vad man gör/var man är
+[33m74d00f4[m HEAD@{107}: commit: Tydligare fokusmarkering
+[33m1ef1a7b[m HEAD@{108}: commit: Tydligare fokusmarkör, generellt och i markdown
+[33m43c6afd[m HEAD@{109}: commit: BF: Spara text för obersvationsbeskrivning
+[33m169a237[m HEAD@{110}: commit: Mindre copyändring
+[33m75ed679[m HEAD@{111}: commit: BF: Toggle av markdown fungerar nu
+[33m84d11dd[m HEAD@{112}: commit: Färdiga textförslag när man underkänner något
+[33m6fabd5b[m HEAD@{113}: commit: Utökad toggle-funktion för markdown
+[33m6e3c7cc[m HEAD@{114}: commit: Togglefunktion för listor, övrigt opåverkat
+[33m3bba630[m HEAD@{115}: commit: BF: Textarean uppdaterades vid inmatning. Fixat
+[33m4e154d8[m HEAD@{116}: commit: Mindre språkändringar
+[33m40caa01[m HEAD@{117}: commit: Knapprad för markdown i alla textarea-element
+[33m48d9cab[m HEAD@{118}: reset: moving to HEAD
+[33m48d9cab[m HEAD@{119}: reset: moving to 48d9cab0313ce3815930d614efac5e488ab9f54c
+[33mad76797[m HEAD@{120}: commit: Formatera text i en textarea
+[33m48d9cab[m HEAD@{121}: commit: Länkar till det man granskar, om länk finns
+[33mf7550e4[m HEAD@{122}: commit: BF: Beräkning av värdetalet fungerar igen
+[33m4cc4272[m HEAD@{123}: commit: Länkar i löpande text i krav är klickbara
+[33me883d5e[m HEAD@{124}: commit: Diverse buggfixar
+[33m91d0448[m HEAD@{125}: commit: Filterfunktion i kravlistan
+[33m163b945[m HEAD@{126}: commit: Mindfre färgkorr
+[33mc6c1c1d[m HEAD@{127}: commit: BF: Stabila textareor, inget hoppande
+[33m7b566b4[m HEAD@{128}: commit: Alla textarea följer innehållet, ingen scrollbar
+[33m670d989[m HEAD@{129}: commit: Label framför länk till ref.doc i kravhanteringen
+[33mc3e03f0[m HEAD@{130}: commit: Mer färg för att vista state på en kontroll
+[33m05c0fff[m HEAD@{131}: commit: Designändringar
+[33m491d482[m HEAD@{132}: commit: Info om aktör ocho sida i kravlistan
+[33m2aee689[m HEAD@{133}: commit: Bytt plats på Instruktioner och Förväntat resultat
+[33m9a373f8[m HEAD@{134}: commit: Buggfix: Känna av ljust/mörkt läge
+[33mb195d89[m HEAD@{135}: commit: Ny funktionsrad med viktiga knappar
+[33m5ee6830[m HEAD@{136}: commit: CSS-fix på kravsidan
+[33m6dc5361[m HEAD@{137}: commit: Buggfix: Status för ett krav
+[33m6eb65d9[m HEAD@{138}: commit: Buggfix: Status för ett krav är korrekt
+[33mdd9809c[m HEAD@{139}: commit: Nytt: Beskriv varför man underkänner en kontroll
+[33mc7fe316[m HEAD@{140}: commit: Tydligare ikoner i kravöversikten
+[33mebcc044[m HEAD@{141}: commit: Buggfix: Fokus på h1 när en ny vy laddas
+[33m45708e8[m HEAD@{142}: commit: CSS-fix
+[33m5bef58d[m HEAD@{143}: commit: Buggfix: Fokushantering i ett krav
+[33ma78f010[m HEAD@{144}: commit: Ändrat ordningen på Instruktion och Förväntan
+[33mdc564ac[m HEAD@{145}: commit: Buggfix: Rätt antal krav vid val av innehållstyp
+[33m9caab2f[m HEAD@{146}: commit: Värdetal med siffra och progressbar v1
+[33m3f2107c[m HEAD@{147}: commit: Loggning för felsökning av värdetalet
+[33mf7f8992[m HEAD@{148}: commit: Buggfix: Fokus är nu kvar på knapp efter tryck
+[33m7c5268b[m HEAD@{149}: commit: Buggfix: Lyssna på knapptryckningar i kraven
+[33me5f4052[m HEAD@{150}: commit: Lagt till info + progresbar för värdetalet
+[33maa628b1[m HEAD@{151}: reset: moving to återställning
+[33m8b9ace1[m HEAD@{152}: checkout: moving from återställning to main
+[33maa628b1[m HEAD@{153}: reset: moving to återställning
+[33maa628b1[m HEAD@{154}: checkout: moving from aa628b1023d1436814118e1fd436f9d57c02e24c to återställning
+[33maa628b1[m HEAD@{155}: checkout: moving from main to aa628b1
+[33m8b9ace1[m HEAD@{156}: checkout: moving from Refaktorering-2025-05-27 to main
+[33m371ab4a[m HEAD@{157}: checkout: moving from main to Refaktorering-2025-05-27
+[33m8b9ace1[m HEAD@{158}: checkout: moving from Refaktorering-2025-05-27 to main
+[33m371ab4a[m HEAD@{159}: commit: Massiv refaktorering - pågående felsökning
+[33m8b9ace1[m HEAD@{160}: checkout: moving from main to Refaktorering-2025-05-27
+[33m8b9ace1[m HEAD@{161}: commit: Refaktor: Hjälpfunktioner nu moduler, direktimport
+[33mc4ec557[m HEAD@{162}: commit: Refact: Språkhantering
+[33md0102b4[m HEAD@{163}: commit: Refact: Hur metadata visas
+[33m4872ec1[m HEAD@{164}: commit: Brytit ut kod för att läsa in regelfil och sparad
+[33m64f2938[m HEAD@{165}: commit: Refactor: Dela upp ReqAudit, skapade CheckItem.
+[33maa628b1[m HEAD@{166}: commit: Spara gransknng som fil till egen modul
+[33m5733393[m HEAD@{167}: checkout: moving from Inbyggd-regelfil to main
+[33mf93316d[m HEAD@{168}: checkout: moving from main to Inbyggd-regelfil
+[33m5733393[m HEAD@{169}: checkout: moving from Inbyggd-regelfil to main
+[33mf93316d[m HEAD@{170}: commit: WIP: Öppna inbyggd regelfil istället + ladda upp
+[33m5733393[m HEAD@{171}: checkout: moving from main to Inbyggd-regelfil
+[33m5733393[m HEAD@{172}: commit: Ny folder för regelfiler samt en regelfil
+[33mf567195[m HEAD@{173}: clone: from https://github.com/ibennani/pts_granskningsverktyg-PoC.git
