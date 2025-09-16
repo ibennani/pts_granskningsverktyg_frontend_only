@@ -2,9 +2,10 @@
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave';
-const APP_STATE_VERSION = '2.1.0'; // Version bumped to reflect new scoring model
+const APP_STATE_VERSION = '2.1.0';
 
-export const ActionTypes = {
+export const StoreActionTypes = {
+    // Audit actions
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
     LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
     UPDATE_METADATA: 'UPDATE_METADATA',
@@ -13,19 +14,25 @@ export const ActionTypes = {
     DELETE_SAMPLE: 'DELETE_SAMPLE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
-    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
+    CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
+
+    // Rule file editor actions
+    INITIALIZE_EDIT_MODE: 'INITIALIZE_EDIT_MODE',
+    UPDATE_RULEFILE_CONTENT: 'UPDATE_RULEFILE_CONTENT',
+
+    // Cross-mode actions
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
+
+    // UI settings
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
     CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
-    // --- START OF CHANGE: Add new action types ---
-    CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
-    CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS'
-    // --- END OF CHANGE ---
 };
 
-const initial_state = {
+export const StoreInitialState = {
     saveFileVersion: APP_STATE_VERSION,
+    appMode: null, // null | 'audit' | 'edit'
     ruleFileContent: null,
     auditMetadata: {
         caseNumber: '',
@@ -57,7 +64,7 @@ const initial_state = {
     pendingSampleChanges: null
 };
 
-let internal_state = { ...initial_state };
+let internal_state = { ...StoreInitialState };
 let listeners = [];
 let autosaveDebounceTimer = null;
 
@@ -69,71 +76,38 @@ function root_reducer(current_state, action) {
     let new_state;
 
     switch (action.type) {
-        // --- START OF CHANGE: Add new reducer cases ---
-        case ActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT:
-            const { sampleId, requirementId } = action.payload;
+        // --- RULE FILE EDITOR ACTIONS ---
+        case StoreActionTypes.INITIALIZE_EDIT_MODE:
             return {
-                ...current_state,
-                samples: current_state.samples.map(sample => {
-                    if (sample.id === sampleId && sample.requirementResults?.[requirementId]?.needsReview) {
-                        const newResults = { ...sample.requirementResults };
-                        const newReqResult = { ...newResults[requirementId] };
-                        delete newReqResult.needsReview;
-                        newResults[requirementId] = newReqResult;
-                        return { ...sample, requirementResults: newResults };
-                    }
-                    return sample;
-                })
-            };
-
-        case ActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
-            return {
-                ...current_state,
-                samples: current_state.samples.map(sample => {
-                    const newResults = {};
-                    let hasChanged = false;
-                    Object.keys(sample.requirementResults || {}).forEach(reqId => {
-                        const originalResult = sample.requirementResults[reqId];
-                        if (originalResult?.needsReview) {
-                            hasChanged = true;
-                            newResults[reqId] = { ...originalResult };
-                            delete newResults[reqId].needsReview;
-                        } else {
-                            newResults[reqId] = originalResult;
-                        }
-                    });
-                    return hasChanged ? { ...sample, requirementResults: newResults } : sample;
-                })
-            };
-        // --- END OF CHANGE ---
-
-        case ActionTypes.STAGE_SAMPLE_CHANGES:
-            return {
-                ...current_state,
-                pendingSampleChanges: action.payload
-            };
-
-        case ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES:
-            return {
-                ...current_state,
-                pendingSampleChanges: null
-            };
-        
-        case ActionTypes.INITIALIZE_NEW_AUDIT:
-            return {
-                ...initial_state,
+                ...StoreInitialState,
                 saveFileVersion: APP_STATE_VERSION,
+                appMode: 'edit',
                 ruleFileContent: action.payload.ruleFileContent,
-                uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings))
             };
 
-        case ActionTypes.LOAD_AUDIT_FROM_FILE:
+        case StoreActionTypes.UPDATE_RULEFILE_CONTENT:
+            return {
+                ...current_state,
+                ruleFileContent: action.payload.ruleFileContent,
+            };
+
+        // --- AUDIT ACTIONS ---
+        case StoreActionTypes.INITIALIZE_NEW_AUDIT:
+            return {
+                ...StoreInitialState,
+                saveFileVersion: APP_STATE_VERSION,
+                appMode: 'audit',
+                ruleFileContent: action.payload.ruleFileContent,
+            };
+
+        case StoreActionTypes.LOAD_AUDIT_FROM_FILE:
             if (action.payload && typeof action.payload === 'object') {
                 const loaded_data = action.payload;
-                const new_state_base = JSON.parse(JSON.stringify(initial_state));
+                const new_state_base = JSON.parse(JSON.stringify(StoreInitialState));
                 const merged_state = {
                     ...new_state_base,
                     ...loaded_data,
+                    appMode: 'audit', // Ensure mode is set
                     uiSettings: {
                         ...new_state_base.uiSettings,
                         ...(loaded_data.uiSettings || {})
@@ -166,13 +140,62 @@ function root_reducer(current_state, action) {
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
 
-        case ActionTypes.UPDATE_METADATA:
+        // --- OTHER ACTIONS (unchanged from your current file) ---
+        case StoreActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT:
+            const { sampleId, requirementId } = action.payload;
+            return {
+                ...current_state,
+                samples: current_state.samples.map(sample => {
+                    if (sample.id === sampleId && sample.requirementResults?.[requirementId]?.needsReview) {
+                        const newResults = { ...sample.requirementResults };
+                        const newReqResult = { ...newResults[requirementId] };
+                        delete newReqResult.needsReview;
+                        newResults[requirementId] = newReqResult;
+                        return { ...sample, requirementResults: newResults };
+                    }
+                    return sample;
+                })
+            };
+
+        case StoreActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
+            return {
+                ...current_state,
+                samples: current_state.samples.map(sample => {
+                    const newResults = {};
+                    let hasChanged = false;
+                    Object.keys(sample.requirementResults || {}).forEach(reqId => {
+                        const originalResult = sample.requirementResults[reqId];
+                        if (originalResult?.needsReview) {
+                            hasChanged = true;
+                            newResults[reqId] = { ...originalResult };
+                            delete newResults[reqId].needsReview;
+                        } else {
+                            newResults[reqId] = originalResult;
+                        }
+                    });
+                    return hasChanged ? { ...sample, requirementResults: newResults } : sample;
+                })
+            };
+
+        case StoreActionTypes.STAGE_SAMPLE_CHANGES:
+            return {
+                ...current_state,
+                pendingSampleChanges: action.payload
+            };
+
+        case StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES:
+            return {
+                ...current_state,
+                pendingSampleChanges: null
+            };
+
+        case StoreActionTypes.UPDATE_METADATA:
             return {
                 ...current_state,
                 auditMetadata: { ...current_state.auditMetadata, ...action.payload }
             };
 
-        case ActionTypes.ADD_SAMPLE:
+        case StoreActionTypes.ADD_SAMPLE:
             const new_sample_with_defaults = {
                 sampleCategory: '',
                 sampleType: '',
@@ -180,17 +203,17 @@ function root_reducer(current_state, action) {
             };
             return { ...current_state, samples: [...current_state.samples, new_sample_with_defaults] };
 
-        case ActionTypes.UPDATE_SAMPLE:
+        case StoreActionTypes.UPDATE_SAMPLE:
             return {
                 ...current_state,
                 samples: current_state.samples.map(s => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s)
             };
         
-        case ActionTypes.DELETE_SAMPLE:
+        case StoreActionTypes.DELETE_SAMPLE:
             new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
             return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
-        case ActionTypes.UPDATE_REQUIREMENT_RESULT:
+        case StoreActionTypes.UPDATE_REQUIREMENT_RESULT:
             const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
             const result_to_save = { ...newRequirementResult };
             delete result_to_save.needsReview;
@@ -204,7 +227,7 @@ function root_reducer(current_state, action) {
             };
             return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
-        case ActionTypes.SET_AUDIT_STATUS:
+        case StoreActionTypes.SET_AUDIT_STATUS:
             const newStatus = action.payload.status;
             let timeUpdate = {};
             let state_before_status_change = current_state;
@@ -224,7 +247,7 @@ function root_reducer(current_state, action) {
 
             return { ...state_before_status_change, auditStatus: newStatus, ...timeUpdate };
 
-        case ActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
+        case StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
             if (!action.payload || !action.payload.ruleFileContent || !action.payload.samples) {
                 console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload.');
                 return current_state;
@@ -233,14 +256,8 @@ function root_reducer(current_state, action) {
                 ...action.payload,
                 saveFileVersion: APP_STATE_VERSION
             };
-
-        case ActionTypes.SET_RULE_FILE_CONTENT:
-            return {
-                ...current_state,
-                ruleFileContent: action.payload.ruleFileContent
-            };
         
-        case ActionTypes.SET_UI_FILTER_SETTINGS:
+        case StoreActionTypes.SET_UI_FILTER_SETTINGS:
             return {
                 ...current_state,
                 uiSettings: {
@@ -259,7 +276,7 @@ function root_reducer(current_state, action) {
 
 
 function saveStateToLocalStorage(state_to_save) {
-    if (!state_to_save || state_to_save.auditStatus === 'not_started') {
+    if (!state_to_save || !state_to_save.appMode) { // Save only if a mode is active
         return;
     }
     try {
@@ -275,7 +292,7 @@ function saveStateToLocalStorage(state_to_save) {
 }
 
 function forceSaveStateToLocalStorage(state_to_save) {
-    if (!state_to_save || state_to_save.auditStatus === 'not_started') {
+    if (!state_to_save || !state_to_save.appMode) {
         return;
     }
     try {
@@ -347,24 +364,24 @@ function notify_listeners() {
 function loadStateFromSessionStorage() {
     const serializedState = sessionStorage.getItem(APP_STATE_KEY);
     if (serializedState === null) {
-        return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
+        return { ...StoreInitialState, saveFileVersion: APP_STATE_VERSION };
     }
     try {
         const storedState = JSON.parse(serializedState);
         if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
             const mergedState = {
-                ...JSON.parse(JSON.stringify(initial_state)),
+                ...JSON.parse(JSON.stringify(StoreInitialState)),
                 ...storedState,
                 saveFileVersion: APP_STATE_VERSION
             };
             return mergedState;
         } else {
             sessionStorage.removeItem(APP_STATE_KEY);
-            return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
+            return { ...StoreInitialState, saveFileVersion: APP_STATE_VERSION };
         }
     } catch (e) {
         sessionStorage.removeItem(APP_STATE_KEY);
-        return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
+        return { ...StoreInitialState, saveFileVersion: APP_STATE_VERSION };
     }
 }
 
@@ -411,11 +428,11 @@ function clearAutosavedState() {
 
 function initState() {
     internal_state = loadStateFromSessionStorage();
-    if (window.AuditLogic && typeof window.AuditLogic.updateIncrementalDeficiencyIds === 'function') {
+    if (window.AuditLogic && typeof window.AuditLogic.updateIncrementalDeficiencyIds === 'function' && internal_state.appMode === 'audit') {
         internal_state = window.AuditLogic.updateIncrementalDeficiencyIds(internal_state);
         saveStateToSessionStorage(internal_state);
     } else {
-        console.error("[State.js] AuditLogic not available during initState. State may be inconsistent.");
+        console.log("[State.js] Skipping deficiency ID update during initState (not in audit mode or AuditLogic unavailable).");
     }
 }
 
@@ -424,8 +441,6 @@ export {
     getState, 
     subscribe, 
     initState, 
-    ActionTypes as StoreActionTypes, 
-    initial_state as StoreInitialState,
     loadStateFromLocalStorage,
     clearAutosavedState,
     forceSaveStateToLocalStorage

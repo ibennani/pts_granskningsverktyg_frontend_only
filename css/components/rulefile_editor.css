@@ -1,0 +1,123 @@
+/* css/components/rulefile_editor.css */
+
+.editor-nav-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rulefile-editor-section fieldset {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    border: 2px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+}
+
+.rulefile-editor-section h3,
+.rulefile-editor-section h4,
+.rulefile-editor-section h5 {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.rulefile-editor-section fieldset > h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--primary-color-dark);
+    margin: -2.5rem 0 1rem 0;
+    background-color: var(--plate-background-color);
+    display: inline-block;
+    padding: 0 0.5rem;
+}
+
+.check-fieldset,
+.hierarchy-editor-fieldset {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+}
+
+.check-fieldset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.check-fieldset-header h4,
+.hierarchy-editor-fieldset > h4 {
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.pass-criterion-item h5 {
+    font-size: 1rem;
+    font-weight: bold;
+    margin-bottom: 0; /* Let flexbox handle alignment */
+}
+
+/* --- UPDATED PASS CRITERION STYLES --- */
+
+.pass-criterion-item {
+    display: flex; /* Changed from relative */
+    flex-direction: column; /* Stack header and content vertically */
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--secondary-color);
+    border-radius: var(--border-radius);
+}
+
+.criterion-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.criterion-content-wrapper {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.criterion-textarea-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-width: 250px;
+    /* This makes them take up half the space */
+    flex-basis: calc(50% - 0.5rem); 
+}
+
+.criterion-textarea-wrapper label {
+    font-size: 0.85em;
+    font-weight: 500;
+    color: var(--text-color-muted);
+    margin-bottom: 0.25rem;
+}
+
+/* --- OTHER STYLES (Unchanged) --- */
+
+.dynamic-list-item {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.dynamic-list-item textarea {
+    flex-grow: 1;
+}
+
+.content-type-description {
+    font-size: 0.85em;
+    color: var(--text-color-muted);
+    margin-top: -0.25rem;
+    margin-left: 1.75rem;
+}
+
+/* --- MODAL STYLES (Unchanged) --- */
+.modal-overlay { /* ... */ }
+.modal-content { /* ... */ }

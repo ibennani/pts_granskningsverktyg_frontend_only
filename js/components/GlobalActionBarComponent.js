@@ -6,14 +6,11 @@ export const GlobalActionBarComponentFactory = function () {
 
     const CSS_PATH = 'css/components/global_action_bar_component.css';
     let container_ref;
-
-    // *** KORRIGERING: Ändra till ett enda beroendeobjekt ***
     let dependencies = {};
 
     let save_audit_button_component_instance = null;
     let save_audit_button_container_element = null;
 
-    // *** KORRIGERING: init tar nu emot ett enda objekt med alla beroenden ***
     async function init(_container, _dependencies) {
         container_ref = _container;
         dependencies = _dependencies;
@@ -28,13 +25,11 @@ export const GlobalActionBarComponentFactory = function () {
         }
         
         save_audit_button_container_element = dependencies.Helpers.create_element('div', { class_name: 'save-audit-button-container' });
-        
         save_audit_button_component_instance = SaveAuditButtonComponentFactory(); 
         
         await save_audit_button_component_instance.init(
             save_audit_button_container_element,
             dependencies.getState,
-            // *** KORRIGERING: Hämta SaveAuditLogic från beroendeobjektet ***
             dependencies.SaveAuditLogic.save_audit_to_json_file,
             dependencies.Translation.t,
             dependencies.NotificationComponent.show_global_message,
@@ -43,6 +38,35 @@ export const GlobalActionBarComponentFactory = function () {
             dependencies.Helpers.load_css
         );
     }
+    
+    function handle_save_rulefile() {
+        const { getState, Translation, NotificationComponent } = dependencies;
+        const t = Translation.t;
+        const current_state = getState();
+
+        if (!current_state.ruleFileContent) {
+            NotificationComponent.show_global_message(t('error_internal'), 'error');
+            return;
+        }
+
+        const data_str = JSON.stringify(current_state.ruleFileContent, null, 2);
+        const blob = new Blob([data_str], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        const title = current_state.ruleFileContent.metadata.title || 'rulefile';
+        const safe_title = title.replace(/[\\/:*?"<>|]/g, '_');
+        const filename = `${safe_title}_${new Date().toISOString().split('T')[0]}.json`;
+        
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        NotificationComponent.show_global_message(t('audit_saved_as_file', {filename: filename}), 'success');
+    }
 
     function render() {
         if (!container_ref) return;
@@ -50,22 +74,28 @@ export const GlobalActionBarComponentFactory = function () {
 
         const { getState, Translation, Helpers } = dependencies;
         const t = Translation.t;
-
         const current_state = getState();
-        // Spara-knappen ska bara visas om det finns en pågående granskning
-        const show_save_button = current_state && current_state.ruleFileContent;
+        const app_mode = current_state.appMode;
 
         const bar_element = Helpers.create_element('div', { class_name: 'global-action-bar' });
-
-        // --- KORRIGERING HÄR: Skicka klasser som en array ---
         const left_group = Helpers.create_element('div', { class_name: ['action-bar-group', 'left'] });
-        if (show_save_button && save_audit_button_component_instance) {
+
+        // --- FIX: Logic only applies to the left group (save buttons) ---
+        if (app_mode === 'audit' && current_state.ruleFileContent) {
             save_audit_button_component_instance.render();
             left_group.appendChild(save_audit_button_container_element);
+        } else if (app_mode === 'edit') {
+            const save_rulefile_button = Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                html_content: `<span>${t('save_and_download_rulefile')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('save') : '')
+            });
+            save_rulefile_button.addEventListener('click', handle_save_rulefile);
+            left_group.appendChild(save_rulefile_button);
         }
+        
         bar_element.appendChild(left_group);
 
-        // --- KORRIGERING HÄR: Skicka klasser som en array ---
+        // --- FIX: The right group is now ALWAYS rendered ---
         const right_group = Helpers.create_element('div', { class_name: ['action-bar-group', 'right'] });
         
         const language_selector_container = Helpers.create_element('div', { class_name: 'language-selector-container' });
@@ -130,7 +160,7 @@ export const GlobalActionBarComponentFactory = function () {
         if (save_audit_button_component_instance) {
             save_audit_button_component_instance.destroy();
         }
-        dependencies = {}; // Rensa beroenden
+        dependencies = {};
     }
     
     return {

@@ -1,66 +1,24 @@
-/* Styles for AddSampleFormComponent */
-.add-sample-form {
-    border: 1px dashed var(--secondary-color);
-    padding: 1.5rem;
-    margin-top: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: var(--border-radius);
-    background-color: var(--background-color); 
-}
-
-[data-theme="dark"] .add-sample-form {
-    /* Ingen specifik ändring just nu, ärver från globala variabler */
-}
-
-.add-sample-form h2 {
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-    font-size: 1.5rem; 
-    color: var(--primary-color);
-}
-
-.add-sample-form h2:first-of-type {
-    margin-top: 0;
-}
+/* css/components/add_sample_form_component.css */
 
 .add-sample-form .form-group {
     margin-bottom: 1.25rem;
 }
-
-/* Styling för fieldset och legend (Innehållstyper) */
-.add-sample-form .content-types-group {
-    border: none;
-    padding: 0;
-    margin: 0;
-}
-
-.add-sample-form .content-types-group legend {
-    font-weight: 500;
-    padding: 0;
-    margin-bottom: 0.5rem;
-    font-size: var(--font-size-base); 
-    color: var(--text-color);
-    width: auto;
-}
-.add-sample-form .content-types-group .form-check {
-    margin-bottom: 0.5rem; 
-}
-
-.add-sample-form .form-actions {
+.add-sample-form h2 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
     margin-top: 1.5rem;
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.add-sample-form h2:first-of-type {
+    margin-top: 0;
 }
 
-/* --- NYA STILAR FÖR HIERARKISKA INNEHÅLLSTYPER --- */
-
+/* Main group for a parent category (e.g., Webbsida) */
 .content-type-parent-group {
     border: none;
     padding: 0;
     margin: 0 0 1rem 0;
 }
-
 .content-type-parent-group legend {
     padding: 0;
     margin-bottom: 0.5rem;
@@ -71,35 +29,30 @@
     align-items: center;
 }
 
-/* Behållare för en underkategori (t.ex. "Rubriker") */
+/* Container for a child item (e.g., a specific page type or content type) */
 .content-type-child-item {
     padding-left: 2rem;
-    /* --- ÄNDRING HÄR: Nollställ marginalen helt --- */
-    margin-bottom: 0;
+    margin-bottom: 0; /* Reset margin for tighter spacing */
 }
 
-/* Beskrivningen för en underkategori */
+/* Description for a child item */
 .content-type-description {
-    padding-left: 3.5rem;
-    /* --- ÄNDRING HÄR: Lägg till en liten marginal *ovanför* beskrivningen --- */
-    margin-top: 0.25rem; /* Drar den lite närmare */
-    margin-bottom: 1rem;  /* Öka marginalen *under* för att separera från nästa punkt */
+    padding-left: 3.5rem; /* Indent further than the checkbox */
+    margin-top: 0.25rem; /* Bring it closer to the item above */
+    margin-bottom: 1rem; /* Space before the next item */
     font-size: 0.9em;
     color: var(--text-color-muted);
     line-height: 1.5;
 }
 
-/* Anpassa checkboxar och etiketter för bättre linjering */
-.form-check-input {
-    margin-top: 0.2em;
-}
-
-.form-check label {
-    display: inline-block;
-}
-
-/* --- NY REGEL FÖR ATT SPECIFIKT HANTERA MARGINALEN PÅ .form-check --- */
-/* Åsidosätt den generella marginalen för just .form-check inuti .child-item */
+/* Specific rule to override general .form-check margin */
 .add-sample-form .content-type-child-item.form-check {
     margin-bottom: 0;
+}
+
+.add-sample-form .form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
