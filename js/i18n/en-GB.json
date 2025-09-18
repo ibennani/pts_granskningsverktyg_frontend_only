@@ -513,5 +513,6 @@
   "unknown_rulefile": "Unknown Rule File",
   "upload_view_title_edit": "Edit a rule file",
   "edit_this_requirement_aria": "Edit requirement: {requirementTitle}",
-  "rulefile_edit_requirement_intro": "Modify the fields below to update the requirement. When you are finished, return to the list and save the updated rule file."
+  "rulefile_edit_requirement_intro": "Modify the fields below to update the requirement. When you are finished, return to the list and save the updated rule file.",
+  "content_types_section_title": "Associated Content Types"
 }

@@ -1,0 +1,60 @@
+/* css/components/edit_rulefile_requirement_component.css */
+
+/* Sektion för grundläggande info och hjälptexter */
+.edit-rulefile-requirement-view .audit-section {
+    margin-bottom: 2rem;
+}
+
+.edit-rulefile-requirement-view .audit-section h2 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
+/* Styling för redigerbara kontrollpunkter */
+.check-item-edit {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--background-color);
+}
+
+[data-theme="dark"] .check-item-edit {
+    background-color: color-mix(in srgb, var(--background-color) 95%, black);
+}
+
+.pc-container-edit {
+    padding-left: 1.5rem;
+    margin-top: 1rem;
+    border-left: 2px solid var(--secondary-color);
+}
+
+.pc-item-edit {
+    margin-bottom: 1rem;
+}
+
+/* --- NYA STILAR FÖR HIERARKISKA INNEHÅLLSTYPER --- */
+.content-type-parent-group-edit {
+    border: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+
+.content-type-parent-group-edit legend {
+    font-weight: 500;
+    padding: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.1em;
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.content-type-child-item-edit {
+    padding-left: 2rem;
+    margin-bottom: 0.75rem;
+}

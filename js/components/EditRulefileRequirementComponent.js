@@ -54,7 +54,7 @@ export const EditRulefileRequirementComponent = (function () {
         }
 
         const form_data = new FormData(form_element_ref);
-        const updated_requirement = { ...original_requirement }; // Start with a copy
+        const updated_requirement = { ...original_requirement }; 
 
         updated_requirement.title = form_data.get('title');
         updated_requirement.expectedObservation = form_data.get('expectedObservation');
@@ -72,6 +72,9 @@ export const EditRulefileRequirementComponent = (function () {
             form_element_ref.querySelector('[name="title"]').focus();
             return;
         }
+        
+        const content_type_checkboxes = form_element_ref.querySelectorAll('input[name="contentType"]:checked');
+        updated_requirement.contentType = Array.from(content_type_checkboxes).map(cb => cb.value);
 
         const new_checks = [];
         const check_elements = form_element_ref.querySelectorAll('.check-item-edit');
@@ -119,15 +122,12 @@ export const EditRulefileRequirementComponent = (function () {
             window.Helpers.init_auto_resize_for_textarea(input);
         } else {
             input = Helpers_create_element('input', { id: name, name: name, class_name: 'form-control', attributes: { type: 'text' }});
-            // --- DENNA RAD SAKNADES ---
             input.value = value || ''; 
-            // -------------------------
         }
         form_group.appendChild(input);
         return form_group;
     }
     
-    // --- NY HJÄLPFUNKTION för att skapa åtgärdsknapparna ---
     function _create_action_buttons(position) {
         const t = Translation_t;
         const actions_div = Helpers_create_element('div', { 
@@ -157,6 +157,96 @@ export const EditRulefileRequirementComponent = (function () {
         return actions_div;
     }
 
+    // --- START OF CHANGE: Interactivity Logic ---
+    function _update_parent_checkbox_state(parent_checkbox) {
+        const parent_id = parent_checkbox.dataset.parentId;
+        if (!parent_id) return;
+
+        const children = form_element_ref.querySelectorAll(`input[data-child-for="${parent_id}"]`);
+        if (children.length === 0) return;
+
+        const total_children = children.length;
+        const checked_children = Array.from(children).filter(child => child.checked).length;
+
+        if (checked_children === 0) {
+            parent_checkbox.checked = false;
+            parent_checkbox.indeterminate = false;
+        } else if (checked_children === total_children) {
+            parent_checkbox.checked = true;
+            parent_checkbox.indeterminate = false;
+        } else {
+            parent_checkbox.checked = false;
+            parent_checkbox.indeterminate = true;
+        }
+    }
+
+    function _handle_content_type_change(event) {
+        const target = event.target;
+        if (target.type !== 'checkbox') return;
+
+        if (target.dataset.parentId) {
+            // Parent checkbox was clicked
+            const parent_id = target.dataset.parentId;
+            const children = form_element_ref.querySelectorAll(`input[data-child-for="${parent_id}"]`);
+            children.forEach(child => child.checked = target.checked);
+        } else if (target.dataset.childFor) {
+            // Child checkbox was clicked
+            const parent_id = target.dataset.childFor;
+            const parent_checkbox = form_element_ref.querySelector(`input[data-parent-id="${parent_id}"]`);
+            if (parent_checkbox) {
+                _update_parent_checkbox_state(parent_checkbox);
+            }
+        }
+    }
+    // --- END OF CHANGE ---
+
+    function _create_content_types_section(all_content_types, selected_content_types) {
+        const t = Translation_t;
+        const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
+        section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('content_types_section_title') }));
+
+        // --- START OF CHANGE: Add event listener ---
+        section_wrapper.addEventListener('change', _handle_content_type_change);
+        // --- END OF CHANGE ---
+
+        all_content_types.forEach(group => {
+            const fieldset = Helpers_create_element('fieldset', { class_name: 'content-type-parent-group-edit' });
+            
+            const legend = Helpers_create_element('legend');
+            const parent_id = `ct-parent-${group.id}`;
+            const parent_checkbox = Helpers_create_element('input', { id: parent_id, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-parent-id': group.id } });
+            const parent_label = Helpers_create_element('label', { attributes: { for: parent_id }, text_content: group.text });
+            legend.append(parent_checkbox, parent_label);
+            fieldset.appendChild(legend);
+
+            (group.types || []).forEach(child => {
+                const child_id = `ct-child-${child.id}`;
+                const is_checked = selected_content_types.includes(child.id);
+
+                const child_wrapper = Helpers_create_element('div', { class_name: 'form-check content-type-child-item-edit' });
+                const child_checkbox = Helpers_create_element('input', { 
+                    id: child_id, 
+                    class_name: 'form-check-input', 
+                    attributes: { 
+                        type: 'checkbox', 
+                        name: 'contentType', 
+                        value: child.id, 
+                        'data-child-for': group.id 
+                    } 
+                });
+                if (is_checked) {
+                    child_checkbox.checked = true;
+                }
+                const child_label = Helpers_create_element('label', { attributes: { for: child_id }, text_content: child.text });
+                
+                child_wrapper.append(child_checkbox, child_label);
+                fieldset.appendChild(child_wrapper);
+            });
+            section_wrapper.appendChild(fieldset);
+        });
+        return section_wrapper;
+    }
+
     function render() {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
@@ -172,17 +262,14 @@ export const EditRulefileRequirementComponent = (function () {
             return;
         }
 
-        // --- ÄNDRING: Kombinerad H1 och ny introduktionstext ---
         plate_element.appendChild(Helpers_create_element('h1', { text_content: `${t('rulefile_edit_requirement_title')}: ${requirement.title}` }));
         plate_element.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_edit_requirement_intro') }));
 
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);
         
-        // --- ÄNDRING: Lägg till den övre knappraden ---
         form_element_ref.appendChild(_create_action_buttons('top'));
 
-        // Basic Info Section
         const basic_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
         basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
         basic_info_section.appendChild(_create_form_group('requirement_title', 'title', requirement.title));
@@ -190,14 +277,12 @@ export const EditRulefileRequirementComponent = (function () {
         basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', requirement.standardReference?.url));
         form_element_ref.appendChild(basic_info_section);
 
-        // Text Sections
         form_element_ref.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', requirement.expectedObservation, true));
         form_element_ref.appendChild(_create_form_group('requirement_instructions', 'instructions', requirement.instructions, true));
         form_element_ref.appendChild(_create_form_group('requirement_exceptions', 'exceptions', requirement.exceptions, true));
         form_element_ref.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', requirement.commonErrors, true));
         form_element_ref.appendChild(_create_form_group('requirement_tips', 'tips', requirement.tips, true));
 
-        // Checks Section
         const checks_section = Helpers_create_element('div', { class_name: 'audit-section checks-container-edit' });
         checks_section.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
         (requirement.checks || []).forEach(check => {
@@ -215,16 +300,27 @@ export const EditRulefileRequirementComponent = (function () {
         });
         form_element_ref.appendChild(checks_section);
 
-        // --- ÄNDRING: Använd hjälpfunktionen för den nedre knappraden ---
+        const all_content_types = current_state.ruleFileContent.metadata.contentTypes || [];
+        const selected_content_types = requirement.contentType || [];
+        form_element_ref.appendChild(_create_content_types_section(all_content_types, selected_content_types));
+        
         form_element_ref.appendChild(_create_action_buttons('bottom'));
 
         plate_element.appendChild(form_element_ref);
         app_container_ref.appendChild(plate_element);
+
+        // --- START OF CHANGE: Update parent checkboxes on initial render ---
+        form_element_ref.querySelectorAll('input[data-parent-id]').forEach(_update_parent_checkbox_state);
+        // --- END OF CHANGE ---
     }
 
     function destroy() {
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
+            const ct_section = form_element_ref.querySelector('.audit-section'); // More robust selector might be needed
+            if (ct_section) {
+                ct_section.removeEventListener('change', _handle_content_type_change);
+            }
         }
         app_container_ref.innerHTML = '';
         form_element_ref = null;
