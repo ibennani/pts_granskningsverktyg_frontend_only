@@ -514,5 +514,12 @@
   "upload_view_title_edit": "Redigera en regelfil",
   "edit_this_requirement_aria": "Redigera kravet: {requirementTitle}",
   "rulefile_edit_requirement_intro": "Ändra fälten nedan för att uppdatera kravet. När du är klar, återgå till listan och spara ner den uppdaterade regelfilen.",
-  "content_types_section_title": "Kopplade innehållstyper"
+  "content_types_section_title": "Kopplade innehållstyper",
+  "is_critical": "Är kritiskt?",
+  "main_category_text": "Huvudkategori (text)",
+  "primary_score": "Primär poäng",
+  "requirement_general_info_title": "Allmän information",
+  "secondary_score": "Sekundär poäng",
+  "sub_category_text": "Underkategori (text)",
+  "classification_and_impact_title": "Klassificering och påverkan"
 }

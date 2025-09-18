@@ -56,6 +56,7 @@ export const EditRulefileRequirementComponent = (function () {
         const form_data = new FormData(form_element_ref);
         const updated_requirement = { ...original_requirement }; 
 
+        // Basic fields
         updated_requirement.title = form_data.get('title');
         updated_requirement.expectedObservation = form_data.get('expectedObservation');
         updated_requirement.instructions = form_data.get('instructions');
@@ -73,9 +74,21 @@ export const EditRulefileRequirementComponent = (function () {
             return;
         }
         
+        // --- START OF CHANGE: Collect Metadata and Content Types ---
+        updated_requirement.metadata = updated_requirement.metadata || {};
+        updated_requirement.metadata.mainCategory = { text: form_data.get('mainCategoryText') };
+        updated_requirement.metadata.subCategory = { text: form_data.get('subCategoryText') };
+        updated_requirement.metadata.impact = {
+            isCritical: form_data.get('isCritical') === 'on',
+            primaryScore: parseInt(form_data.get('primaryScore'), 10) || 0,
+            secondaryScore: parseInt(form_data.get('secondaryScore'), 10) || 0
+        };
+
         const content_type_checkboxes = form_element_ref.querySelectorAll('input[name="contentType"]:checked');
         updated_requirement.contentType = Array.from(content_type_checkboxes).map(cb => cb.value);
+        // --- END OF CHANGE ---
 
+        // Rebuild checks and passCriteria
         const new_checks = [];
         const check_elements = form_element_ref.querySelectorAll('.check-item-edit');
         check_elements.forEach((check_el) => {
@@ -110,7 +123,7 @@ export const EditRulefileRequirementComponent = (function () {
         router_ref('rulefile_requirements');
     }
 
-    function _create_form_group(label_key, name, value, is_textarea = false) {
+    function _create_form_group(label_key, name, value, is_textarea = false, input_type = 'text') {
         const t = Translation_t;
         const form_group = Helpers_create_element('div', { class_name: 'form-group' });
         form_group.appendChild(Helpers_create_element('label', { attributes: { for: name }, text_content: t(label_key) }));
@@ -121,7 +134,7 @@ export const EditRulefileRequirementComponent = (function () {
             input.value = Array.isArray(value) ? value.join('\n') : (value || '');
             window.Helpers.init_auto_resize_for_textarea(input);
         } else {
-            input = Helpers_create_element('input', { id: name, name: name, class_name: 'form-control', attributes: { type: 'text' }});
+            input = Helpers_create_element('input', { id: name, name: name, class_name: 'form-control', attributes: { type: input_type }});
             input.value = value || ''; 
         }
         form_group.appendChild(input);
@@ -156,8 +169,37 @@ export const EditRulefileRequirementComponent = (function () {
         actions_div.append(cancel_button, save_button);
         return actions_div;
     }
+    
+    // --- START OF CHANGE: New functions for metadata and content types ---
+    function _create_metadata_section(metadata) {
+        const t = Translation_t;
+        const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
+        section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('classification_and_impact_title') }));
 
-    // --- START OF CHANGE: Interactivity Logic ---
+        section_wrapper.appendChild(_create_form_group('main_category_text', 'mainCategoryText', metadata?.mainCategory?.text));
+        section_wrapper.appendChild(_create_form_group('sub_category_text', 'subCategoryText', metadata?.subCategory?.text));
+
+        // --- BORTTAGEN RAD ---
+        // const impact_group = Helpers_create_element('div', { class_name: 'form-group-inline' });
+        // --- NY RAD ---
+        const impact_group = Helpers_create_element('div', { class_name: 'impact-group' }); // Använder en neutral klass istället
+
+        impact_group.appendChild(_create_form_group('primary_score', 'primaryScore', metadata?.impact?.primaryScore, false, 'number'));
+        impact_group.appendChild(_create_form_group('secondary_score', 'secondaryScore', metadata?.impact?.secondaryScore, false, 'number'));
+
+        const critical_wrapper = Helpers_create_element('div', { class_name: 'form-check' });
+        const critical_checkbox = Helpers_create_element('input', { id: 'isCritical', name: 'isCritical', class_name: 'form-check-input', attributes: { type: 'checkbox' }});
+        if (metadata?.impact?.isCritical) {
+            critical_checkbox.checked = true;
+        }
+        critical_wrapper.appendChild(critical_checkbox);
+        critical_wrapper.appendChild(Helpers_create_element('label', { attributes: { for: 'isCritical' }, text_content: t('is_critical') }));
+        impact_group.appendChild(critical_wrapper);
+
+        section_wrapper.appendChild(impact_group);
+        return section_wrapper;
+    }
+
     function _update_parent_checkbox_state(parent_checkbox) {
         const parent_id = parent_checkbox.dataset.parentId;
         if (!parent_id) return;
@@ -185,12 +227,10 @@ export const EditRulefileRequirementComponent = (function () {
         if (target.type !== 'checkbox') return;
 
         if (target.dataset.parentId) {
-            // Parent checkbox was clicked
             const parent_id = target.dataset.parentId;
             const children = form_element_ref.querySelectorAll(`input[data-child-for="${parent_id}"]`);
             children.forEach(child => child.checked = target.checked);
         } else if (target.dataset.childFor) {
-            // Child checkbox was clicked
             const parent_id = target.dataset.childFor;
             const parent_checkbox = form_element_ref.querySelector(`input[data-parent-id="${parent_id}"]`);
             if (parent_checkbox) {
@@ -198,16 +238,12 @@ export const EditRulefileRequirementComponent = (function () {
             }
         }
     }
-    // --- END OF CHANGE ---
 
     function _create_content_types_section(all_content_types, selected_content_types) {
         const t = Translation_t;
         const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
         section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('content_types_section_title') }));
-
-        // --- START OF CHANGE: Add event listener ---
         section_wrapper.addEventListener('change', _handle_content_type_change);
-        // --- END OF CHANGE ---
 
         all_content_types.forEach(group => {
             const fieldset = Helpers_create_element('fieldset', { class_name: 'content-type-parent-group-edit' });
@@ -227,12 +263,7 @@ export const EditRulefileRequirementComponent = (function () {
                 const child_checkbox = Helpers_create_element('input', { 
                     id: child_id, 
                     class_name: 'form-check-input', 
-                    attributes: { 
-                        type: 'checkbox', 
-                        name: 'contentType', 
-                        value: child.id, 
-                        'data-child-for': group.id 
-                    } 
+                    attributes: { type: 'checkbox', name: 'contentType', value: child.id, 'data-child-for': group.id } 
                 });
                 if (is_checked) {
                     child_checkbox.checked = true;
@@ -246,6 +277,7 @@ export const EditRulefileRequirementComponent = (function () {
         });
         return section_wrapper;
     }
+    // --- END OF CHANGE ---
 
     function render() {
         const t = Translation_t;
@@ -270,13 +302,18 @@ export const EditRulefileRequirementComponent = (function () {
         
         form_element_ref.appendChild(_create_action_buttons('top'));
 
+        // Basic Info Section
         const basic_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
-        basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_metadata_title') }));
+        basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_general_info_title') }));
         basic_info_section.appendChild(_create_form_group('requirement_title', 'title', requirement.title));
         basic_info_section.appendChild(_create_form_group('requirement_standard_reference_text', 'standardReferenceText', requirement.standardReference?.text));
         basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', requirement.standardReference?.url));
         form_element_ref.appendChild(basic_info_section);
 
+        // --- NEW: Add Metadata Section ---
+        form_element_ref.appendChild(_create_metadata_section(requirement.metadata));
+
+        // Text Sections
         form_element_ref.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', requirement.expectedObservation, true));
         form_element_ref.appendChild(_create_form_group('requirement_instructions', 'instructions', requirement.instructions, true));
         form_element_ref.appendChild(_create_form_group('requirement_exceptions', 'exceptions', requirement.exceptions, true));
@@ -309,15 +346,13 @@ export const EditRulefileRequirementComponent = (function () {
         plate_element.appendChild(form_element_ref);
         app_container_ref.appendChild(plate_element);
 
-        // --- START OF CHANGE: Update parent checkboxes on initial render ---
         form_element_ref.querySelectorAll('input[data-parent-id]').forEach(_update_parent_checkbox_state);
-        // --- END OF CHANGE ---
     }
 
     function destroy() {
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
-            const ct_section = form_element_ref.querySelector('.audit-section'); // More robust selector might be needed
+            const ct_section = form_element_ref.querySelector('.audit-section');
             if (ct_section) {
                 ct_section.removeEventListener('change', _handle_content_type_change);
             }

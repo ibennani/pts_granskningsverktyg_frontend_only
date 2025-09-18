@@ -514,5 +514,12 @@
   "upload_view_title_edit": "Edit a rule file",
   "edit_this_requirement_aria": "Edit requirement: {requirementTitle}",
   "rulefile_edit_requirement_intro": "Modify the fields below to update the requirement. When you are finished, return to the list and save the updated rule file.",
-  "content_types_section_title": "Associated Content Types"
+  "content_types_section_title": "Associated Content Types",
+  "is_critical": "Is Critical?",
+  "main_category_text": "Main Category (text)",
+  "primary_score": "Primary Score",
+  "requirement_general_info_title": "General Information",
+  "secondary_score": "Secondary Score",
+  "sub_category_text": "Subcategory (text)",
+  "classification_and_impact_title": "Classification and Impact"
 }
