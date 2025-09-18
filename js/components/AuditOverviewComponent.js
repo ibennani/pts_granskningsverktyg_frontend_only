@@ -275,7 +275,6 @@ export const AuditOverviewComponent = (function () {
         progress_container.appendChild(window.ProgressBarComponent.create(progress_data.audited, progress_data.total));
         score_panel.appendChild(progress_container);
         
-        // --- START OF CHANGE: Add divider ---
         const divider = Helpers_create_element('div', {
             style: {
                 borderBottom: '1px dashed var(--secondary-color)',
@@ -283,7 +282,6 @@ export const AuditOverviewComponent = (function () {
             }
         });
         score_panel.appendChild(divider);
-        // --- END OF CHANGE ---
         
         if (scoreAnalysisComponentInstance) {
             score_panel.appendChild(scoreAnalysisContainerElement);

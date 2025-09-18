@@ -11,6 +11,8 @@ export const RequirementListToolbarComponent = (function () {
     let Helpers_create_element;
     let Helpers_load_css;
 
+    let component_config;
+
     let search_debounce_timer;
 
     let filter_button_ref;
@@ -21,7 +23,7 @@ export const RequirementListToolbarComponent = (function () {
     
     let is_dom_built = false;
 
-    async function init(_container, _on_change_cb, _initial_state, _Translation, _Helpers) {
+    async function init(_container, _on_change_cb, _initial_state, _Translation, _Helpers, _config = {}) {
         container_ref = _container;
         on_change_callback = _on_change_cb;
         component_state = _initial_state;
@@ -29,6 +31,11 @@ export const RequirementListToolbarComponent = (function () {
         Translation_t = _Translation.t;
         Helpers_create_element = _Helpers.create_element;
         Helpers_load_css = _Helpers.load_css;
+
+        component_config = {
+            showStatusFilter: _config.showStatusFilter !== false,
+            sortOptions: _config.sortOptions || []
+        };
 
         is_dom_built = false;
 
@@ -75,8 +82,6 @@ export const RequirementListToolbarComponent = (function () {
         update_and_notify({ sortBy: event.target.value });
     }
     
-    // --- NY OCH FÖRBÄTTRAD LOGIK FÖR ATT HANTERA PANELEN ---
-
     function close_filter_panel(focus_button = true) {
         if (filter_panel_ref && filter_panel_ref.classList.contains('is-visible')) {
             filter_panel_ref.classList.remove('is-visible');
@@ -153,22 +158,36 @@ export const RequirementListToolbarComponent = (function () {
         const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' } });
         search_input.addEventListener('input', handle_search_input);
         search_group.appendChild(search_input);
+        toolbar.appendChild(search_group);
 
-        const filter_group = Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
-        filter_group.innerHTML = `<label>${t('filter_by_status_label')}</label>`;
-        filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
-        filter_button_ref.addEventListener('click', toggle_filter_panel);
-        filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
-        filter_panel_ref.addEventListener('change', handle_status_filter_change);
-        filter_group.append(filter_button_ref, filter_panel_ref);
+        if (component_config.showStatusFilter) {
+            const filter_group = Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
+            filter_group.innerHTML = `<label>${t('filter_by_status_label')}</label>`;
+            filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
+            filter_button_ref.addEventListener('click', toggle_filter_panel);
+            filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
+            filter_panel_ref.addEventListener('change', handle_status_filter_change);
+            filter_group.append(filter_button_ref, filter_panel_ref);
+            toolbar.appendChild(filter_group);
+        }
         
-        const sort_group = Helpers_create_element('div', { class_name: 'toolbar-group sort-group' });
-        sort_group.innerHTML = `<label for="req-list-sort">${t('sort_by_label')}</label>`;
-        const sort_select = Helpers_create_element('select', { id: 'req-list-sort', class_name: 'form-control' });
-        sort_select.addEventListener('change', handle_sort_change);
-        sort_group.appendChild(sort_select);
+        if (component_config.sortOptions && component_config.sortOptions.length > 0) {
+            const sort_group = Helpers_create_element('div', { class_name: 'toolbar-group sort-group' });
+            sort_group.innerHTML = `<label for="req-list-sort">${t('sort_by_label')}</label>`;
+            const sort_select = Helpers_create_element('select', { id: 'req-list-sort', class_name: 'form-control' });
+            
+            component_config.sortOptions.forEach(opt => {
+                sort_select.appendChild(Helpers_create_element('option', {
+                    value: opt.value,
+                    text_content: t(opt.textKey, { defaultValue: opt.defaultValue })
+                }));
+            });
 
-        toolbar.append(search_group, filter_group, sort_group);
+            sort_select.addEventListener('change', handle_sort_change);
+            sort_group.appendChild(sort_select);
+            toolbar.appendChild(sort_group);
+        }
+        
         container_ref.appendChild(toolbar);
         is_dom_built = true;
     }
@@ -177,20 +196,36 @@ export const RequirementListToolbarComponent = (function () {
         const t = Translation_t;
         
         container_ref.querySelector('#req-list-search').value = component_state.searchText;
-        container_ref.querySelector('#req-list-sort').value = component_state.sortBy;
         
-        filter_button_ref.textContent = t('status_filter_button_text');
+        const sortSelect = container_ref.querySelector('#req-list-sort');
+        if (sortSelect) {
+            sortSelect.value = component_state.sortBy;
+        }
 
-        const status_types = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
-        const all_individual_checked = status_types.every(status => component_state.status[status]);
+        if (component_config.showStatusFilter && filter_panel_ref && filter_button_ref) {
+            filter_button_ref.textContent = t('status_filter_button_text');
 
-        filter_panel_ref.querySelector('#status-filter-all').checked = all_individual_checked;
-        status_types.forEach(status => {
-            filter_panel_ref.querySelector(`#status-filter-${status}`).checked = component_state.status[status];
-        });
+            const status_types = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
+            const all_individual_checked = status_types.every(status => component_state.status[status]);
+
+            if (filter_panel_ref.querySelector('#status-filter-all')) {
+                filter_panel_ref.querySelector('#status-filter-all').checked = all_individual_checked;
+                status_types.forEach(status => {
+                    if (filter_panel_ref.querySelector(`#status-filter-${status}`)) {
+                        filter_panel_ref.querySelector(`#status-filter-${status}`).checked = component_state.status[status];
+                    }
+                });
+            }
+        }
     }
 
-    function render() {
+    // --- START OF CHANGE: render can now accept new state ---
+    function render(new_state = null) {
+        if (new_state) {
+            component_state = new_state;
+        }
+        // --- END OF CHANGE ---
+
         if (!container_ref || !Helpers_create_element || !Translation_t || !component_state) {
             console.error("ToolbarComponent: Cannot render, core dependencies missing.");
             return;
@@ -199,43 +234,36 @@ export const RequirementListToolbarComponent = (function () {
         if (!is_dom_built) {
             initial_build();
             const t = Translation_t;
-            filter_panel_ref.innerHTML = `
-                <div class="form-check all-check">
-                    <input id="status-filter-all" class="form-check-input" type="checkbox" data-status="all">
-                    <label for="status-filter-all">${t('show_all')}</label>
-                </div>
-                <hr>
-                <div class="form-check">
-                    <input id="status-filter-passed" class="form-check-input" type="checkbox" data-status="passed">
-                    <label for="status-filter-passed">${t('audit_status_passed')}</label>
-                </div>
-                <div class="form-check">
-                    <input id="status-filter-failed" class="form-check-input" type="checkbox" data-status="failed">
-                    <label for="status-filter-failed">${t('audit_status_failed')}</label>
-                </div>
-                <div class="form-check">
-                    <input id="status-filter-partially_audited" class="form-check-input" type="checkbox" data-status="partially_audited">
-                    <label for="status-filter-partially_audited">${t('audit_status_partially_audited')}</label>
-                </div>
-                <div class="form-check">
-                    <input id="status-filter-not_audited" class="form-check-input" type="checkbox" data-status="not_audited">
-                    <label for="status-filter-not_audited">${t('audit_status_not_audited')}</label>
-                </div>
-                <div class="form-check">
-                    <input id="status-filter-updated" class="form-check-input" type="checkbox" data-status="updated">
-                    <label for="status-filter-updated">${t('filter_option_updated')}</label>
-                </div>
-            `;
-            const sort_select = container_ref.querySelector('#req-list-sort');
-            // --- **HÄR ÄR ÄNDRINGEN FÖR SORTERINGSALTERNATIVEN** ---
-            sort_select.innerHTML = `
-                <option value="default">${t('sort_option_ref_asc_natural', {defaultValue: "Reference (ascending)"})}</option>
-                <option value="ref_desc">${t('sort_option_ref_desc_natural', {defaultValue: "Reference (descending)"})}</option>
-                <option value="title_asc">${t('sort_option_title_asc')}</option>
-                <option value="title_desc">${t('sort_option_title_desc')}</option>
-                <option value="updated_first">${t('sort_option_updated_first', {defaultValue: "Updated First"})}</option>
-            `;
-            // --- SLUT PÅ ÄNDRING ---
+            
+            if (component_config.showStatusFilter && filter_panel_ref) {
+                filter_panel_ref.innerHTML = `
+                    <div class="form-check all-check">
+                        <input id="status-filter-all" class="form-check-input" type="checkbox" data-status="all">
+                        <label for="status-filter-all">${t('show_all')}</label>
+                    </div>
+                    <hr>
+                    <div class="form-check">
+                        <input id="status-filter-passed" class="form-check-input" type="checkbox" data-status="passed">
+                        <label for="status-filter-passed">${t('audit_status_passed')}</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="status-filter-failed" class="form-check-input" type="checkbox" data-status="failed">
+                        <label for="status-filter-failed">${t('audit_status_failed')}</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="status-filter-partially_audited" class="form-check-input" type="checkbox" data-status="partially_audited">
+                        <label for="status-filter-partially_audited">${t('audit_status_partially_audited')}</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="status-filter-not_audited" class="form-check-input" type="checkbox" data-status="not_audited">
+                        <label for="status-filter-not_audited">${t('audit_status_not_audited')}</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="status-filter-updated" class="form-check-input" type="checkbox" data-status="updated">
+                        <label for="status-filter-updated">${t('filter_option_updated')}</label>
+                    </div>
+                `;
+            }
         }
 
         update_values();

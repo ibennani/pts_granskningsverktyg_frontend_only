@@ -8,100 +8,140 @@ export const UploadViewComponent = (function () {
     let router_ref;
     let global_message_element_ref;
 
-    let rule_file_for_audit_input;
-    let rule_file_for_edit_input;
+    let rule_file_input_for_audit;
     let saved_audit_input_element;
-    let file_info_display_ref;
+    let rule_file_input_for_edit;
 
+    // Local state/dependencies
     let local_getState;
     let local_dispatch;
     let local_StoreActionTypes;
 
     function get_t_func() {
-        return window.Translation?.t || ((key) => `**${key}**`);
+        return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
+            ? window.Translation.t
+            : (key, replacements) => `**${key}**`;
     }
 
-    function create_file_handler(validation_function, success_callback) {
-        return function (event) {
-            const t = get_t_func();
-            const file = event.target.files[0];
-            if (!file) return;
+    function handle_audit_rule_file_select(event) {
+        const t = get_t_func();
+        const file = event.target.files[0];
+        if (!file) return;
 
-            if (file_info_display_ref) {
-                file_info_display_ref.textContent = t('upload_view_loading_file', { filename: file.name });
-                file_info_display_ref.style.display = 'block';
-            }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const json_content = JSON.parse(e.target.result);
+                const validation_result = window.ValidationLogic.validate_rule_file_json(json_content);
 
-            if (file.type !== "application/json") {
-                if (window.NotificationComponent) window.NotificationComponent.show_global_message(t('error_file_must_be_json'), 'error');
-                event.target.value = '';
-                if (file_info_display_ref) file_info_display_ref.style.display = 'none';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                try {
-                    const json_content = JSON.parse(e.target.result);
-                    const validation_result = validation_function(json_content);
-
-                    if (validation_result.isValid) {
-                        if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
-                            window.Store.clearAutosavedState();
-                        }
-                        
-                        // --- FIX 1: Add the success message with filename ---
-                        if (window.NotificationComponent) {
-                            window.NotificationComponent.show_global_message(t('rule_file_loaded_successfully', { filename: file.name }), 'success');
-                        }
-                        success_callback(json_content);
-                    } else {
-                        if (window.NotificationComponent) window.NotificationComponent.show_global_message(validation_result.message, 'error');
-                        if (file_info_display_ref) file_info_display_ref.style.display = 'none';
+                if (validation_result.isValid) {
+                    if(window.Store && typeof window.Store.clearAutosavedState === 'function') {
+                        window.Store.clearAutosavedState();
                     }
-                } catch (error) {
-                    console.error("Error parsing JSON:", error);
-                    if (window.NotificationComponent) window.NotificationComponent.show_global_message(`${t('rule_file_invalid_json')}: ${error.message}`, 'error');
-                    if (file_info_display_ref) file_info_display_ref.style.display = 'none';
-                } finally {
-                    event.target.value = '';
+                    
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'success');
+                    
+                    local_dispatch({
+                        type: local_StoreActionTypes.INITIALIZE_NEW_AUDIT,
+                        payload: { ruleFileContent: json_content }
+                    });
+                    
+                    router_ref('metadata');
+                } else {
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
                 }
-            };
-            reader.readAsText(file);
+            } catch (error) {
+                console.error("Error parsing JSON from rule file for audit:", error);
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('rule_file_invalid_json'), 'error');
+            } finally {
+                if (event.target) event.target.value = '';
+            }
         };
+        reader.readAsText(file);
     }
 
-    const handle_rule_file_for_audit = create_file_handler(
-        window.ValidationLogic.validate_rule_file_json,
-        (json_content) => {
-            local_dispatch({ type: local_StoreActionTypes.INITIALIZE_NEW_AUDIT, payload: { ruleFileContent: json_content } });
-            router_ref('metadata');
-        }
-    );
-    const handle_rule_file_for_edit = create_file_handler(
-        window.ValidationLogic.validate_rule_file_json,
-        (json_content) => {
-            local_dispatch({ type: local_StoreActionTypes.INITIALIZE_EDIT_MODE, payload: { ruleFileContent: json_content } });
-            router_ref('edit_rulefile_main');
-        }
-    );
-    const handle_saved_audit_file = create_file_handler(
-        window.ValidationLogic.validate_saved_audit_file,
-        (file_content_object) => {
-            local_dispatch({ type: local_StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: file_content_object });
-            router_ref('audit_overview');
-        }
-    );
+    function handle_saved_audit_file_select(event) {
+        const t = get_t_func();
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            try {
+                const file_content_object = JSON.parse(e.target.result);
+                const validation_result = window.ValidationLogic.validate_saved_audit_file(file_content_object);
+
+                if (validation_result.isValid) {
+                    local_dispatch({
+                        type: local_StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+                        payload: file_content_object
+                    });
+
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
+                    router_ref('audit_overview');
+
+                } else {
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
+                }
+            } catch (error) {
+                console.error("Error parsing JSON from saved audit file:", error);
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
+            } finally {
+                 if (event.target) event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function handle_edit_file_select(event) {
+        const t = get_t_func();
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const json_content = JSON.parse(e.target.result);
+                const validation_result = window.ValidationLogic.validate_rule_file_json(json_content);
+
+                if (validation_result.isValid) {
+                    if(window.Store && typeof window.Store.clearAutosavedState === 'function') {
+                        window.Store.clearAutosavedState();
+                    }
+
+                    local_dispatch({
+                        type: local_StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
+                        payload: { ruleFileContent: json_content }
+                    });
+                    
+                    // --- HÄR ÄR ÄNDRINGEN ---
+                    router_ref('edit_rulefile_main');
+
+                } else {
+                    if (window.NotificationComponent) NotificationComponent.show_global_message(validation_result.message, 'error');
+                }
+            } catch (error) {
+                console.error("Error parsing rule file for editing:", error);
+                if (window.NotificationComponent) NotificationComponent.show_global_message(t('rule_file_invalid_json'), 'error');
+            } finally {
+                if (event.target) event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    }
 
     async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes) {
         app_container_ref = _app_container;
         router_ref = _router;
+        
         local_getState = _getState;
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes;
+
         if (window.NotificationComponent?.get_global_message_element_reference) {
             global_message_element_ref = window.NotificationComponent.get_global_message_element_reference();
         }
+
         if (window.Helpers?.load_css) {
             await window.Helpers.load_css(CSS_PATH).catch(e => console.warn(e));
         }
@@ -117,74 +157,89 @@ export const UploadViewComponent = (function () {
 
         if (global_message_element_ref) {
             app_container_ref.appendChild(global_message_element_ref);
+            if (window.NotificationComponent?.clear_global_message && 
+                !global_message_element_ref.classList.contains('message-error') &&
+                !global_message_element_ref.classList.contains('message-warning')) {
+                window.NotificationComponent.clear_global_message();
+            }
         }
 
-        const plate = window.Helpers.create_element('div', { class_name: 'content-plate' });
-        plate.appendChild(window.Helpers.create_element('h1', { text_content: t('app_title') }));
-        file_info_display_ref = window.Helpers.create_element('div', {
-            id: 'uploaded-file-info-display',
-            style: { 
-                display: 'none', margin: '1rem 0', padding: '0.75rem',
-                backgroundColor: 'var(--background-color)', border: '1px solid var(--border-color)',
-                borderRadius: 'var(--border-radius)', color: 'var(--text-color-muted)', fontStyle: 'italic'
-            }
-        });
-        plate.appendChild(file_info_display_ref);
-        plate.appendChild(window.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('upload_view_intro') }));
-        
-        const audit_section = window.Helpers.create_element('section', { style: { 'margin-top': '2rem' } });
-        const audit_button_group = window.Helpers.create_element('div', { class_name: 'button-group', style: { justifyContent: 'flex-start' } });
-        const load_ongoing_audit_btn = window.Helpers.create_element('button', {
-            id: 'load-ongoing-audit-btn', class_name: ['button', 'button-default'],
-            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('load_existing', ['currentColor'], 18) : '')
-        });
+        const title = window.Helpers.create_element('h1', { text_content: t('app_title') });
+        const intro_text = window.Helpers.create_element('p', { text_content: t('upload_view_intro') });
+
+        const audit_section_title = window.Helpers.create_element('h2', { text_content: t('upload_view_title_audit'), style: 'font-size: 1.2rem; margin-top: 2rem;' });
         const start_new_audit_btn = window.Helpers.create_element('button', {
-            id: 'start-new-audit-btn', class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('start_new_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('start_new', ['currentColor'], 18) : '')
+            id: 'start-new-audit-btn',
+            class_name: ['button', 'button-primary'],
+            html_content: `<span>${t('start_new_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('start_new') : '')
         });
-        audit_button_group.append(load_ongoing_audit_btn, start_new_audit_btn);
-        audit_section.appendChild(audit_button_group);
-        plate.appendChild(audit_section);
+        const load_ongoing_audit_btn = window.Helpers.create_element('button', {
+            id: 'load-ongoing-audit-btn',
+            class_name: ['button', 'button-secondary'],
+            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('load_existing') : '')
+        });
+        const audit_button_group = window.Helpers.create_element('div', { class_name: 'button-group' });
+        audit_button_group.append(start_new_audit_btn, load_ongoing_audit_btn);
 
-        plate.appendChild(window.Helpers.create_element('hr', { style: { 'margin': '2rem 0' } }));
-
-        const edit_section = window.Helpers.create_element('section');
-        const edit_button_group = window.Helpers.create_element('div', { class_name: 'button-group', style: { justifyContent: 'flex-start' } });
+        const edit_section_title = window.Helpers.create_element('h2', { text_content: t('upload_view_title_edit'), style: 'font-size: 1.2rem; margin-top: 2.5rem;' });
         const edit_rulefile_btn = window.Helpers.create_element('button', {
-            id: 'edit-rulefile-btn', class_name: ['button', 'button-secondary'],
-            html_content: `<span>${t('upload_view_button_edit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('edit', ['currentColor'], 18) : '')
+            id: 'edit-rulefile-btn',
+            class_name: ['button', 'button-default'],
+            html_content: `<span>${t('upload_view_button_edit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('edit') : '')
         });
+        const edit_button_group = window.Helpers.create_element('div', { class_name: 'button-group' });
         edit_button_group.appendChild(edit_rulefile_btn);
-        edit_section.appendChild(edit_button_group);
-        plate.appendChild(edit_section);
 
-        rule_file_for_audit_input = window.Helpers.create_element('input', {
-            id: 'rule-file-for-audit-input',
-            attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
-        });
-        rule_file_for_edit_input = window.Helpers.create_element('input', {
-            id: 'rule-file-for-edit-input',
+        rule_file_input_for_audit = window.Helpers.create_element('input', {
+            id: 'rule-file-input-audit',
             attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
         });
         saved_audit_input_element = window.Helpers.create_element('input', {
             id: 'saved-audit-input',
             attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
         });
+        rule_file_input_for_edit = window.Helpers.create_element('input', {
+            id: 'rule-file-input-edit',
+            attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
+        });
 
-        app_container_ref.appendChild(plate);
-        app_container_ref.appendChild(rule_file_for_audit_input);
-        app_container_ref.appendChild(rule_file_for_edit_input);
-        app_container_ref.appendChild(saved_audit_input_element);
+        app_container_ref.append(
+            title, 
+            intro_text, 
+            audit_section_title, 
+            audit_button_group,
+            window.Helpers.create_element('hr', { style: 'margin: 2rem 0;' }),
+            edit_section_title,
+            edit_button_group,
+            rule_file_input_for_audit, 
+            saved_audit_input_element, 
+            rule_file_input_for_edit
+        );
 
-        start_new_audit_btn.addEventListener('click', () => rule_file_for_audit_input.click());
-        rule_file_for_audit_input.addEventListener('change', handle_rule_file_for_audit);
-        edit_rulefile_btn.addEventListener('click', () => rule_file_for_edit_input.click());
-        rule_file_for_edit_input.addEventListener('change', handle_rule_file_for_edit);
+        start_new_audit_btn.addEventListener('click', () => rule_file_input_for_audit.click());
+        rule_file_input_for_audit.addEventListener('change', handle_audit_rule_file_select);
+        
         load_ongoing_audit_btn.addEventListener('click', () => saved_audit_input_element.click());
-        saved_audit_input_element.addEventListener('change', handle_saved_audit_file);
+        saved_audit_input_element.addEventListener('change', handle_saved_audit_file_select);
+
+        edit_rulefile_btn.addEventListener('click', () => rule_file_input_for_edit.click());
+        rule_file_input_for_edit.addEventListener('change', handle_edit_file_select);
     }
 
-    function destroy() { app_container_ref.innerHTML = ''; }
+    function destroy() {
+        if (rule_file_input_for_audit) rule_file_input_for_audit.removeEventListener('change', handle_audit_rule_file_select);
+        if (saved_audit_input_element) saved_audit_input_element.removeEventListener('change', handle_saved_audit_file_select);
+        if (rule_file_input_for_edit) rule_file_input_for_edit.removeEventListener('change', handle_edit_file_select);
+        
+        app_container_ref.innerHTML = '';
+        local_getState = null; 
+        local_dispatch = null;
+        local_StoreActionTypes = null;
+    }
 
-    return { init, render, destroy };
+    return {
+        init,
+        render,
+        destroy
+    };
 })();

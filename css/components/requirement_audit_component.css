@@ -382,3 +382,20 @@
     margin-top: 0.75rem;
     display: block;
 }
+
+
+.requirement-audit-header-title-wrapper {
+    display: flex;
+    align-items: center; /* Centrerar vertikalt */
+    gap: 1rem; /* Skapar ett fast avstånd mellan rubrik och knapp */
+    flex-wrap: wrap; /* Tillåter radbrytning på små skärmar */
+    margin-bottom: 0.5rem;
+}
+
+.requirement-audit-header-title-wrapper h1 {
+    margin: 0; /* Tar bort H1-elementets standardmarginal */
+}
+
+.requirement-audit-header-title-wrapper .edit-button {
+    flex-shrink: 0; /* Förhindrar att knappen trycks ihop */
+}
