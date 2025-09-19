@@ -537,7 +537,14 @@
   "confirm_delete_check_intro": "Du är på väg att radera kontrollpunkten:",
   "confirm_delete_check_title": "Bekräfta radering av kontrollpunkt",
   "confirm_delete_criterion_intro": "Du är på väg att radera godkännandekriteriet:",
-  "confirm_delete_criterion_title": "Bekräfta radering av kriterium",
+  "confirm_delete_criterion_title": "Bekräfta radering av godkännandekriterium",
   "delete_check_button": "Radera kontrollpunkt",
-  "delete_criterion_button": "Radera kriterium"
+  "delete_criterion_button": "Radera kriterium",
+  "delete_check_aria_label": "Radera kontrollpunkt: {conditionText}",
+  "delete_criterion_aria_label": "Radera godkännandekriterium: {criterionText}",
+  "aria_label_empty_content": "Fältet saknar innehåll",
+  "check_logic_display": "Logik för kriterier:",
+  "content_types_associated": "Kopplade innehållstyper",
+  "failure_statement_template_display": "Mall för avvikelsetext",
+  "metadata_and_classification_title": "Metadata och klassificering"
 }

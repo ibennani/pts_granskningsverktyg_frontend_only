@@ -23,10 +23,8 @@ export const ActionTypes = {
     CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
     UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
-    // --- START OF CHANGE: Add new action types ---
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK'
-    // --- END OF CHANGE ---
 };
 
 const initial_state = {
@@ -74,7 +72,6 @@ function root_reducer(current_state, action) {
     let new_state;
 
     switch (action.type) {
-        // --- START OF CHANGE: Add new reducer cases ---
         case ActionTypes.DELETE_CHECK_FROM_REQUIREMENT:
             const { requirementId: reqIdForCheck, checkId } = action.payload;
             const reqToUpdateCheck = current_state.ruleFileContent.requirements[reqIdForCheck];
@@ -102,22 +99,29 @@ function root_reducer(current_state, action) {
                 return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirementsForPc } };
             }
             return current_state;
-        // --- END OF CHANGE ---
 
         case ActionTypes.UPDATE_REQUIREMENT_DEFINITION:
             const { requirementId: updateReqId, updatedRequirementData } = action.payload;
+            // --- DEBUG START ---
+            console.log(`%c[DEBUG] Reducer: Received UPDATE_REQUIREMENT_DEFINITION for ID '${updateReqId}'.`, 'color: #FF69B4;');
+            console.log(`%c[DEBUG] Reducer: INCOMING classifications data:`, 'color: #FF69B4;', JSON.parse(JSON.stringify(updatedRequirementData.classifications)));
+            // --- DEBUG END ---
             if (current_state.ruleFileContent?.requirements[updateReqId]) {
                 const newRequirements = {
                     ...current_state.ruleFileContent.requirements,
                     [updateReqId]: updatedRequirementData
                 };
-                return {
+                const final_state = {
                     ...current_state,
                     ruleFileContent: {
                         ...current_state.ruleFileContent,
                         requirements: newRequirements
                     }
                 };
+                // --- DEBUG START ---
+                console.log(`%c[DEBUG] Reducer: FINAL classifications in new state for '${updateReqId}':`, 'color: #FF69B4; font-weight: bold;', JSON.parse(JSON.stringify(final_state.ruleFileContent.requirements[updateReqId].classifications)));
+                // --- DEBUG END ---
+                return final_state;
             }
             return current_state;
 

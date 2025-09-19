@@ -16,11 +16,7 @@ import { EditRulefileMainViewComponent } from './components/EditRulefileMainView
 import { RulefileRequirementsListComponent } from './components/RulefileRequirementsListComponent.js';
 import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequirementComponent.js';
 import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
-import { ConfirmDeleteRequirementViewComponent } from './components/ConfirmDeleteRequirementViewComponent.js';
-// --- START OF CHANGE: Import new confirm views ---
-import { ConfirmDeleteCheckViewComponent } from './components/ConfirmDeleteCheckViewComponent.js';
-import { ConfirmDeleteCriterionViewComponent } from './components/ConfirmDeleteCriterionViewComponent.js';
-// --- END OF CHANGE ---
+import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
@@ -113,17 +109,13 @@ window.StoreActionTypes = StoreActionTypes;
                 case 'rulefile_edit_requirement':
                     title_prefix = t('rulefile_edit_requirement_title');
                     break;
-                case 'rulefile_confirm_delete_requirement':
-                    title_prefix = t('rulefile_confirm_delete_title');
+                case 'confirm_delete':
+                    switch(params.type) {
+                        case 'requirement': title_prefix = t('rulefile_confirm_delete_title'); break;
+                        case 'check': title_prefix = t('confirm_delete_check_title'); break;
+                        case 'criterion': title_prefix = t('confirm_delete_criterion_title'); break;
+                    }
                     break;
-                // --- START OF CHANGE: Add titles for new confirm views ---
-                case 'confirm_delete_check':
-                    title_prefix = t('confirm_delete_check_title');
-                    break;
-                case 'confirm_delete_criterion':
-                    title_prefix = t('confirm_delete_criterion_title');
-                    break;
-                // --- END OF CHANGE ---
                 case 'requirement_audit':
                     const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
                     const requirementTitle = requirement?.title;
@@ -197,8 +189,16 @@ window.StoreActionTypes = StoreActionTypes;
         }
     }
 
+    // --- START OF CHANGE ---
     function set_focus_to_h1() {
         setTimeout(() => {
+            // Kontrollera om en specifik fokusinstruktion redan har hanterats
+            if (window.customFocusApplied) {
+                // Återställ flaggan och gör ingenting mer
+                window.customFocusApplied = false;
+                return;
+            }
+            // Annars, kör den generella fokuseringen
             if (app_container) {
                 const h1_element = app_container.querySelector('h1');
                 if (h1_element) {
@@ -210,6 +210,7 @@ window.StoreActionTypes = StoreActionTypes;
             }
         }, 100); 
     }
+    // --- END OF CHANGE ---
 
     async function render_view(view_name_to_render, params_to_render = {}) {
         const t = get_t_fallback();
@@ -265,15 +266,10 @@ window.StoreActionTypes = StoreActionTypes;
             case 'rulefile_requirements': ComponentClass = RulefileRequirementsListComponent; break;
             case 'rulefile_view_requirement': ComponentClass = ViewRulefileRequirementComponent; break;
             case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
-            case 'rulefile_confirm_delete_requirement': ComponentClass = ConfirmDeleteRequirementViewComponent; break;
-            // --- START OF CHANGE: Add new routes ---
-            case 'confirm_delete_check': ComponentClass = ConfirmDeleteCheckViewComponent; break;
-            case 'confirm_delete_criterion': ComponentClass = ConfirmDeleteCriterionViewComponent; break;
-            // --- END OF CHANGE ---
+            case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
-                set_focus_to_h1();
                 return;
         }
 
@@ -310,7 +306,6 @@ window.StoreActionTypes = StoreActionTypes;
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
             const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
             if(app_container) app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
-            set_focus_to_h1();
         }
     }
 

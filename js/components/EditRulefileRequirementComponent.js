@@ -43,7 +43,8 @@ export const EditRulefileRequirementComponent = (function () {
         await Helpers_load_css(CSS_PATH_SPECIFIC).catch(e => console.warn(e));
     }
 
-    function _gather_and_update_local_data() {
+    // --- NY FUNKTION: Uppdaterar local_requirement_data från formuläret ---
+    function _update_local_data_from_form() {
         if (!form_element_ref) return;
         
         local_requirement_data.title = form_element_ref.querySelector('#title')?.value || '';
@@ -67,27 +68,40 @@ export const EditRulefileRequirementComponent = (function () {
         }
 
         local_requirement_data.contentType = Array.from(form_element_ref.querySelectorAll('input[name="contentType"]:checked')).map(cb => cb.value);
+        
         local_requirement_data.classifications = Array.from(form_element_ref.querySelectorAll('input[name="classification"]:checked')).map(cb => ({
             taxonomyId: 'wcag22-pour',
             conceptId: cb.value
         }));
 
-        local_requirement_data.checks.forEach(check => {
-            const sane_check_id = Helpers_sanitize_id_for_css_selector(check.id);
-            check.condition = form_element_ref.querySelector(`#check_${sane_check_id}_condition`)?.value || '';
-            const logic_radio = form_element_ref.querySelector(`input[name="check_${sane_check_id}_logic"]:checked`);
-            check.logic = logic_radio ? logic_radio.value : 'AND';
-            check.passCriteria.forEach(pc => {
-                const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc.id);
-                pc.requirement = form_element_ref.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_requirement`)?.value || '';
-                pc.failureStatementTemplate = form_element_ref.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_failureTemplate`)?.value || '';
+        const checks_data = [];
+        form_element_ref.querySelectorAll('.check-item-edit').forEach(check_el => {
+            const check_id = check_el.dataset.checkId;
+            const sane_check_id = Helpers_sanitize_id_for_css_selector(check_id);
+            const check_obj = {
+                id: check_id,
+                condition: check_el.querySelector(`#check_${sane_check_id}_condition`)?.value || '',
+                logic: check_el.querySelector(`input[name="check_${sane_check_id}_logic"]:checked`)?.value || 'AND',
+                passCriteria: []
+            };
+
+            check_el.querySelectorAll('.pc-item-edit').forEach(pc_el => {
+                const pc_id = pc_el.dataset.pcId;
+                const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc_id);
+                check_obj.passCriteria.push({
+                    id: pc_id,
+                    requirement: pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_requirement`)?.value || '',
+                    failureStatementTemplate: pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_failureTemplate`)?.value || ''
+                });
             });
+            checks_data.push(check_obj);
         });
+        local_requirement_data.checks = checks_data;
     }
 
     function handle_form_submit(event) {
         event.preventDefault();
-        _gather_and_update_local_data();
+        _update_local_data_from_form(); // Använd den nya funktionen
 
         const t = Translation_t;
         if (!local_requirement_data.title.trim()) {
@@ -108,11 +122,15 @@ export const EditRulefileRequirementComponent = (function () {
         router_ref('rulefile_view_requirement', { id: params_ref.id });
     }
     
-    function _handle_dynamic_changes(event) {
+    function handle_form_click(event) {
         const button = event.target.closest('button[data-action]');
         if (!button) return;
 
-        _gather_and_update_local_data();
+        event.stopPropagation();
+        event.preventDefault();
+        
+        // Uppdatera modellen från DOM innan vi ändrar modellen
+        _update_local_data_from_form();
 
         const action = button.dataset.action;
         let check_id, pc_id;
@@ -125,19 +143,13 @@ export const EditRulefileRequirementComponent = (function () {
                     logic: 'AND',
                     passCriteria: []
                 });
-                _rerender_checks_section(true);
+                _rerender_all_sections(); // Rendera om hela formuläret
                 break;
 
             case 'delete-check':
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 if (check_id) {
-                    // Spara nuvarande data innan vi navigerar iväg
-                    local_dispatch({
-                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
-                    });
-                    // --- KORRIGERING HÄR ---
-                    router_ref('confirm_delete_check', { reqId: params_ref.id, checkId: check_id });
+                    router_ref('confirm_delete', { type: 'check', reqId: params_ref.id, checkId: check_id });
                 }
                 break;
 
@@ -150,7 +162,7 @@ export const EditRulefileRequirementComponent = (function () {
                         requirement: '',
                         failureStatementTemplate: ''
                     });
-                    _rerender_checks_section(true);
+                    _rerender_all_sections(); // Rendera om hela formuläret
                 }
                 break;
 
@@ -159,13 +171,7 @@ export const EditRulefileRequirementComponent = (function () {
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 pc_id = pc_item?.dataset.pcId;
                 if (check_id && pc_id) {
-                    // Spara nuvarande data innan vi navigerar iväg
-                    local_dispatch({
-                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
-                    });
-                    // --- KORRIGERING HÄR ---
-                    router_ref('confirm_delete_criterion', { reqId: params_ref.id, checkId: check_id, pcId: pc_id });
+                    router_ref('confirm_delete', { type: 'criterion', reqId: params_ref.id, checkId: check_id, pcId: pc_id });
                 }
                 break;
         }
@@ -220,17 +226,22 @@ export const EditRulefileRequirementComponent = (function () {
     
     function _create_classification_section(metadata, classifications) {
         const t = Translation_t;
+        const fragment = document.createDocumentFragment();
+        
         const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
         section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('classification_title') }));
         section_wrapper.appendChild(_create_form_group('main_category_text', 'mainCategoryText', metadata?.mainCategory?.text));
         section_wrapper.appendChild(_create_form_group('sub_category_text', 'subCategoryText', metadata?.subCategory?.text));
-        
+        fragment.appendChild(section_wrapper);
+
         const current_state = local_getState();
         const pour_taxonomy = current_state.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
+        
         if (pour_taxonomy && pour_taxonomy.concepts) {
+            const pour_section = Helpers_create_element('div', { class_name: 'audit-section' });
             const fieldset = Helpers_create_element('div', { class_name: 'classification-group' });
-            const legend_text = pour_taxonomy.label || t('wcag_principles_title');
-            section_wrapper.appendChild(Helpers_create_element('h2', { text_content: legend_text }));
+            const legend_text = t('wcag_principles_title');
+            pour_section.appendChild(Helpers_create_element('h2', { text_content: legend_text }));
 
             const selected_concepts = new Set((classifications || []).map(c => c.conceptId));
             
@@ -250,10 +261,11 @@ export const EditRulefileRequirementComponent = (function () {
                 wrapper.append(checkbox, label);
                 fieldset.appendChild(wrapper);
             });
-            section_wrapper.appendChild(fieldset);
+            pour_section.appendChild(fieldset);
+            fragment.appendChild(pour_section);
         }
         
-        return section_wrapper;
+        return fragment;
     }
 
     function _create_impact_section(metadata) {
@@ -356,72 +368,137 @@ export const EditRulefileRequirementComponent = (function () {
         return section_wrapper;
     }
     
+    function _rerender_all_sections(animate_last_item = false) {
+        const t = Translation_t;
+        const scroll_position = window.scrollY;
+        
+        // Spara referens till det element som hade fokus
+        const active_element_id = document.activeElement ? document.activeElement.id : null;
+
+        form_element_ref.innerHTML = ''; // Rensa hela formuläret
+
+        const current_state = local_getState();
+        
+        form_element_ref.appendChild(_create_action_buttons('top'));
+
+        const basic_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_general_info_title') }));
+        basic_info_section.appendChild(_create_form_group('requirement_title', 'title', local_requirement_data.title));
+        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_text', 'standardReferenceText', local_requirement_data.standardReference?.text));
+        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', local_requirement_data.standardReference?.url));
+        form_element_ref.appendChild(basic_info_section);
+        
+        const help_texts_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        help_texts_section.appendChild(Helpers_create_element('h2', { text_content: t('help_texts_title') }));
+        help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', true));
+        help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', true));
+        help_texts_section.appendChild(_create_form_group('requirement_exceptions', 'exceptions', true));
+        help_texts_section.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', true));
+        help_texts_section.appendChild(_create_form_group('requirement_tips', 'tips', true));
+        help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', true));
+        form_element_ref.appendChild(help_texts_section);
+        
+        const checks_container_wrapper = Helpers_create_element('div', { class_name: 'checks-container-edit' });
+        form_element_ref.appendChild(checks_container_wrapper);
+        _rerender_checks_section(animate_last_item);
+        
+        form_element_ref.appendChild(_create_classification_section(local_requirement_data.metadata, local_requirement_data.classifications));
+        form_element_ref.appendChild(_create_impact_section(local_requirement_data.metadata));
+
+        const all_content_types = current_state.ruleFileContent.metadata.contentTypes || [];
+        const selected_content_types = local_requirement_data.contentType || [];
+        form_element_ref.appendChild(_create_content_types_section(all_content_types, selected_content_types));
+        
+        form_element_ref.appendChild(_create_action_buttons('bottom'));
+
+        form_element_ref.querySelectorAll('input[data-parent-id]').forEach(_update_parent_checkbox_state);
+
+        window.scrollTo(0, scroll_position);
+
+        // Återställ fokus
+        if (active_element_id) {
+            const elementToFocus = document.getElementById(active_element_id);
+            elementToFocus?.focus();
+        }
+    }
+
     function _rerender_checks_section(animate_last_item = false) {
         const t = Translation_t;
         let checks_section = form_element_ref.querySelector('.checks-container-edit');
         if (!checks_section) return;
 
-        const scroll_position = window.scrollY;
-
         checks_section.innerHTML = '';
-        checks_section.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
+        checks_section.appendChild(Helpers_create_element('h2', { id: 'checks-section-heading', attributes: {tabindex: '-1'}, text_content: t('checks_title') }));
 
-        (local_requirement_data.checks || []).forEach((check, check_index) => {
-            const sane_check_id = Helpers_sanitize_id_for_css_selector(check.id);
-            const check_el = Helpers_create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
-            
-            const delete_check_btn = Helpers_create_element('button', {type: 'button', class_name: 'button button-danger button-small delete-item-btn', attributes: {'data-action': 'delete-check'}, html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_check_button')}</span>`});
-            check_el.appendChild(delete_check_btn);
-            
-            check_el.appendChild(_create_form_group('check_condition_label', `check_${sane_check_id}_condition`, check.condition, true));
-
-            const logic_fieldset = Helpers_create_element('fieldset', { class_name: 'check-logic-group' });
-            logic_fieldset.appendChild(Helpers_create_element('legend', { text_content: t('check_logic_title') }));
-            const logic_and = Helpers_create_element('input', { id: `logic_${sane_check_id}_and`, name: `check_${sane_check_id}_logic`, value: 'AND', attributes: { type: 'radio' } });
-            if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
-            const logic_or = Helpers_create_element('input', { id: `logic_${sane_check_id}_or`, name: `check_${sane_check_id}_logic`, value: 'OR', attributes: { type: 'radio' } });
-            if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
-            
-            logic_fieldset.append(
-                Helpers_create_element('div', { class_name: 'form-check', children: [logic_and, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_and` }, text_content: t('check_logic_and') })] }),
-                Helpers_create_element('div', { class_name: 'form-check', children: [logic_or, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_or` }, text_content: t('check_logic_or') })] })
-            );
-            check_el.appendChild(logic_fieldset);
-            
-            const pc_container = Helpers_create_element('div', { class_name: 'pc-container-edit' });
-            (check.passCriteria || []).forEach((pc, pc_index) => {
-                const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc.id);
-                const pc_el = Helpers_create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
-                const delete_pc_btn = Helpers_create_element('button', {type: 'button', class_name: 'button button-danger button-small delete-item-btn', attributes: {'data-action': 'delete-pass-criterion'}, html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_criterion_button')}</span>`});
-                pc_el.appendChild(delete_pc_btn);
-                pc_el.appendChild(_create_form_group('pass_criterion_label', `pc_${sane_check_id}_${sane_pc_id}_requirement`, pc.requirement, true));
-                pc_el.appendChild(_create_form_group('failure_template_label', `pc_${sane_check_id}_${sane_pc_id}_failureTemplate`, pc.failureStatementTemplate, true));
-                pc_container.appendChild(pc_el);
-
-                if (animate_last_item && check_index === local_requirement_data.checks.length - 1 && pc_index === check.passCriteria.length - 1) {
-                    pc_el.classList.add('new-item-animation');
-                    pc_el.querySelector('textarea')?.focus();
-                    setTimeout(() => pc_el.classList.remove('new-item-animation'), 300);
-                }
-            });
-            
-            const add_pc_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-default', 'button-small'], attributes: { 'data-action': 'add-pass-criterion' }, text_content: t('add_criterion_button') });
-            pc_container.appendChild(add_pc_button);
-            check_el.appendChild(pc_container);
-
-            if (animate_last_item && check_index === local_requirement_data.checks.length - 1 && !check.passCriteria.length) {
-                check_el.classList.add('new-item-animation');
-                check_el.querySelector('textarea')?.focus();
-                setTimeout(() => check_el.classList.remove('new-item-animation'), 300);
-            }
-
+        (local_requirement_data.checks || []).forEach((check) => {
+            const check_el = _create_check_fieldset(check);
             checks_section.appendChild(check_el);
         });
 
         const add_check_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-primary'], attributes: { 'data-action': 'add-check' }, text_content: t('add_check_button') });
         checks_section.appendChild(add_check_button);
+    }
+    
+    function _create_check_fieldset(check) {
+        const t = Translation_t;
+        const sane_check_id = Helpers_sanitize_id_for_css_selector(check.id);
+        const check_el = Helpers_create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
+        
+        const delete_check_btn = Helpers_create_element('button', {
+            type: 'button', 
+            class_name: 'button button-danger button-small delete-item-btn', 
+            attributes: {
+                'data-action': 'delete-check',
+                'aria-label': t('delete_check_aria_label', { conditionText: check.condition || t('aria_label_empty_content') })
+            }, 
+            html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_check_button')}</span>`
+        });
+        check_el.appendChild(delete_check_btn);
+        
+        check_el.appendChild(_create_form_group('check_condition_label', `check_${sane_check_id}_condition`, check.condition, true));
 
-        window.scrollTo(0, scroll_position);
+        const logic_fieldset = Helpers_create_element('fieldset', { class_name: 'check-logic-group' });
+        logic_fieldset.appendChild(Helpers_create_element('legend', { text_content: t('check_logic_title') }));
+        const logic_and = Helpers_create_element('input', { id: `logic_${sane_check_id}_and`, name: `check_${sane_check_id}_logic`, value: 'AND', attributes: { type: 'radio' } });
+        if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
+        const logic_or = Helpers_create_element('input', { id: `logic_${sane_check_id}_or`, name: `check_${sane_check_id}_logic`, value: 'OR', attributes: { type: 'radio' } });
+        if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
+        
+        logic_fieldset.append(
+            Helpers_create_element('div', { class_name: 'form-check', children: [logic_and, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_and` }, text_content: t('check_logic_and') })] }),
+            Helpers_create_element('div', { class_name: 'form-check', children: [logic_or, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_or` }, text_content: t('check_logic_or') })] })
+        );
+        check_el.appendChild(logic_fieldset);
+        
+        const pc_container = Helpers_create_element('div', { class_name: 'pc-container-edit' });
+        (check.passCriteria || []).forEach((pc) => {
+            pc_container.appendChild(_create_pc_item(pc, sane_check_id));
+        });
+        
+        const add_pc_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-default', 'button-small'], attributes: { 'data-action': 'add-pass-criterion' }, text_content: t('add_criterion_button') });
+        pc_container.appendChild(add_pc_button);
+        check_el.appendChild(pc_container);
+
+        return check_el;
+    }
+
+    function _create_pc_item(pc, sane_check_id) {
+        const t = Translation_t;
+        const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc.id);
+        const pc_el = Helpers_create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
+        const delete_pc_btn = Helpers_create_element('button', {
+            type: 'button', 
+            class_name: 'button button-danger button-small delete-item-btn', 
+            attributes: {
+                'data-action': 'delete-pass-criterion',
+                'aria-label': t('delete_criterion_aria_label', { criterionText: pc.requirement || t('aria_label_empty_content') })
+            }, 
+            html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_criterion_button')}</span>`
+        });
+        pc_el.appendChild(delete_pc_btn);
+        pc_el.appendChild(_create_form_group('pass_criterion_label', `pc_${sane_check_id}_${sane_pc_id}_requirement`, pc.requirement, true));
+        pc_el.appendChild(_create_form_group('failure_template_label', `pc_${sane_check_id}_${sane_pc_id}_failureTemplate`, pc.failureStatementTemplate, true));
+        return pc_el;
     }
 
     function render() {
@@ -445,54 +522,34 @@ export const EditRulefileRequirementComponent = (function () {
         
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);
-        form_element_ref.addEventListener('click', _handle_dynamic_changes);
+        form_element_ref.addEventListener('click', handle_form_click);
         
-        form_element_ref.appendChild(_create_action_buttons('top'));
-
-        const basic_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
-        basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_general_info_title') }));
-        basic_info_section.appendChild(_create_form_group('requirement_title', 'title', local_requirement_data.title));
-        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_text', 'standardReferenceText', local_requirement_data.standardReference?.text));
-        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', local_requirement_data.standardReference?.url));
-        form_element_ref.appendChild(basic_info_section);
+        _rerender_all_sections();
         
-        const help_texts_section = Helpers_create_element('div', { class_name: 'audit-section' });
-        help_texts_section.appendChild(Helpers_create_element('h2', { text_content: t('help_texts_title') }));
-        help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', local_requirement_data.expectedObservation, true));
-        help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', local_requirement_data.instructions, true));
-        help_texts_section.appendChild(_create_form_group('requirement_exceptions', 'exceptions', local_requirement_data.exceptions, true));
-        help_texts_section.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', local_requirement_data.commonErrors, true));
-        help_texts_section.appendChild(_create_form_group('requirement_tips', 'tips', local_requirement_data.tips, true));
-        help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', local_requirement_data.examples, true));
-        form_element_ref.appendChild(help_texts_section);
-        
-        const checks_container_wrapper = Helpers_create_element('div', { class_name: 'checks-container-edit' });
-        form_element_ref.appendChild(checks_container_wrapper);
-        _rerender_checks_section();
-
-        const all_content_types = current_state.ruleFileContent.metadata.contentTypes || [];
-        const selected_content_types = local_requirement_data.contentType || [];
-        form_element_ref.appendChild(_create_content_types_section(all_content_types, selected_content_types));
-        
-        form_element_ref.appendChild(_create_classification_section(local_requirement_data.metadata, local_requirement_data.classifications));
-        form_element_ref.appendChild(_create_impact_section(local_requirement_data.metadata));
-        
-        form_element_ref.appendChild(_create_action_buttons('bottom'));
-
         plate_element.appendChild(form_element_ref);
         app_container_ref.appendChild(plate_element);
 
-        form_element_ref.querySelectorAll('input[data-parent-id]').forEach(_update_parent_checkbox_state);
+        setTimeout(() => {
+            const focusSelector = sessionStorage.getItem('focusAfterLoad');
+            if (focusSelector) {
+                sessionStorage.removeItem('focusAfterLoad');
+                const elementToFocus = form_element_ref.querySelector(focusSelector);
+                if (elementToFocus) {
+                    try {
+                        elementToFocus.focus();
+                        window.customFocusApplied = true;
+                    } catch (e) {
+                        console.warn(`Could not focus on element with selector: ${focusSelector}`, e);
+                    }
+                }
+            }
+        }, 100);
     }
 
     function destroy() {
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
-            form_element_ref.removeEventListener('click', _handle_dynamic_changes);
-            const ct_section = form_element_ref.querySelector('.audit-section');
-            if (ct_section) {
-                ct_section.removeEventListener('change', _handle_content_type_change);
-            }
+            form_element_ref.removeEventListener('click', handle_form_click);
         }
         app_container_ref.innerHTML = '';
         form_element_ref = null;

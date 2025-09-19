@@ -157,11 +157,9 @@ export const RulefileRequirementsListComponent = (function () {
 
         const filter_settings = current_global_state.uiSettings?.requirementListFilter;
 
-        // --- START OF CHANGE: Skicka med det uppdaterade state till toolbarens render-funktion ---
         if (toolbar_component_instance) {
              toolbar_component_instance.render(filter_settings);
         }
-        // --- END OF CHANGE ---
 
         const search_term = (filter_settings.searchText || '').toLowerCase();
         
@@ -250,11 +248,17 @@ export const RulefileRequirementsListComponent = (function () {
     }
 
     function destroy() {
+        // --- KORRIGERING HÄR ---
+        // Se till att eventlyssnaren tas bort korrekt.
         if (content_div_for_delegation) {
             content_div_for_delegation.removeEventListener('click', handle_list_click);
+            content_div_for_delegation = null;
         }
+        // --- SLUT PÅ KORRIGERING ---
+
         if (toolbar_component_instance) {
             toolbar_component_instance.destroy();
+            toolbar_component_instance = null;
         }
         is_dom_initialized = false;
         plate_element_ref = null;

@@ -7,6 +7,7 @@ export const ViewRulefileRequirementComponent = (function () {
     let app_container_ref;
     let router_ref;
     let params_ref;
+    let plate_element_ref = null;
 
     let local_getState;
     let Translation_t;
@@ -41,16 +42,13 @@ export const ViewRulefileRequirementComponent = (function () {
         const renderer = new marked.Renderer();
         renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
         
-        // --- START OF CORRECTION ---
         renderer.html = (html_token) => {
-            // Smartare hantering: escapa bara den råa texten, inte hela objektet
             const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                 ? html_token.text
                 : String(html_token || '');
             
             return window.Helpers.escape_html(text_to_escape);
         };
-        // --- END OF CORRECTION ---
 
         const options = { renderer, breaks: true, gfm: true };
         
@@ -73,7 +71,7 @@ export const ViewRulefileRequirementComponent = (function () {
         
         const content_element = Helpers_create_element('div', { 
             class_name: ['audit-section-content', 'markdown-content'],
-            html_content: _safe_parse_markdown(processed_content) // Use the new helper
+            html_content: _safe_parse_markdown(processed_content)
         });
         
         section_div.appendChild(content_element);
@@ -83,19 +81,20 @@ export const ViewRulefileRequirementComponent = (function () {
     function render() {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
-        const plate_element = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
+        plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
         
         const requirement_id = params_ref?.id;
         const current_state = local_getState();
         const requirement = current_state?.ruleFileContent?.requirements[requirement_id];
 
         if (!requirement) {
-            plate_element.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
-            plate_element.appendChild(Helpers_create_element('p', { text_content: t('error_loading_sample_or_requirement_data') }));
-            app_container_ref.appendChild(plate_element);
+            plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
+            plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('error_loading_sample_or_requirement_data') }));
+            app_container_ref.appendChild(plate_element_ref);
             return;
         }
 
+        // Header
         const header_div = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
         const title_wrapper = Helpers_create_element('div', { class_name: 'requirement-audit-header-title-wrapper' });
         const h1_element = Helpers_create_element('h1', { text_content: requirement.title, id: 'view-requirement-h1', attributes: { tabindex: '-1' } });
@@ -112,22 +111,9 @@ export const ViewRulefileRequirementComponent = (function () {
         title_wrapper.appendChild(edit_button);
 
         header_div.appendChild(title_wrapper);
+        plate_element_ref.appendChild(header_div);
 
-        if (requirement.standardReference) {
-            const p = Helpers_create_element('p', { class_name: 'standard-reference' });
-            p.appendChild(Helpers_create_element('strong', { text_content: `${t('requirement_standard_reference_label')} ` }));
-            if (requirement.standardReference.url) {
-                p.appendChild(Helpers_create_element('a', {
-                    text_content: requirement.standardReference.text,
-                    attributes: { href: Helpers_add_protocol_if_missing(requirement.standardReference.url), target: '_blank' }
-                }));
-            } else {
-                p.appendChild(document.createTextNode(requirement.standardReference.text));
-            }
-            header_div.appendChild(p);
-        }
-        plate_element.appendChild(header_div);
-
+        // Top Navigation
         const top_nav_bar = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         const back_button_top = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
@@ -135,52 +121,132 @@ export const ViewRulefileRequirementComponent = (function () {
         });
         back_button_top.addEventListener('click', () => router_ref('rulefile_requirements'));
         top_nav_bar.appendChild(back_button_top);
-        plate_element.appendChild(top_nav_bar);
+        plate_element_ref.appendChild(top_nav_bar);
 
-        const sections = [
+        // General Info (Reference)
+        if (requirement.standardReference && requirement.standardReference.text) {
+             const general_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
+             const p = Helpers_create_element('p', { class_name: 'standard-reference' });
+             p.appendChild(Helpers_create_element('strong', { text_content: `${t('requirement_standard_reference_label')} ` }));
+             if (requirement.standardReference.url) {
+                 p.appendChild(Helpers_create_element('a', {
+                     text_content: requirement.standardReference.text,
+                     attributes: { href: Helpers_add_protocol_if_missing(requirement.standardReference.url), target: '_blank' }
+                 }));
+             } else {
+                 p.appendChild(document.createTextNode(requirement.standardReference.text));
+             }
+             general_info_section.appendChild(p);
+             plate_element_ref.appendChild(general_info_section);
+        }
+
+        // Help Texts
+        const help_text_sections = [
             _render_markdown_section('requirement_expected_observation', requirement.expectedObservation),
             _render_markdown_section('requirement_instructions', requirement.instructions),
             _render_markdown_section('requirement_exceptions', requirement.exceptions),
             _render_markdown_section('requirement_common_errors', requirement.commonErrors),
-            _render_markdown_section('requirement_tips', requirement.tips)
+            _render_markdown_section('requirement_tips', requirement.tips),
+            _render_markdown_section('requirement_examples', requirement.examples)
         ];
-        sections.filter(Boolean).forEach(sec => plate_element.appendChild(sec));
+        help_text_sections.filter(Boolean).forEach(sec => plate_element_ref.appendChild(sec));
         
+        // Checkpoints
         const checks_container = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
         checks_container.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
-
         (requirement.checks || []).forEach(check => {
-            const check_wrapper = Helpers_create_element('div', {
-                class_name: 'check-item status-not_audited',
-                style: 'border-left-width: 3px;'
-            });
-
-            // --- START OF CHANGE: Apply Markdown parsing to checkpoint texts ---
-            const condition_h3 = Helpers_create_element('h3', { 
-                class_name: 'check-condition-title', 
-                html_content: _safe_parse_markdown(check.condition, true) 
-            });
+            const check_wrapper = Helpers_create_element('div', { class_name: 'check-item status-not_audited', style: 'border-left-width: 3px;' });
+            const condition_h3 = Helpers_create_element('h3', { class_name: 'check-condition-title', html_content: _safe_parse_markdown(check.condition, true) });
             check_wrapper.appendChild(condition_h3);
-            
+            const logicText = check.logic ? check.logic.toUpperCase() : 'AND';
+            check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'text-muted', html_content: `<strong>${t('check_logic_display')}</strong> ${logicText}`}));
             if (check.passCriteria && check.passCriteria.length > 0) {
                 const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                 check.passCriteria.forEach(pc => {
                     const pc_item = Helpers_create_element('li', { class_name: 'pass-criterion-item' });
-                    const requirement_div = Helpers_create_element('div', { 
-                        class_name: 'pass-criterion-requirement', 
-                        html_content: _safe_parse_markdown(pc.requirement, true) 
-                    });
-                    pc_item.appendChild(requirement_div);
+                    pc_item.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-requirement', html_content: _safe_parse_markdown(pc.requirement, true) }));
+                    if(pc.failureStatementTemplate) {
+                        const template_div = Helpers_create_element('div', { class_name: 'failure-template-display' });
+                        template_div.innerHTML = `<strong>${t('failure_statement_template_display')}</strong>`;
+                        template_div.appendChild(Helpers_create_element('p', { text_content: pc.failureStatementTemplate }));
+                        pc_item.appendChild(template_div);
+                    }
                     pc_list.appendChild(pc_item);
                 });
                 check_wrapper.appendChild(pc_list);
             }
-            // --- END OF CHANGE ---
-
             checks_container.appendChild(check_wrapper);
         });
-        plate_element.appendChild(checks_container);
+        plate_element_ref.appendChild(checks_container);
         
+        // Classification
+        const classification_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        classification_section.appendChild(Helpers_create_element('h2', { text_content: t('classification_title') }));
+        const classification_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
+        if (requirement.metadata?.mainCategory?.text) {
+            classification_ul.appendChild(Helpers_create_element('li', { html_content: `<strong>${t('main_category_text')}:</strong> ${requirement.metadata.mainCategory.text}` }));
+        }
+        if (requirement.metadata?.subCategory?.text) {
+            classification_ul.appendChild(Helpers_create_element('li', { html_content: `<strong>${t('sub_category_text')}:</strong> ${requirement.metadata.subCategory.text}` }));
+        }
+        if (classification_ul.hasChildNodes()) {
+            classification_section.appendChild(classification_ul);
+            plate_element_ref.appendChild(classification_section);
+        }
+        
+        // --- START OF CHANGE: Separate WCAG Principles section ---
+        const pour_taxonomy = current_state.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
+        if (pour_taxonomy && requirement.classifications?.length > 0) {
+            const concepts = requirement.classifications
+                .filter(c => c.taxonomyId === 'wcag22-pour')
+                .map(c => pour_taxonomy.concepts.find(p => p.id === c.conceptId)?.label)
+                .filter(Boolean);
+
+            if (concepts.length > 0) {
+                const pour_section = Helpers_create_element('div', { class_name: 'audit-section' });
+                pour_section.appendChild(Helpers_create_element('h2', { text_content: t('wcag_principles_title') }));
+                const pour_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
+                concepts.forEach(conceptName => {
+                    pour_ul.appendChild(Helpers_create_element('li', { text_content: conceptName }));
+                });
+                pour_section.appendChild(pour_ul);
+                plate_element_ref.appendChild(pour_section);
+            }
+        }
+        // --- END OF CHANGE ---
+        
+        // Impact
+        const impact_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        impact_section.appendChild(Helpers_create_element('h2', { text_content: t('impact_title') }));
+        const impact_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
+        if (requirement.metadata?.impact) {
+            const impact = requirement.metadata.impact;
+            impact_ul.appendChild(Helpers_create_element('li', { html_content: `<strong>${t('is_critical')}:</strong> ${impact.isCritical ? t('yes') : t('no')}` }));
+            impact_ul.appendChild(Helpers_create_element('li', { html_content: `<strong>${t('primary_score')}:</strong> ${impact.primaryScore || 0}` }));
+            impact_ul.appendChild(Helpers_create_element('li', { html_content: `<strong>${t('secondary_score')}:</strong> ${impact.secondaryScore || 0}` }));
+        }
+         if (impact_ul.hasChildNodes()) {
+            impact_section.appendChild(impact_ul);
+            plate_element_ref.appendChild(impact_section);
+        }
+
+        // Associated Content Types
+        if (requirement.contentType?.length > 0) {
+            const content_types_section = Helpers_create_element('div', { class_name: 'audit-section' });
+            content_types_section.appendChild(Helpers_create_element('h2', { text_content: t('content_types_associated') }));
+            const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
+            const content_types_map = new Map();
+            (current_state.ruleFileContent.metadata.contentTypes || []).forEach(parent => {
+                (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
+            });
+            requirement.contentType.forEach(ct_id => {
+                content_types_ul.appendChild(Helpers_create_element('li', { text_content: content_types_map.get(ct_id) || ct_id }));
+            });
+            content_types_section.appendChild(content_types_ul);
+            plate_element_ref.appendChild(content_types_section);
+        }
+
+        // Bottom Navigation
         const bottom_nav_bar = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
         const back_button_bottom = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
@@ -188,14 +254,15 @@ export const ViewRulefileRequirementComponent = (function () {
         });
         back_button_bottom.addEventListener('click', () => router_ref('rulefile_requirements'));
         bottom_nav_bar.appendChild(back_button_bottom);
-        plate_element.appendChild(bottom_nav_bar);
+        plate_element_ref.appendChild(bottom_nav_bar);
 
-        app_container_ref.appendChild(plate_element);
+        app_container_ref.appendChild(plate_element_ref);
         setTimeout(() => h1_element.focus(), 0);
     }
 
     function destroy() {
         app_container_ref.innerHTML = '';
+        plate_element_ref = null;
     }
 
     return { init, render, destroy };
