@@ -13,10 +13,11 @@ export const EditRulefileRequirementComponent = (function () {
     let local_dispatch;
     let local_StoreActionTypes;
     let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_load_css;
+    let Helpers_create_element, Helpers_get_icon_svg, Helpers_load_css, Helpers_generate_uuid_v4, Helpers_sanitize_id_for_css_selector;
     let NotificationComponent_show_global_message;
     
     let form_element_ref;
+    let local_requirement_data = null;
 
     function assign_globals_once() {
         if (Translation_t) return;
@@ -24,6 +25,8 @@ export const EditRulefileRequirementComponent = (function () {
         Helpers_create_element = window.Helpers.create_element;
         Helpers_get_icon_svg = window.Helpers.get_icon_svg;
         Helpers_load_css = window.Helpers.load_css;
+        Helpers_generate_uuid_v4 = window.Helpers.generate_uuid_v4;
+        Helpers_sanitize_id_for_css_selector = window.Helpers.sanitize_id_for_css_selector;
         NotificationComponent_show_global_message = window.NotificationComponent.show_global_message;
     }
 
@@ -40,111 +43,146 @@ export const EditRulefileRequirementComponent = (function () {
         await Helpers_load_css(CSS_PATH_SPECIFIC).catch(e => console.warn(e));
     }
 
-    function handle_form_submit(event) {
-        event.preventDefault();
-        const t = Translation_t;
-        const requirement_id = params_ref?.id;
-        const current_state = local_getState();
-        const original_requirement = current_state?.ruleFileContent?.requirements[requirement_id];
+    function _gather_and_update_local_data() {
+        if (!form_element_ref) return;
         
-        if (!original_requirement) {
-            NotificationComponent_show_global_message(t('error_internal'), 'error');
-            return;
+        local_requirement_data.title = form_element_ref.querySelector('#title')?.value || '';
+        local_requirement_data.expectedObservation = form_element_ref.querySelector('#expectedObservation')?.value || '';
+        local_requirement_data.instructions = form_element_ref.querySelector('#instructions')?.value || '';
+        local_requirement_data.exceptions = form_element_ref.querySelector('#exceptions')?.value || '';
+        local_requirement_data.commonErrors = form_element_ref.querySelector('#commonErrors')?.value || '';
+        local_requirement_data.tips = form_element_ref.querySelector('#tips')?.value || '';
+        local_requirement_data.examples = form_element_ref.querySelector('#examples')?.value || '';
+        
+        if (local_requirement_data.standardReference) {
+            local_requirement_data.standardReference.text = form_element_ref.querySelector('#standardReferenceText')?.value || '';
+            local_requirement_data.standardReference.url = form_element_ref.querySelector('#standardReferenceUrl')?.value || '';
+        }
+        if (local_requirement_data.metadata) {
+            local_requirement_data.metadata.mainCategory.text = form_element_ref.querySelector('#mainCategoryText')?.value || '';
+            local_requirement_data.metadata.subCategory.text = form_element_ref.querySelector('#subCategoryText')?.value || '';
+            local_requirement_data.metadata.impact.isCritical = form_element_ref.querySelector('#isCritical')?.checked || false;
+            local_requirement_data.metadata.impact.primaryScore = parseInt(form_element_ref.querySelector('#primaryScore')?.value, 10) || 0;
+            local_requirement_data.metadata.impact.secondaryScore = parseInt(form_element_ref.querySelector('#secondaryScore')?.value, 10) || 0;
         }
 
-        const form_data = new FormData(form_element_ref);
-        
-        const title_value = (form_data.get('title') || '').trim();
-        if (!title_value) {
-            NotificationComponent_show_global_message(t('field_is_required', { fieldName: t('requirement_title') }), 'error');
-            const title_input = form_element_ref.querySelector('#title');
-            if (title_input) {
-                title_input.focus();
-                title_input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-            return;
-        }
-
-        const updated_requirement = JSON.parse(JSON.stringify(original_requirement));
-
-        updated_requirement.title = title_value;
-        updated_requirement.expectedObservation = form_data.get('expectedObservation') || '';
-        updated_requirement.instructions = form_data.get('instructions') || '';
-        updated_requirement.exceptions = form_data.get('exceptions') || '';
-        updated_requirement.commonErrors = form_data.get('commonErrors') || '';
-        updated_requirement.tips = form_data.get('tips') || '';
-        updated_requirement.examples = form_data.get('examples') || '';
-        
-        if (updated_requirement.standardReference) {
-            updated_requirement.standardReference.text = form_data.get('standardReferenceText') || '';
-            updated_requirement.standardReference.url = form_data.get('standardReferenceUrl') || '';
-        }
-
-        updated_requirement.metadata = updated_requirement.metadata || {};
-        updated_requirement.metadata.mainCategory = { text: form_data.get('mainCategoryText') || '' };
-        updated_requirement.metadata.subCategory = { text: form_data.get('subCategoryText') || '' };
-        updated_requirement.metadata.impact = {
-            isCritical: form_data.get('isCritical') === 'on',
-            primaryScore: parseInt(form_data.get('primaryScore'), 10) || 0,
-            secondaryScore: parseInt(form_data.get('secondaryScore'), 10) || 0
-        };
-
-        updated_requirement.contentType = Array.from(form_element_ref.querySelectorAll('input[name="contentType"]:checked')).map(cb => cb.value);
-        
-        updated_requirement.classifications = Array.from(form_element_ref.querySelectorAll('input[name="classification"]:checked')).map(cb => ({
+        local_requirement_data.contentType = Array.from(form_element_ref.querySelectorAll('input[name="contentType"]:checked')).map(cb => cb.value);
+        local_requirement_data.classifications = Array.from(form_element_ref.querySelectorAll('input[name="classification"]:checked')).map(cb => ({
             taxonomyId: 'wcag22-pour',
             conceptId: cb.value
         }));
 
-        updated_requirement.checks = Array.from(form_element_ref.querySelectorAll('.check-item-edit')).map(check_el => {
-            const check_id = check_el.dataset.checkId;
-            return {
-                id: check_id,
-                condition: check_el.querySelector(`[name="check_${check_id}_condition"]`).value || '',
-                logic: form_data.get(`check_${check_id}_logic`) || 'AND',
-                passCriteria: Array.from(check_el.querySelectorAll('.pc-item-edit')).map(pc_el => {
-                    const pc_id = pc_el.dataset.pcId;
-                    return {
-                        id: pc_id,
-                        requirement: pc_el.querySelector(`[name="pc_${check_id}_${pc_id}_requirement"]`).value || '',
-                        failureStatementTemplate: pc_el.querySelector(`[name="pc_${check_id}_${pc_id}_failureTemplate"]`).value || ''
-                    };
-                })
-            };
+        local_requirement_data.checks.forEach(check => {
+            const sane_check_id = Helpers_sanitize_id_for_css_selector(check.id);
+            check.condition = form_element_ref.querySelector(`#check_${sane_check_id}_condition`)?.value || '';
+            const logic_radio = form_element_ref.querySelector(`input[name="check_${sane_check_id}_logic"]:checked`);
+            check.logic = logic_radio ? logic_radio.value : 'AND';
+            check.passCriteria.forEach(pc => {
+                const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc.id);
+                pc.requirement = form_element_ref.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_requirement`)?.value || '';
+                pc.failureStatementTemplate = form_element_ref.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_failureTemplate`)?.value || '';
+            });
         });
+    }
+
+    function handle_form_submit(event) {
+        event.preventDefault();
+        _gather_and_update_local_data();
+
+        const t = Translation_t;
+        if (!local_requirement_data.title.trim()) {
+            NotificationComponent_show_global_message(t('field_is_required', { fieldName: t('requirement_title') }), 'error');
+            form_element_ref.querySelector('#title')?.focus();
+            return;
+        }
         
         local_dispatch({
             type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
             payload: {
-                requirementId: requirement_id,
-                updatedRequirementData: updated_requirement
+                requirementId: params_ref.id,
+                updatedRequirementData: local_requirement_data
             }
         });
         
         NotificationComponent_show_global_message(t('rulefile_requirement_saved'), 'success');
-        router_ref('rulefile_view_requirement', { id: requirement_id });
+        router_ref('rulefile_view_requirement', { id: params_ref.id });
+    }
+    
+    function _handle_dynamic_changes(event) {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+
+        _gather_and_update_local_data();
+
+        const action = button.dataset.action;
+        let check_id, pc_id;
+
+        switch (action) {
+            case 'add-check':
+                local_requirement_data.checks.push({
+                    id: `new-check-${Helpers_generate_uuid_v4()}`,
+                    condition: '',
+                    logic: 'AND',
+                    passCriteria: []
+                });
+                _rerender_checks_section(true);
+                break;
+
+            case 'delete-check':
+                check_id = button.closest('.check-item-edit')?.dataset.checkId;
+                if (check_id) {
+                    // Spara nuvarande data innan vi navigerar iväg
+                    local_dispatch({
+                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
+                    });
+                    // --- KORRIGERING HÄR ---
+                    router_ref('confirm_delete_check', { reqId: params_ref.id, checkId: check_id });
+                }
+                break;
+
+            case 'add-pass-criterion':
+                check_id = button.closest('.check-item-edit')?.dataset.checkId;
+                const check = local_requirement_data.checks.find(c => c.id === check_id);
+                if (check) {
+                    check.passCriteria.push({
+                        id: `new-pc-${Helpers_generate_uuid_v4()}`,
+                        requirement: '',
+                        failureStatementTemplate: ''
+                    });
+                    _rerender_checks_section(true);
+                }
+                break;
+
+            case 'delete-pass-criterion':
+                const pc_item = button.closest('.pc-item-edit');
+                check_id = button.closest('.check-item-edit')?.dataset.checkId;
+                pc_id = pc_item?.dataset.pcId;
+                if (check_id && pc_id) {
+                    // Spara nuvarande data innan vi navigerar iväg
+                    local_dispatch({
+                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
+                    });
+                    // --- KORRIGERING HÄR ---
+                    router_ref('confirm_delete_criterion', { reqId: params_ref.id, checkId: check_id, pcId: pc_id });
+                }
+                break;
+        }
     }
 
-    function _create_form_group(label_key, name, value, is_textarea = false, input_type = 'text') {
+    function _create_form_group(label_key, id, value, is_textarea = false, input_type = 'text') {
         const t = Translation_t;
         const form_group = Helpers_create_element('div', { class_name: 'form-group' });
-        form_group.appendChild(Helpers_create_element('label', { attributes: { for: name }, text_content: t(label_key) }));
+        form_group.appendChild(Helpers_create_element('label', { attributes: { for: id }, text_content: t(label_key) }));
         
         let input;
         if (is_textarea) {
-            input = Helpers_create_element('textarea', { 
-                id: name, 
-                class_name: 'form-control', 
-                attributes: { name: name, rows: 4 } 
-            });
+            input = Helpers_create_element('textarea', { id: id, name: id, class_name: 'form-control', attributes: { rows: 4 } });
             input.value = Array.isArray(value) ? value.join('\n') : (value || '');
             window.Helpers.init_auto_resize_for_textarea(input);
         } else {
-            input = Helpers_create_element('input', { 
-                id: name, 
-                class_name: 'form-control', 
-                attributes: { name: name, type: input_type }
-            });
+            input = Helpers_create_element('input', { id: id, name: id, class_name: 'form-control', attributes: { type: input_type }});
             input.value = value || ''; 
         }
         form_group.appendChild(input);
@@ -190,10 +228,9 @@ export const EditRulefileRequirementComponent = (function () {
         const current_state = local_getState();
         const pour_taxonomy = current_state.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
         if (pour_taxonomy && pour_taxonomy.concepts) {
+            const fieldset = Helpers_create_element('div', { class_name: 'classification-group' });
             const legend_text = pour_taxonomy.label || t('wcag_principles_title');
             section_wrapper.appendChild(Helpers_create_element('h2', { text_content: legend_text }));
-
-        const fieldset = Helpers_create_element('div', { class_name: 'classification-group' }); 
 
             const selected_concepts = new Set((classifications || []).map(c => c.conceptId));
             
@@ -318,6 +355,74 @@ export const EditRulefileRequirementComponent = (function () {
         });
         return section_wrapper;
     }
+    
+    function _rerender_checks_section(animate_last_item = false) {
+        const t = Translation_t;
+        let checks_section = form_element_ref.querySelector('.checks-container-edit');
+        if (!checks_section) return;
+
+        const scroll_position = window.scrollY;
+
+        checks_section.innerHTML = '';
+        checks_section.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
+
+        (local_requirement_data.checks || []).forEach((check, check_index) => {
+            const sane_check_id = Helpers_sanitize_id_for_css_selector(check.id);
+            const check_el = Helpers_create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
+            
+            const delete_check_btn = Helpers_create_element('button', {type: 'button', class_name: 'button button-danger button-small delete-item-btn', attributes: {'data-action': 'delete-check'}, html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_check_button')}</span>`});
+            check_el.appendChild(delete_check_btn);
+            
+            check_el.appendChild(_create_form_group('check_condition_label', `check_${sane_check_id}_condition`, check.condition, true));
+
+            const logic_fieldset = Helpers_create_element('fieldset', { class_name: 'check-logic-group' });
+            logic_fieldset.appendChild(Helpers_create_element('legend', { text_content: t('check_logic_title') }));
+            const logic_and = Helpers_create_element('input', { id: `logic_${sane_check_id}_and`, name: `check_${sane_check_id}_logic`, value: 'AND', attributes: { type: 'radio' } });
+            if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
+            const logic_or = Helpers_create_element('input', { id: `logic_${sane_check_id}_or`, name: `check_${sane_check_id}_logic`, value: 'OR', attributes: { type: 'radio' } });
+            if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
+            
+            logic_fieldset.append(
+                Helpers_create_element('div', { class_name: 'form-check', children: [logic_and, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_and` }, text_content: t('check_logic_and') })] }),
+                Helpers_create_element('div', { class_name: 'form-check', children: [logic_or, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_or` }, text_content: t('check_logic_or') })] })
+            );
+            check_el.appendChild(logic_fieldset);
+            
+            const pc_container = Helpers_create_element('div', { class_name: 'pc-container-edit' });
+            (check.passCriteria || []).forEach((pc, pc_index) => {
+                const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc.id);
+                const pc_el = Helpers_create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
+                const delete_pc_btn = Helpers_create_element('button', {type: 'button', class_name: 'button button-danger button-small delete-item-btn', attributes: {'data-action': 'delete-pass-criterion'}, html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_criterion_button')}</span>`});
+                pc_el.appendChild(delete_pc_btn);
+                pc_el.appendChild(_create_form_group('pass_criterion_label', `pc_${sane_check_id}_${sane_pc_id}_requirement`, pc.requirement, true));
+                pc_el.appendChild(_create_form_group('failure_template_label', `pc_${sane_check_id}_${sane_pc_id}_failureTemplate`, pc.failureStatementTemplate, true));
+                pc_container.appendChild(pc_el);
+
+                if (animate_last_item && check_index === local_requirement_data.checks.length - 1 && pc_index === check.passCriteria.length - 1) {
+                    pc_el.classList.add('new-item-animation');
+                    pc_el.querySelector('textarea')?.focus();
+                    setTimeout(() => pc_el.classList.remove('new-item-animation'), 300);
+                }
+            });
+            
+            const add_pc_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-default', 'button-small'], attributes: { 'data-action': 'add-pass-criterion' }, text_content: t('add_criterion_button') });
+            pc_container.appendChild(add_pc_button);
+            check_el.appendChild(pc_container);
+
+            if (animate_last_item && check_index === local_requirement_data.checks.length - 1 && !check.passCriteria.length) {
+                check_el.classList.add('new-item-animation');
+                check_el.querySelector('textarea')?.focus();
+                setTimeout(() => check_el.classList.remove('new-item-animation'), 300);
+            }
+
+            checks_section.appendChild(check_el);
+        });
+
+        const add_check_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-primary'], attributes: { 'data-action': 'add-check' }, text_content: t('add_check_button') });
+        checks_section.appendChild(add_check_button);
+
+        window.scrollTo(0, scroll_position);
+    }
 
     function render() {
         const t = Translation_t;
@@ -326,78 +431,51 @@ export const EditRulefileRequirementComponent = (function () {
         
         const requirement_id = params_ref?.id;
         const current_state = local_getState();
-        const requirement = current_state?.ruleFileContent?.requirements[requirement_id];
+        const requirement_from_store = current_state?.ruleFileContent?.requirements[requirement_id];
 
-        if (!requirement) {
+        if (!requirement_from_store) {
             plate_element.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
             app_container_ref.appendChild(plate_element);
             return;
         }
 
-        plate_element.appendChild(Helpers_create_element('h1', { text_content: `${t('rulefile_edit_requirement_title')}: ${requirement.title}` }));
+        local_requirement_data = JSON.parse(JSON.stringify(requirement_from_store));
+
+        plate_element.appendChild(Helpers_create_element('h1', { text_content: `${t('rulefile_edit_requirement_title')}: ${local_requirement_data.title}` }));
         
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);
+        form_element_ref.addEventListener('click', _handle_dynamic_changes);
         
         form_element_ref.appendChild(_create_action_buttons('top'));
 
         const basic_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
         basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_general_info_title') }));
-        basic_info_section.appendChild(_create_form_group('requirement_title', 'title', requirement.title));
-        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_text', 'standardReferenceText', requirement.standardReference?.text));
-        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', requirement.standardReference?.url));
+        basic_info_section.appendChild(_create_form_group('requirement_title', 'title', local_requirement_data.title));
+        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_text', 'standardReferenceText', local_requirement_data.standardReference?.text));
+        basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', local_requirement_data.standardReference?.url));
         form_element_ref.appendChild(basic_info_section);
         
         const help_texts_section = Helpers_create_element('div', { class_name: 'audit-section' });
         help_texts_section.appendChild(Helpers_create_element('h2', { text_content: t('help_texts_title') }));
-        help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', requirement.expectedObservation, true));
-        help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', requirement.instructions, true));
-        help_texts_section.appendChild(_create_form_group('requirement_exceptions', 'exceptions', requirement.exceptions, true));
-        help_texts_section.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', requirement.commonErrors, true));
-        help_texts_section.appendChild(_create_form_group('requirement_tips', 'tips', requirement.tips, true));
-        help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', requirement.examples, true));
+        help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', local_requirement_data.expectedObservation, true));
+        help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', local_requirement_data.instructions, true));
+        help_texts_section.appendChild(_create_form_group('requirement_exceptions', 'exceptions', local_requirement_data.exceptions, true));
+        help_texts_section.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', local_requirement_data.commonErrors, true));
+        help_texts_section.appendChild(_create_form_group('requirement_tips', 'tips', local_requirement_data.tips, true));
+        help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', local_requirement_data.examples, true));
         form_element_ref.appendChild(help_texts_section);
-
-        const checks_section = Helpers_create_element('div', { class_name: 'audit-section checks-container-edit' });
-        checks_section.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
-        (requirement.checks || []).forEach(check => {
-            const check_el = Helpers_create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
-            check_el.appendChild(_create_form_group('check_condition_label', `check_${check.id}_condition`, check.condition, true));
-
-            const logic_fieldset = Helpers_create_element('fieldset', { class_name: 'check-logic-group' });
-            logic_fieldset.appendChild(Helpers_create_element('legend', { text_content: t('check_logic_title') }));
-            const logic_and = Helpers_create_element('input', { id: `logic_${check.id}_and`, name: `check_${check.id}_logic`, value: 'AND', attributes: { type: 'radio' } });
-            if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
-            const logic_or = Helpers_create_element('input', { id: `logic_${check.id}_or`, name: `check_${check.id}_logic`, value: 'OR', attributes: { type: 'radio' } });
-            if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
-            
-            logic_fieldset.append(
-                Helpers_create_element('div', { class_name: 'form-check', children: [logic_and, Helpers_create_element('label', { attributes: { for: `logic_${check.id}_and` }, text_content: t('check_logic_and') })] }),
-                Helpers_create_element('div', { class_name: 'form-check', children: [logic_or, Helpers_create_element('label', { attributes: { for: `logic_${check.id}_or` }, text_content: t('check_logic_or') })] })
-            );
-            check_el.appendChild(logic_fieldset);
-
-            const pc_container = Helpers_create_element('div', { class_name: 'pc-container-edit' });
-            (check.passCriteria || []).forEach(pc => {
-                const pc_el = Helpers_create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
-                pc_el.appendChild(_create_form_group('pass_criterion_label', `pc_${check.id}_${pc.id}_requirement`, pc.requirement, true));
-                
-                // --- DENNA RAD ÅTERINFÖRS NU KORREKT ---
-                pc_el.appendChild(_create_form_group('failure_template_label', `pc_${check.id}_${pc.id}_failureTemplate`, pc.failureStatementTemplate, true));
-                
-                pc_container.appendChild(pc_el);
-            });
-            check_el.appendChild(pc_container);
-            checks_section.appendChild(check_el);
-        });
-        form_element_ref.appendChild(checks_section);
         
+        const checks_container_wrapper = Helpers_create_element('div', { class_name: 'checks-container-edit' });
+        form_element_ref.appendChild(checks_container_wrapper);
+        _rerender_checks_section();
+
         const all_content_types = current_state.ruleFileContent.metadata.contentTypes || [];
-        const selected_content_types = requirement.contentType || [];
+        const selected_content_types = local_requirement_data.contentType || [];
         form_element_ref.appendChild(_create_content_types_section(all_content_types, selected_content_types));
         
-        form_element_ref.appendChild(_create_classification_section(requirement.metadata, requirement.classifications));
-        form_element_ref.appendChild(_create_impact_section(requirement.metadata));
+        form_element_ref.appendChild(_create_classification_section(local_requirement_data.metadata, local_requirement_data.classifications));
+        form_element_ref.appendChild(_create_impact_section(local_requirement_data.metadata));
         
         form_element_ref.appendChild(_create_action_buttons('bottom'));
 
@@ -410,6 +488,7 @@ export const EditRulefileRequirementComponent = (function () {
     function destroy() {
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
+            form_element_ref.removeEventListener('click', _handle_dynamic_changes);
             const ct_section = form_element_ref.querySelector('.audit-section');
             if (ct_section) {
                 ct_section.removeEventListener('change', _handle_content_type_change);
@@ -417,6 +496,7 @@ export const EditRulefileRequirementComponent = (function () {
         }
         app_container_ref.innerHTML = '';
         form_element_ref = null;
+        local_requirement_data = null;
     }
 
     return { init, render, destroy };

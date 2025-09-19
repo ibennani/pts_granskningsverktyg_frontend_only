@@ -531,5 +531,13 @@
   "failure_template_label": "Mall för avvikelsetext (valfri)",
   "help_texts_title": "Informationstexter",
   "requirement_examples": "Exempel",
-  "wcag_principles_title": "WCAG Principer"
+  "wcag_principles_title": "WCAG Principer",
+  "add_check_button": "Lägg till kontrollpunkt",
+  "add_criterion_button": "Lägg till kriterium",
+  "confirm_delete_check_intro": "Du är på väg att radera kontrollpunkten:",
+  "confirm_delete_check_title": "Bekräfta radering av kontrollpunkt",
+  "confirm_delete_criterion_intro": "Du är på väg att radera godkännandekriteriet:",
+  "confirm_delete_criterion_title": "Bekräfta radering av kriterium",
+  "delete_check_button": "Radera kontrollpunkt",
+  "delete_criterion_button": "Radera kriterium"
 }

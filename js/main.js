@@ -12,12 +12,14 @@ import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComp
 import { RestoreSessionViewComponent } from './components/RestoreSessionViewComponent.js'; 
 import { ConfirmUpdatesViewComponent } from './components/ConfirmUpdatesViewComponent.js';
 import { FinalConfirmUpdatesViewComponent } from './components/FinalConfirmUpdatesViewComponent.js';
-// --- START OF CHANGE: Import new components for rulefile editing ---
 import { EditRulefileMainViewComponent } from './components/EditRulefileMainViewComponent.js';
 import { RulefileRequirementsListComponent } from './components/RulefileRequirementsListComponent.js';
 import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequirementComponent.js';
 import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
 import { ConfirmDeleteRequirementViewComponent } from './components/ConfirmDeleteRequirementViewComponent.js';
+// --- START OF CHANGE: Import new confirm views ---
+import { ConfirmDeleteCheckViewComponent } from './components/ConfirmDeleteCheckViewComponent.js';
+import { ConfirmDeleteCriterionViewComponent } from './components/ConfirmDeleteCriterionViewComponent.js';
 // --- END OF CHANGE ---
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
@@ -94,12 +96,11 @@ window.StoreActionTypes = StoreActionTypes;
                     title_prefix = t('restore_session_title');
                     break;
                 case 'confirm_updates':
-                    title_prefix = t('handle_updated_assessments_title', {count: ''}).trim(); // count is dynamic in view
+                    title_prefix = t('handle_updated_assessments_title', {count: ''}).trim();
                     break;
                 case 'final_confirm_updates':
                     title_prefix = t('final_confirm_updates_title');
                     break;
-                // --- START OF CHANGE: Add/update titles ---
                 case 'edit_rulefile_main':
                     title_prefix = t('edit_rulefile_title');
                     break;
@@ -114,6 +115,13 @@ window.StoreActionTypes = StoreActionTypes;
                     break;
                 case 'rulefile_confirm_delete_requirement':
                     title_prefix = t('rulefile_confirm_delete_title');
+                    break;
+                // --- START OF CHANGE: Add titles for new confirm views ---
+                case 'confirm_delete_check':
+                    title_prefix = t('confirm_delete_check_title');
+                    break;
+                case 'confirm_delete_criterion':
+                    title_prefix = t('confirm_delete_criterion_title');
                     break;
                 // --- END OF CHANGE ---
                 case 'requirement_audit':
@@ -253,12 +261,14 @@ window.StoreActionTypes = StoreActionTypes;
             case 'restore_session': ComponentClass = RestoreSessionViewComponent; break;
             case 'confirm_updates': ComponentClass = ConfirmUpdatesViewComponent; break;
             case 'final_confirm_updates': ComponentClass = FinalConfirmUpdatesViewComponent; break;
-            // --- START OF CHANGE: Add/Update routes ---
             case 'edit_rulefile_main': ComponentClass = EditRulefileMainViewComponent; break;
             case 'rulefile_requirements': ComponentClass = RulefileRequirementsListComponent; break;
             case 'rulefile_view_requirement': ComponentClass = ViewRulefileRequirementComponent; break;
             case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_confirm_delete_requirement': ComponentClass = ConfirmDeleteRequirementViewComponent; break;
+            // --- START OF CHANGE: Add new routes ---
+            case 'confirm_delete_check': ComponentClass = ConfirmDeleteCheckViewComponent; break;
+            case 'confirm_delete_criterion': ComponentClass = ConfirmDeleteCriterionViewComponent; break;
             // --- END OF CHANGE ---
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
@@ -322,7 +332,7 @@ window.StoreActionTypes = StoreActionTypes;
             target_view = 'audit_overview';
             target_params = {};
         } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus === 'rulefile_editing') {
-            target_view = 'edit_rulefile_main'; // Fallback for editing mode
+            target_view = 'edit_rulefile_main';
             target_params = {};
         }
         render_view(target_view, target_params);

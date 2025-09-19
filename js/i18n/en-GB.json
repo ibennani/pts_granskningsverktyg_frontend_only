@@ -531,5 +531,13 @@
   "failure_template_label": "Template for failure statement (optional)",
   "help_texts_title": "Informational Texts",
   "requirement_examples": "Examples",
-  "wcag_principles_title": "WCAG Principles"
+  "wcag_principles_title": "WCAG Principles",
+  "add_check_button": "Add Checkpoint",
+  "add_criterion_button": "Add Criterion",
+  "confirm_delete_check_intro": "You are about to delete the checkpoint:",
+  "confirm_delete_check_title": "Confirm Checkpoint Deletion",
+  "confirm_delete_criterion_intro": "You are about to delete the pass criterion:",
+  "confirm_delete_criterion_title": "Confirm Criterion Deletion",
+  "delete_check_button": "Delete Checkpoint",
+  "delete_criterion_button": "Delete Criterion"
 }

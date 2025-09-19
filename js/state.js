@@ -6,9 +6,7 @@ const APP_STATE_VERSION = '2.1.0'; // Version bumped to reflect new scoring mode
 
 export const ActionTypes = {
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
-    // --- START OF CHANGE: Add new action type ---
     INITIALIZE_RULEFILE_EDITING: 'INITIALIZE_RULEFILE_EDITING',
-    // --- END OF CHANGE ---
     LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
     UPDATE_METADATA: 'UPDATE_METADATA',
     ADD_SAMPLE: 'ADD_SAMPLE',
@@ -24,7 +22,11 @@ export const ActionTypes = {
     CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
     CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
     UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
-    DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION'
+    DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
+    // --- START OF CHANGE: Add new action types ---
+    DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
+    DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK'
+    // --- END OF CHANGE ---
 };
 
 const initial_state = {
@@ -38,7 +40,7 @@ const initial_state = {
         caseHandler: '',
         internalComment: ''
     },
-    auditStatus: 'not_started', // Can also be 'in_progress', 'locked', 'rulefile_editing'
+    auditStatus: 'not_started',
     startTime: null,
     endTime: null,
     samples: [],
@@ -72,6 +74,36 @@ function root_reducer(current_state, action) {
     let new_state;
 
     switch (action.type) {
+        // --- START OF CHANGE: Add new reducer cases ---
+        case ActionTypes.DELETE_CHECK_FROM_REQUIREMENT:
+            const { requirementId: reqIdForCheck, checkId } = action.payload;
+            const reqToUpdateCheck = current_state.ruleFileContent.requirements[reqIdForCheck];
+            if (reqToUpdateCheck) {
+                const updatedChecks = reqToUpdateCheck.checks.filter(c => c.id !== checkId);
+                const updatedReq = { ...reqToUpdateCheck, checks: updatedChecks };
+                const newRequirements = { ...current_state.ruleFileContent.requirements, [reqIdForCheck]: updatedReq };
+                return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirements } };
+            }
+            return current_state;
+
+        case ActionTypes.DELETE_CRITERION_FROM_CHECK:
+            const { requirementId: reqIdForPc, checkId: checkIdForPc, passCriterionId } = action.payload;
+            const reqToUpdatePc = current_state.ruleFileContent.requirements[reqIdForPc];
+            if (reqToUpdatePc) {
+                const updatedChecksForPc = reqToUpdatePc.checks.map(c => {
+                    if (c.id === checkIdForPc) {
+                        const updatedPassCriteria = c.passCriteria.filter(pc => pc.id !== passCriterionId);
+                        return { ...c, passCriteria: updatedPassCriteria };
+                    }
+                    return c;
+                });
+                const updatedReqForPc = { ...reqToUpdatePc, checks: updatedChecksForPc };
+                const newRequirementsForPc = { ...current_state.ruleFileContent.requirements, [reqIdForPc]: updatedReqForPc };
+                return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirementsForPc } };
+            }
+            return current_state;
+        // --- END OF CHANGE ---
+
         case ActionTypes.UPDATE_REQUIREMENT_DEFINITION:
             const { requirementId: updateReqId, updatedRequirementData } = action.payload;
             if (current_state.ruleFileContent?.requirements[updateReqId]) {
@@ -87,7 +119,7 @@ function root_reducer(current_state, action) {
                     }
                 };
             }
-            return current_state; 
+            return current_state;
 
         case ActionTypes.DELETE_REQUIREMENT_DEFINITION:
             const { requirementId: deleteReqId } = action.payload;
@@ -166,19 +198,17 @@ function root_reducer(current_state, action) {
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileContent: action.payload.ruleFileContent,
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-                auditStatus: 'not_started' // Explicitly set status for clarity
+                auditStatus: 'not_started'
             };
         
-        // --- START OF CHANGE: Add new reducer case ---
         case ActionTypes.INITIALIZE_RULEFILE_EDITING:
             return {
                 ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileContent: action.payload.ruleFileContent,
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-                auditStatus: 'rulefile_editing' // Set special status
+                auditStatus: 'rulefile_editing'
             };
-        // --- END OF CHANGE ---
 
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
             if (action.payload && typeof action.payload === 'object') {
@@ -313,7 +343,7 @@ function root_reducer(current_state, action) {
 
 function saveStateToLocalStorage(state_to_save) {
     if (!state_to_save || state_to_save.auditStatus === 'not_started' || state_to_save.auditStatus === 'rulefile_editing') {
-        return; // Don't autosave editing sessions
+        return;
     }
     try {
         const autosave_payload = {
@@ -329,7 +359,7 @@ function saveStateToLocalStorage(state_to_save) {
 
 function forceSaveStateToLocalStorage(state_to_save) {
     if (!state_to_save || state_to_save.auditStatus === 'not_started' || state_to_save.auditStatus === 'rulefile_editing') {
-        return; // Don't autosave editing sessions
+        return;
     }
     try {
         const autosave_payload = {

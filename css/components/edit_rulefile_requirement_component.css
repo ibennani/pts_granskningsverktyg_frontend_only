@@ -15,11 +15,18 @@
 
 /* Styling för redigerbara kontrollpunkter */
 .check-item-edit {
-    padding: 1rem;
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     background-color: var(--background-color);
+    position: relative;
+}
+
+.check-item-edit > .delete-item-btn {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
 }
 
 [data-theme="dark"] .check-item-edit {
@@ -33,10 +40,25 @@
 }
 
 .pc-item-edit {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    position: relative;
 }
 
-/* --- NYA STILAR FÖR HIERARKISKA INNEHÅLLSTYPER --- */
+.pc-item-edit > .delete-item-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    /* --- KORRIGERING: Lägg till lite marginal under --- */
+    margin-bottom: 0.5rem; 
+}
+
+/* --- NY REGEL: Lägg till skiljelinje mellan kriterier --- */
+.pc-item-edit:not(:last-of-type) {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
+/* HIERARKISKA INNEHÅLLSTYPER */
 .content-type-parent-group-edit {
     border: none;
     padding: 0;
@@ -59,7 +81,7 @@
     margin-bottom: 0.75rem;
 }
 
-/* --- KORRIGERING: Tog bort inline-styling för radioknappar --- */
+/* Logik-radioknappar */
 .check-logic-group {
     border: none;
     padding: 0;
@@ -73,36 +95,31 @@
     width: auto;
 }
 
-/* Vanlig form-check kommer automatiskt att stacka vertikalt */
 .check-logic-group .form-check {
     margin-bottom: 0.5rem;
 }
-/* --- SLUT PÅ KORRIGERING --- */
 
-
-/* Styling för indenterat fält för malltext (failureStatementTemplate) */
 .pc-item-edit .form-group:last-of-type {
     margin-left: 1.5rem;
     padding-left: 1.5rem;
     border-left: 2px solid var(--secondary-color);
+    margin-top: 1rem;
 }
 
-/* Återställd label-styling */
 .pc-item-edit .form-group:last-of-type label {
     font-style: normal;
     font-size: 1em;
     color: var(--text-color);
 }
 
-
-/* Styling för klassificerings-kryssrutorna */
+/* Klassificerings-kryssrutor */
 .classification-group {
     border: none;
     padding: 0;
     margin-top: 1rem;
 }
 
-.classification-group legend {
+.classification-group legend, .classification-group h2 {
     font-size: 1em;
     font-weight: 500;
     margin-bottom: 0.5rem;
@@ -111,4 +128,38 @@
 
 .classification-group .form-check {
     margin-bottom: 0.5rem;
+}
+
+/* Animation */
+@keyframes fadeInSlideDown {
+  from { opacity: 0; transform: translateY(-15px); max-height: 0; }
+  to { opacity: 1; transform: translateY(0); max-height: 500px; }
+}
+
+.new-item-animation {
+  animation: fadeInSlideDown 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+.checks-container-edit > .button-primary {
+    margin-top: 1.5rem;
+    /* Ta bort bottenmarginal från knappen, vi styr avståndet med containern istället */
+    margin-bottom: 0;
+}
+
+/* Tydligare skiljelinje efter hela kontrollpunktssektionen */
+.checks-container-edit {
+    /* Utrymme inuti sektionen, efter knappen */
+    padding-bottom: 1.5rem; 
+    /* Marginal utanför sektionen, skapar avstånd ner till nästa rubrik */
+    margin-bottom: 2rem; 
+    /* Gör linjen heldragen och lite mörkare */
+    border-bottom: 1px solid var(--border-color); 
+}
+
+/* Tydligare skiljelinje mellan kriterier */
+.pc-item-edit:not(:last-of-type) {
+    padding-bottom: 1.5rem;
+    /* Gör linjen heldragen och lite mörkare */
+    border-bottom: 1px solid var(--border-color);
 }
