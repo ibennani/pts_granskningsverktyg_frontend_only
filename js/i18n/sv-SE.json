@@ -521,5 +521,15 @@
   "requirement_general_info_title": "Allmän information",
   "secondary_score": "Sekundär poäng",
   "sub_category_text": "Underkategori (text)",
-  "classification_and_impact_title": "Klassificering och påverkan"
+  "classification_and_impact_title": "Klassificering och påverkan",
+  "classification_title": "Klassificering",
+  "impact_title": "Påverkan",
+  "help_texts_title": "Informationstexter",
+  "check_logic_and": "Alla måste uppfyllas (AND)",
+  "check_logic_or": "Minst en måste uppfyllas (OR)",
+  "check_logic_title": "Logik för godkännandekriterier:",
+  "failure_template_label": "Mall för avvikelsetext (valfri)",
+  "help_texts_title": "Informationstexter",
+  "requirement_examples": "Exempel",
+  "wcag_principles_title": "WCAG Principer"
 }

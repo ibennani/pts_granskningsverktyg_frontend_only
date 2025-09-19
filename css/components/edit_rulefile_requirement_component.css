@@ -58,3 +58,57 @@
     padding-left: 2rem;
     margin-bottom: 0.75rem;
 }
+
+/* --- KORRIGERING: Tog bort inline-styling för radioknappar --- */
+.check-logic-group {
+    border: none;
+    padding: 0;
+    margin: 1rem 0 0.5rem 0;
+}
+
+.check-logic-group legend {
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    width: auto;
+}
+
+/* Vanlig form-check kommer automatiskt att stacka vertikalt */
+.check-logic-group .form-check {
+    margin-bottom: 0.5rem;
+}
+/* --- SLUT PÅ KORRIGERING --- */
+
+
+/* Styling för indenterat fält för malltext (failureStatementTemplate) */
+.pc-item-edit .form-group:last-of-type {
+    margin-left: 1.5rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid var(--secondary-color);
+}
+
+/* Återställd label-styling */
+.pc-item-edit .form-group:last-of-type label {
+    font-style: normal;
+    font-size: 1em;
+    color: var(--text-color);
+}
+
+
+/* Styling för klassificerings-kryssrutorna */
+.classification-group {
+    border: none;
+    padding: 0;
+    margin-top: 1rem;
+}
+
+.classification-group legend {
+    font-size: 1em;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    width: auto;
+}
+
+.classification-group .form-check {
+    margin-bottom: 0.5rem;
+}

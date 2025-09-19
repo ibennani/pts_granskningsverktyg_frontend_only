@@ -4,10 +4,9 @@ export const ChecklistHandler = (function () {
     'use-strict';
 
     let container_ref;
-    let on_status_change_callback; // Callback to the parent component
-    let on_autosave_callback; // Callback for text areas
+    let on_status_change_callback;
+    let on_autosave_callback;
 
-    // Dependencies
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg;
     
@@ -15,8 +14,20 @@ export const ChecklistHandler = (function () {
     let requirement_definition_ref = null;
     let requirement_result_ref = null;
 
-    // --- NYTT: För att undvika full omladdning ---
     let is_dom_built = false;
+
+    // --- NY HJÄLPFUNKTION ---
+    function _safe_parse_markdown_inline(markdown_string) {
+        if (typeof marked === 'undefined' || !window.Helpers.escape_html) {
+            return window.Helpers.escape_html(markdown_string);
+        }
+
+        const renderer = new marked.Renderer();
+        renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        renderer.html = (html) => window.Helpers.escape_html(html);
+
+        return marked.parseInline(String(markdown_string || ''), { renderer, breaks: true, gfm: true });
+    }
 
     function assign_globals_once() {
         if (Translation_t && Helpers_create_element) return;
@@ -30,8 +41,6 @@ export const ChecklistHandler = (function () {
         container_ref = _container;
         on_status_change_callback = _callbacks.onStatusChange;
         on_autosave_callback = _callbacks.onAutosave;
-
-        // --- NYTT: Rensa DOM-status vid ny initiering ---
         is_dom_built = false;
 
         container_ref.addEventListener('click', handle_checklist_click);
@@ -94,7 +103,6 @@ export const ChecklistHandler = (function () {
         }
     }
 
-    // --- NY FUNKTION: Bygger den initiala DOM-strukturen ---
     function build_initial_dom() {
         const t = Translation_t;
         container_ref.innerHTML = '';
@@ -109,11 +117,16 @@ export const ChecklistHandler = (function () {
         
         requirement_definition_ref.checks.forEach(check_definition => {
             const check_wrapper = Helpers_create_element('div', { 
-                class_name: 'check-item', // Statusklass läggs till i update_dom
+                class_name: 'check-item',
                 attributes: {'data-check-id': check_definition.id }
             });
 
-            check_wrapper.appendChild(Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check_definition.condition }));
+            // --- ÄNDRING: Använd Markdown-parser ---
+            const condition_h3 = Helpers_create_element('h3', { 
+                class_name: 'check-condition-title', 
+                html_content: _safe_parse_markdown_inline(check_definition.condition)
+            });
+            check_wrapper.appendChild(condition_h3);
             
             const actions_div = Helpers_create_element('div', { class_name: 'condition-actions' });
             actions_div.append(
@@ -132,7 +145,6 @@ export const ChecklistHandler = (function () {
             
             check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'check-status-display' }));
             
-            // --- Bygg pass criteria listan ---
             const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
             (check_definition.passCriteria || []).forEach(pc_def => {
                 const pc_item_li = Helpers_create_element('li', { 
@@ -140,15 +152,11 @@ export const ChecklistHandler = (function () {
                     attributes: {'data-pc-id': pc_def.id }
                 });
 
-                const requirement_content_div = Helpers_create_element('div', { class_name: ['pass-criterion-requirement', 'markdown-content'] });
-                if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
-                    const renderer = new marked.Renderer();
-                    renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-                    renderer.html = (html) => window.Helpers.escape_html(html);
-                    requirement_content_div.innerHTML = marked.parseInline(pc_def.requirement || '', { renderer });
-                } else {
-                    requirement_content_div.textContent = pc_def.requirement || '';
-                }
+                // --- ÄNDRING: Använd Markdown-parser ---
+                const requirement_content_div = Helpers_create_element('div', { 
+                    class_name: ['pass-criterion-requirement', 'markdown-content'],
+                    html_content: _safe_parse_markdown_inline(pc_def.requirement)
+                });
                 pc_item_li.appendChild(requirement_content_div);
                 
                 pc_item_li.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-status' }));
@@ -190,7 +198,6 @@ export const ChecklistHandler = (function () {
         is_dom_built = true;
     }
 
-    // --- NY FUNKTION: Uppdaterar den befintliga DOM-strukturen ---
     function update_dom() {
         const t = Translation_t;
         
@@ -200,10 +207,8 @@ export const ChecklistHandler = (function () {
             const calculated_check_status = check_result_data?.status || 'not_audited';
             const overall_manual_status = check_result_data?.overallStatus || 'not_audited';
 
-            // Uppdatera statusklassen på wrappern
             check_wrapper.className = `check-item status-${calculated_check_status}`;
 
-            // Uppdatera huvudknapparnas status
             const complies_btn = check_wrapper.querySelector('button[data-action="set-check-complies"]');
             const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
             
@@ -213,12 +218,10 @@ export const ChecklistHandler = (function () {
                 complies_btn.parentElement.style.display = is_audit_locked ? 'none' : 'flex';
             }
             
-            // Uppdatera status-texten
             const status_text_container = check_wrapper.querySelector('.check-status-display');
             const status_text = t(`audit_status_${calculated_check_status}`);
             status_text_container.innerHTML = `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status}">${status_text}</span>`;
             
-            // Hantera synlighet för pass criteria listan och infomeddelande
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
 
@@ -228,7 +231,6 @@ export const ChecklistHandler = (function () {
                 compliance_info_text.textContent = t('check_marked_as_not_compliant_criteria_passed');
             }
 
-            // Uppdatera varje pass criterion
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach(pc_item_li => {
                 const pc_id = pc_item_li.dataset.pcId;
                 const pc_data = check_result_data?.passCriteria[pc_id] || { status: 'not_audited', observationDetail: '' };
@@ -253,7 +255,6 @@ export const ChecklistHandler = (function () {
                 const was_hidden = observation_wrapper.hidden;
                 observation_wrapper.hidden = (current_pc_status !== 'failed');
                 
-                // Om textrutan precis blev synlig och var tom, sätt fokus.
                 if (was_hidden && !observation_wrapper.hidden && !is_audit_locked) {
                     observation_textarea.focus();
                 }
@@ -269,7 +270,6 @@ export const ChecklistHandler = (function () {
         });
     }
 
-    // --- ÄNDRAD RENDER-FUNKTION ---
     function render(requirement_definition, requirement_result, locked_status) {
         requirement_definition_ref = requirement_definition;
         requirement_result_ref = requirement_result;

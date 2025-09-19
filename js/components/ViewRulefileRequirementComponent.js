@@ -3,7 +3,7 @@
 export const ViewRulefileRequirementComponent = (function () {
     'use-strict';
 
-    const CSS_PATH = 'css/components/requirement_audit_component.css'; // Återanvänder CSS för liknande utseende
+    const CSS_PATH = 'css/components/requirement_audit_component.css';
     let app_container_ref;
     let router_ref;
     let params_ref;
@@ -33,9 +33,35 @@ export const ViewRulefileRequirementComponent = (function () {
         await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
     }
 
+    function _safe_parse_markdown(markdown_string, is_inline = false) {
+        if (typeof marked === 'undefined' || !window.Helpers.escape_html) {
+            return window.Helpers.escape_html(markdown_string);
+        }
+
+        const renderer = new marked.Renderer();
+        renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        
+        // --- START OF CORRECTION ---
+        renderer.html = (html_token) => {
+            // Smartare hantering: escapa bara den råa texten, inte hela objektet
+            const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                ? html_token.text
+                : String(html_token || '');
+            
+            return window.Helpers.escape_html(text_to_escape);
+        };
+        // --- END OF CORRECTION ---
+
+        const options = { renderer, breaks: true, gfm: true };
+        
+        if (is_inline) {
+            return marked.parseInline(String(markdown_string || ''), options);
+        }
+        return marked.parse(String(markdown_string || ''), options);
+    }
+
     function _render_markdown_section(title_key, content_data) {
         const t = Translation_t;
-        
         const processed_content = Array.isArray(content_data) ? content_data.join('\n\n') : content_data;
 
         if (!processed_content || (typeof processed_content === 'string' && !processed_content.trim())) {
@@ -45,22 +71,15 @@ export const ViewRulefileRequirementComponent = (function () {
         const section_div = Helpers_create_element('div', { class_name: 'audit-section' });
         section_div.appendChild(Helpers_create_element('h2', { text_content: t(title_key) }));
         
-        const content_element = Helpers_create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
-        
-        if (typeof marked !== 'undefined' && window.Helpers.escape_html) {
-            const renderer = new marked.Renderer();
-            renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-            renderer.html = (html) => window.Helpers.escape_html(html);
-            content_element.innerHTML = marked.parse(String(processed_content), { renderer, breaks: true, gfm: true });
-        } else {
-            content_element.textContent = String(processed_content);
-        }
+        const content_element = Helpers_create_element('div', { 
+            class_name: ['audit-section-content', 'markdown-content'],
+            html_content: _safe_parse_markdown(processed_content) // Use the new helper
+        });
         
         section_div.appendChild(content_element);
         return section_div;
     }
 
-    // --- KORRIGERING: Denna yttre funktion saknades ---
     function render() {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
@@ -79,7 +98,8 @@ export const ViewRulefileRequirementComponent = (function () {
 
         const header_div = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
         const title_wrapper = Helpers_create_element('div', { class_name: 'requirement-audit-header-title-wrapper' });
-        title_wrapper.appendChild(Helpers_create_element('h1', { text_content: requirement.title }));
+        const h1_element = Helpers_create_element('h1', { text_content: requirement.title, id: 'view-requirement-h1', attributes: { tabindex: '-1' } });
+        title_wrapper.appendChild(h1_element);
         
         const edit_button = Helpers_create_element('button', {
             class_name: ['button', 'button-secondary', 'button-small', 'edit-button'],
@@ -134,17 +154,29 @@ export const ViewRulefileRequirementComponent = (function () {
                 class_name: 'check-item status-not_audited',
                 style: 'border-left-width: 3px;'
             });
-            check_wrapper.appendChild(Helpers_create_element('h3', { class_name: 'check-condition-title', text_content: check.condition }));
+
+            // --- START OF CHANGE: Apply Markdown parsing to checkpoint texts ---
+            const condition_h3 = Helpers_create_element('h3', { 
+                class_name: 'check-condition-title', 
+                html_content: _safe_parse_markdown(check.condition, true) 
+            });
+            check_wrapper.appendChild(condition_h3);
             
             if (check.passCriteria && check.passCriteria.length > 0) {
                 const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                 check.passCriteria.forEach(pc => {
                     const pc_item = Helpers_create_element('li', { class_name: 'pass-criterion-item' });
-                    pc_item.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-requirement', text_content: pc.requirement }));
+                    const requirement_div = Helpers_create_element('div', { 
+                        class_name: 'pass-criterion-requirement', 
+                        html_content: _safe_parse_markdown(pc.requirement, true) 
+                    });
+                    pc_item.appendChild(requirement_div);
                     pc_list.appendChild(pc_item);
                 });
                 check_wrapper.appendChild(pc_list);
             }
+            // --- END OF CHANGE ---
+
             checks_container.appendChild(check_wrapper);
         });
         plate_element.appendChild(checks_container);
@@ -159,8 +191,8 @@ export const ViewRulefileRequirementComponent = (function () {
         plate_element.appendChild(bottom_nav_bar);
 
         app_container_ref.appendChild(plate_element);
+        setTimeout(() => h1_element.focus(), 0);
     }
-    // --- SLUT PÅ KORRIGERING ---
 
     function destroy() {
         app_container_ref.innerHTML = '';
