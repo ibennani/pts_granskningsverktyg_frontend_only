@@ -62,7 +62,7 @@ export const EditRulefileMainViewComponent = (function () {
         button_group.append(edit_reqs_button, edit_meta_button);
         plate_element.appendChild(button_group);
 
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 3rem; justify-content: space-between;' });
+        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 3rem;' });
 
         const back_button = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
@@ -70,15 +70,7 @@ export const EditRulefileMainViewComponent = (function () {
         });
         back_button.addEventListener('click', () => router_ref('upload'));
         
-        const save_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-success'],
-            html_content: `<span>${t('save_and_download_rulefile')}</span>` + Helpers_get_icon_svg('save')
-        });
-        save_button.setAttribute('aria-disabled', 'true');
-        save_button.style.cursor = 'not-allowed';
-        save_button.title = t('feature_not_implemented_yet');
-
-        actions_div.append(back_button, save_button);
+        actions_div.append(back_button);
         plate_element.appendChild(actions_div);
 
         app_container_ref.appendChild(plate_element);

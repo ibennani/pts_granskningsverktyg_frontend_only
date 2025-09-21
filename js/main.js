@@ -241,7 +241,15 @@ window.StoreActionTypes = StoreActionTypes;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
-            current_view_component_instance.destroy();
+            if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
+                try {
+                    current_view_component_instance.destroy();
+                } catch (err) {
+                    console.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
+                }
+            } else {
+                current_view_component_instance.destroy();
+            }
         }
         app_container.innerHTML = ''; 
         current_view_component_instance = null;
@@ -275,7 +283,7 @@ window.StoreActionTypes = StoreActionTypes;
 
         try {
             current_view_component_instance = ComponentClass; 
-            
+
             if (!current_view_component_instance || typeof current_view_component_instance.init !== 'function' || typeof current_view_component_instance.render !== 'function') {
                 throw new Error("Component is invalid or missing required methods.");
             }

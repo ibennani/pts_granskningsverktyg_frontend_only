@@ -24,6 +24,15 @@ export const RequirementListComponent = (function () {
     let toolbar_component_instance = null;
     let is_dom_initialized = false;
     let plate_element_ref = null;
+    let results_summary_element_ref = null;
+
+    const SORT_OPTIONS = [
+        { value: 'default', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
+        { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural', defaultValue: 'Reference (Descending)' },
+        { value: 'title_asc', textKey: 'sort_option_title_asc', defaultValue: 'Title (A-Z)' },
+        { value: 'title_desc', textKey: 'sort_option_title_desc', defaultValue: 'Title (Z-A)' },
+        { value: 'updated_first', textKey: 'sort_option_updated_first', defaultValue: 'Updated First' }
+    ];
 
     function get_t_internally() {
         if (Translation_t) return Translation_t;
@@ -126,13 +135,26 @@ export const RequirementListComponent = (function () {
             status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
         };
 
+        const initial_toolbar_state = {
+            searchText: current_ui_settings.searchText || '',
+            sortBy: current_ui_settings.sortBy || 'default',
+            status: current_ui_settings.status || { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+        };
+
         await toolbar_component_instance.init(
             toolbar_container_element,
             handle_toolbar_change,
-            current_ui_settings,
+            initial_toolbar_state,
             { t: Translation_t },
-            { create_element: Helpers_create_element, load_css: Helpers_load_css }
+            { create_element: Helpers_create_element, load_css: Helpers_load_css },
+            { sortOptions: SORT_OPTIONS }
         );
+
+        results_summary_element_ref = Helpers_create_element('p', {
+            class_name: 'results-summary',
+            id: 'requirement-list-results-summary'
+        });
+        plate_element_ref.appendChild(results_summary_element_ref);
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
         content_div_for_delegation.addEventListener('click', handle_requirement_list_click);
@@ -151,7 +173,7 @@ export const RequirementListComponent = (function () {
         
         const filter_settings = current_global_state.uiSettings?.requirementListFilter;
         if (toolbar_component_instance) {
-             toolbar_component_instance.render();
+             toolbar_component_instance.render(filter_settings);
         }
 
         const current_sample_object = current_global_state.samples.find(s => s.id === params_ref.sampleId);
@@ -222,6 +244,13 @@ export const RequirementListComponent = (function () {
             return true;
         });
         
+        if (results_summary_element_ref) {
+            results_summary_element_ref.textContent = t('results_summary_template', {
+                filteredCount: filtered_requirements.length,
+                totalCount: all_relevant_requirements.length
+            });
+        }
+
         const sorted_requirements = [...filtered_requirements];
         const sort_function = {
             'ref_desc': (a, b) => Helpers_natural_sort(b.standardReference?.text || 'Z', a.standardReference?.text || 'Z'),
@@ -239,7 +268,8 @@ export const RequirementListComponent = (function () {
             },
             'default': (a, b) => Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z')
         };
-        sorted_requirements.sort(sort_function[filter_settings.sortBy] || sort_function['default']);
+        const effectiveSortKey = sort_function.hasOwnProperty(filter_settings.sortBy) ? filter_settings.sortBy : 'default';
+        sorted_requirements.sort(sort_function[effectiveSortKey]);
 
         content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
@@ -253,7 +283,16 @@ export const RequirementListComponent = (function () {
 
     async function render() {
         assign_globals_once();
-        
+
+        const current_state = local_getState ? local_getState() : null;
+        if (current_state?.auditStatus === 'rulefile_editing') {
+            if (is_dom_initialized && plate_element_ref?.parentNode) {
+                plate_element_ref.parentNode.removeChild(plate_element_ref);
+            }
+            destroy();
+            return;
+        }
+
         if (!is_dom_initialized) {
             await _initialRender();
         }
@@ -313,9 +352,13 @@ export const RequirementListComponent = (function () {
             toolbar_component_instance.destroy();
             toolbar_component_instance = null;
         }
-        
+
+        if (plate_element_ref?.parentNode) {
+            plate_element_ref.parentNode.removeChild(plate_element_ref);
+        }
         is_dom_initialized = false;
         plate_element_ref = null;
+        results_summary_element_ref = null;
     }
 
     return { init, render, destroy };

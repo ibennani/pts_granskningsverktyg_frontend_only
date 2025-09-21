@@ -23,6 +23,7 @@ export const RulefileRequirementsListComponent = (function () {
     let is_dom_initialized = false;
     let plate_element_ref = null;
     let unsubscribe_from_store_function = null; // *** NY ***
+    let results_summary_element = null;
 
     const SORT_OPTIONS = [
         { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
@@ -64,10 +65,30 @@ export const RulefileRequirementsListComponent = (function () {
     }
 
     function handle_toolbar_change(new_toolbar_state) {
+        console.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
+        const current_state_snapshot = local_getState();
+        console.log('[RulefileRequirementsListComponent] current state snapshot filter:', JSON.stringify(current_state_snapshot.uiSettings?.requirementListFilter));
+        const existing_status_state = current_state_snapshot.uiSettings?.requirementListFilter?.status || {
+            passed: true,
+            failed: true,
+            partially_audited: true,
+            not_audited: true,
+            updated: true
+        };
+
+        const payload = {
+            ...new_toolbar_state,
+            status: new_toolbar_state.status && Object.keys(new_toolbar_state.status).length > 0
+                ? new_toolbar_state.status
+                : existing_status_state
+        };
+
         local_dispatch({
             type: local_StoreActionTypes.SET_UI_FILTER_SETTINGS,
-            payload: new_toolbar_state
+            payload
         });
+        console.log('[RulefileRequirementsListComponent] dispatched payload:', JSON.stringify(payload));
+        render();
     }
 
     // *** NY FUNKTION FÖR ATT HANTERA STATE-UPPDATERINGAR ***
@@ -114,6 +135,9 @@ export const RulefileRequirementsListComponent = (function () {
 
         const toolbar_container_element = Helpers_create_element('div', { id: 'rulefile-list-toolbar-container' });
         plate_element_ref.appendChild(toolbar_container_element);
+
+        results_summary_element = Helpers_create_element('p', { id: 'rulefile-list-results-summary', class_name: 'results-summary' });
+        plate_element_ref.appendChild(results_summary_element);
         
         toolbar_component_instance = RequirementListToolbarComponent;
         
@@ -130,10 +154,18 @@ export const RulefileRequirementsListComponent = (function () {
             current_ui_settings = current_state_for_init.uiSettings.requirementListFilter;
         }
 
+        const default_status_state = current_ui_settings.status || {
+            passed: true,
+            failed: true,
+            partially_audited: true,
+            not_audited: true,
+            updated: true
+        };
+
         const initial_toolbar_state = {
             searchText: current_ui_settings.searchText || '',
             sortBy: current_ui_settings.sortBy,
-            status: {} 
+            status: { ...default_status_state }
         };
 
         await toolbar_component_instance.init(
@@ -162,16 +194,53 @@ export const RulefileRequirementsListComponent = (function () {
         is_dom_initialized = true;
     }
 
-    function _populate_dynamic_content() {
+    function extractSearchableText(value) {
+        if (!value) return '';
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) {
+            return value.map(item => extractSearchableText(item)).join(' ');
+        }
+        if (typeof value === 'object') {
+            const candidateKeys = ['text', 'value', 'label', 'description', 'content'];
+            for (const key of candidateKeys) {
+                if (value[key]) {
+                    return extractSearchableText(value[key]);
+                }
+            }
+            return Object.values(value).map(item => extractSearchableText(item)).join(' ');
+        }
+        return String(value);
+    }
+
+    function _populate_dynamic_content(filter_settings_override = null) {
+        console.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
         const t = Translation_t;
         const current_global_state = local_getState();
-        
+        console.log('[RulefileRequirementsListComponent] current state filter:', JSON.stringify(current_global_state.uiSettings?.requirementListFilter));
+
+        if (app_container_ref && plate_element_ref) {
+            const siblings = Array.from(app_container_ref.children);
+            const removed = siblings.filter(child => child !== plate_element_ref);
+            if (removed.length > 0) {
+                console.warn('[RulefileRequirementsListComponent] Removing sibling content plates:', removed.length);
+                removed.forEach(node => node.remove());
+            }
+        }
+
         if (!current_global_state || !current_global_state.ruleFileContent) {
             content_div_for_delegation.innerHTML = `<p>${t('error_no_rulefile_loaded_for_metadata')}</p>`;
             return;
         }
 
-        const filter_settings = current_global_state.uiSettings?.requirementListFilter;
+        if (plate_element_ref) {
+            Array.from(plate_element_ref.querySelectorAll('.item-list')).forEach(listElement => {
+                if (!content_div_for_delegation.contains(listElement)) {
+                    listElement.remove();
+                }
+            });
+        }
+
+        const filter_settings = filter_settings_override || current_global_state.uiSettings?.requirementListFilter;
 
         if (toolbar_component_instance) {
              toolbar_component_instance.render(filter_settings);
@@ -182,16 +251,32 @@ export const RulefileRequirementsListComponent = (function () {
         const all_requirements = Object.values(current_global_state.ruleFileContent.requirements);
 
         const filtered_requirements = all_requirements.filter(req => {
-            if (search_term) {
-                const searchable_content = [
-                    req.title, req.expectedObservation, req.instructions, req.tips, 
-                    req.exceptions, req.commonErrors, req.standardReference?.text
-                ].flat().filter(Boolean).map(item => (typeof item === 'object' ? item.text : String(item))).join(' ').toLowerCase();
-                return searchable_content.includes(search_term);
-            }
-            return true;
+            if (!search_term) return true;
+
+            const normalized_content = extractSearchableText([
+                req.title,
+                req.expectedObservation,
+                req.instructions,
+                req.tips,
+                req.exceptions,
+                req.commonErrors,
+                req.standardReference?.text,
+                req.standardReference?.description,
+                req.metadata?.mainCategory?.text,
+                req.metadata?.subCategory?.text,
+                req.examples,
+                req.classifications,
+                req.contentType,
+                req.checks
+            ]).toLowerCase();
+
+            return normalized_content.includes(search_term);
         });
-        
+        console.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);
+        if (results_summary_element) {
+            results_summary_element.textContent = `Visar ${filtered_requirements.length} av ${all_requirements.length} krav`;
+        }
+
         const sorted_requirements = [...filtered_requirements];
         const sort_function = {
             'ref_asc': (a, b) => Helpers_natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z'),
@@ -201,14 +286,58 @@ export const RulefileRequirementsListComponent = (function () {
         };
         sorted_requirements.sort(sort_function[filter_settings.sortBy] || sort_function['ref_asc']);
 
+        console.log('[RulefileRequirementsListComponent] before clear li count:', content_div_for_delegation.querySelectorAll('.item-list-item').length);
         content_div_for_delegation.innerHTML = '';
+        console.log('[RulefileRequirementsListComponent] after clear li count:', content_div_for_delegation.querySelectorAll('.item-list-item').length);
         if (sorted_requirements.length === 0) {
             content_div_for_delegation.appendChild(Helpers_create_element('p', { text_content: t('no_requirements_match_filter') }));
         } else {
             const req_ul = Helpers_create_element('ul', { class_name: 'item-list', style: 'list-style: none; padding: 0;' });
             sorted_requirements.forEach(req => req_ul.appendChild(_create_requirement_list_item(req)));
             content_div_for_delegation.appendChild(req_ul);
+            console.log('[RulefileRequirementsListComponent] rendered list length:', req_ul.childElementCount);
+            console.log('[RulefileRequirementsListComponent] rendered titles:', Array.from(req_ul.children).map(li => li.querySelector('h3')?.textContent || '')); 
         }
+        console.log('[RulefileRequirementsListComponent] DOM updated. Current child count:', content_div_for_delegation.childElementCount);
+        setTimeout(() => {
+            const plates = Array.from(document.querySelectorAll('#app-container .content-plate.requirement-list-plate'));
+            const stalePlates = plates.filter(plate => plate !== plate_element_ref);
+            if (stalePlates.length > 0) {
+                console.warn('[RulefileRequirementsListComponent] Removing stale requirement-list plates:', stalePlates.length);
+                stalePlates.forEach(plate => plate.remove());
+            }
+            const allLis = Array.from(document.querySelectorAll('#app-container .item-list-item'));
+            const counts = allLis.reduce((acc, li) => {
+                const belongsToCurrent = content_div_for_delegation.contains(li);
+                const key = belongsToCurrent ? 'currentView' : 'otherViews';
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+            console.log('[RulefileRequirementsListComponent] post-render li distribution:', JSON.stringify(counts));
+            const allPlates = Array.from(document.querySelectorAll('#app-container .content-plate'));
+            console.log('[RulefileRequirementsListComponent] content plates count:', allPlates.length);
+            const debugOther = allLis
+                .filter(li => !content_div_for_delegation.contains(li))
+                .slice(0, 3)
+                .map(li => {
+                    const plate = li.closest('.content-plate');
+                    const summary = li.querySelector('h3')?.textContent || li.textContent?.slice(0,50) || '';
+                    const parentInfo = {
+                        tag: li.parentElement?.tagName,
+                        classes: li.parentElement ? Array.from(li.parentElement.classList).join(' ') : '',
+                        id: li.parentElement?.id || ''
+                    };
+                    return {
+                        summary,
+                        plateClasses: plate ? Array.from(plate.classList).join(' ') : 'no-plate',
+                        plateChildren: plate ? plate.children.length : 0,
+                        parent: parentInfo
+                    };
+                });
+            if (debugOther.length > 0) {
+                console.log('[RulefileRequirementsListComponent] sample other lis:', JSON.stringify(debugOther, null, 2));
+            }
+        }, 0);
 
         const focusSelector = sessionStorage.getItem('focusAfterLoad');
         if (focusSelector) {
