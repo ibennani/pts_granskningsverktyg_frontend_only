@@ -25,7 +25,8 @@ export const ActionTypes = {
     UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
-    DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK'
+    DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
+    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE'
 };
 
 const initial_state = {
@@ -44,6 +45,8 @@ const initial_state = {
     endTime: null,
     samples: [],
     deficiencyCounter: 1,
+    ruleFileOriginalContentString: null,
+    ruleFileOriginalFilename: '',
     uiSettings: {
         requirementListFilter: {
             searchText: '',
@@ -205,14 +208,16 @@ function root_reducer(current_state, action) {
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
                 auditStatus: 'not_started'
             };
-        
+
         case ActionTypes.INITIALIZE_RULEFILE_EDITING:
             return {
                 ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileContent: action.payload.ruleFileContent,
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-                auditStatus: 'rulefile_editing'
+                auditStatus: 'rulefile_editing',
+                ruleFileOriginalContentString: action.payload.originalRuleFileContentString || null,
+                ruleFileOriginalFilename: action.payload.originalRuleFileFilename || ''
             };
 
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
@@ -319,7 +324,9 @@ function root_reducer(current_state, action) {
             }
             return {
                 ...action.payload,
-                saveFileVersion: APP_STATE_VERSION
+                saveFileVersion: APP_STATE_VERSION,
+                ruleFileOriginalContentString: null,
+                ruleFileOriginalFilename: ''
             };
 
         case ActionTypes.SET_RULE_FILE_CONTENT:
@@ -335,6 +342,13 @@ function root_reducer(current_state, action) {
                     ...current_state.ruleFileContent,
                     ...action.payload.ruleFileContent
                 }
+            };
+
+        case ActionTypes.SET_RULEFILE_EDIT_BASELINE:
+            return {
+                ...current_state,
+                ruleFileOriginalContentString: action.payload.originalRuleFileContentString,
+                ruleFileOriginalFilename: action.payload.originalRuleFileFilename
             };
         
         case ActionTypes.SET_UI_FILTER_SETTINGS:

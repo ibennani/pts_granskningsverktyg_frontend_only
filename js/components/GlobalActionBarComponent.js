@@ -39,8 +39,66 @@ export const GlobalActionBarComponentFactory = function () {
         );
     }
     
+    function clone_rulefile_content(ruleFileContent) {
+        return JSON.parse(JSON.stringify(ruleFileContent));
+    }
+
+    function compute_next_version(current_version_string, today) {
+        const current_year = today.getFullYear();
+        const current_month = today.getMonth() + 1;
+        const version_match = typeof current_version_string === 'string'
+            ? current_version_string.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
+            : null;
+
+        if (version_match) {
+            const [, version_year, version_month, release] = version_match;
+            const version_year_number = parseInt(version_year, 10);
+            const version_month_number = parseInt(version_month, 10);
+            if (version_year_number === current_year && version_month_number === current_month) {
+                return `${current_year}.${current_month}.r${parseInt(release, 10) + 1}`;
+            }
+        }
+
+        return `${current_year}.${current_month}.r1`;
+    }
+
+    function to_filename_version_suffix(version_string) {
+        const match = typeof version_string === 'string'
+            ? version_string.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
+            : null;
+        if (!match) return null;
+        const year = match[1];
+        const month = parseInt(match[2], 10);
+        const release = match[3];
+        return `${year}_${month}_r${release}`;
+    }
+
+    function build_rulefile_download_filename(original_filename, version_string) {
+        const default_extension = '.json';
+        const version_suffix = to_filename_version_suffix(version_string);
+        const safe_suffix = version_suffix || '';
+        if (!original_filename) {
+            return `rulefile_${safe_suffix || 'export'}${default_extension}`;
+        }
+
+        const last_dot_index = original_filename.lastIndexOf('.');
+        const extension = last_dot_index > -1 ? original_filename.slice(last_dot_index) : default_extension;
+        const base_name = last_dot_index > -1 ? original_filename.slice(0, last_dot_index) : original_filename;
+
+        if (!safe_suffix) {
+            return `${base_name}${extension}`;
+        }
+
+        const pattern = /(_\d{4}_\d{1,2}_r\d+)$/;
+        const updated_base = base_name.match(pattern)
+            ? base_name.replace(pattern, `_${safe_suffix}`)
+            : `${base_name}_${safe_suffix}`;
+
+        return `${updated_base}${extension}`;
+    }
+
     function handle_save_rulefile() {
-        const { getState, Translation, NotificationComponent } = dependencies;
+        const { getState, Translation, NotificationComponent, dispatch, StoreActionTypes } = dependencies;
         const t = Translation.t;
         const current_state = getState();
 
@@ -49,23 +107,57 @@ export const GlobalActionBarComponentFactory = function () {
             return;
         }
 
-        const data_str = JSON.stringify(current_state.ruleFileContent, null, 2);
-        const blob = new Blob([data_str], { type: "application/json" });
+        const is_edit_mode = current_state.auditStatus === 'rulefile_editing';
+        const original_string = current_state.ruleFileOriginalContentString;
+        const current_string = JSON.stringify(current_state.ruleFileContent, null, 2);
+        const has_changes = !original_string || current_string !== original_string;
+
+        const today = new Date();
+        const today_iso_date = today.toISOString().split('T')[0];
+        let data_string_for_download = current_string;
+        let filename_for_download = current_state.ruleFileOriginalFilename || 'rulefile.json';
+
+        if (is_edit_mode && has_changes) {
+            const updated_rulefile_content = clone_rulefile_content(current_state.ruleFileContent);
+            const current_metadata = updated_rulefile_content.metadata || {};
+            const next_version = compute_next_version(current_metadata.version, today);
+            updated_rulefile_content.metadata = {
+                ...current_metadata,
+                dateModified: today_iso_date,
+                version: next_version
+            };
+
+            data_string_for_download = JSON.stringify(updated_rulefile_content, null, 2);
+            filename_for_download = build_rulefile_download_filename(current_state.ruleFileOriginalFilename, next_version);
+
+            if (typeof dispatch === 'function' && StoreActionTypes) {
+                dispatch({
+                    type: StoreActionTypes.SET_RULE_FILE_CONTENT,
+                    payload: { ruleFileContent: updated_rulefile_content }
+                });
+                dispatch({
+                    type: StoreActionTypes.SET_RULEFILE_EDIT_BASELINE,
+                    payload: {
+                        originalRuleFileContentString: data_string_for_download,
+                        originalRuleFileFilename: filename_for_download
+                    }
+                });
+            }
+        } else if (is_edit_mode && !has_changes && original_string) {
+            data_string_for_download = original_string;
+        }
+
+        const blob = new Blob([data_string_for_download], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        
-        const title = current_state.ruleFileContent.metadata.title || 'rulefile';
-        const safe_title = title.replace(/[\\/:*?"<>|]/g, '_');
-        const filename = `${safe_title}_${new Date().toISOString().split('T')[0]}.json`;
-        
         link.href = url;
-        link.download = filename;
+        link.download = filename_for_download;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        
-        NotificationComponent.show_global_message(t('audit_saved_as_file', {filename: filename}), 'success');
+
+        NotificationComponent.show_global_message(t('rulefile_saved_as_file', { filename: filename_for_download }), 'success');
     }
 
     function render() {
@@ -75,19 +167,21 @@ export const GlobalActionBarComponentFactory = function () {
         const { getState, Translation, Helpers } = dependencies;
         const t = Translation.t;
         const current_state = getState();
-        const app_mode = current_state.appMode;
+        const audit_status = current_state?.auditStatus;
+        const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
 
         const bar_element = Helpers.create_element('div', { class_name: 'global-action-bar' });
         const left_group = Helpers.create_element('div', { class_name: ['action-bar-group', 'left'] });
 
         // --- FIX: Logic only applies to the left group (save buttons) ---
-        if (app_mode === 'audit' && current_state.ruleFileContent) {
+        if (audit_status !== 'rulefile_editing' && has_rulefile_loaded) {
             save_audit_button_component_instance.render();
             left_group.appendChild(save_audit_button_container_element);
-        } else if (app_mode === 'edit') {
+        } else if (audit_status === 'rulefile_editing' && has_rulefile_loaded) {
             const save_rulefile_button = Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
-                html_content: `<span>${t('save_and_download_rulefile')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('save') : '')
+                html_content: `<span class="button-text">${t('save_and_download_rulefile')}</span>` +
+                    (Helpers.get_icon_svg ? Helpers.get_icon_svg('save', ['currentColor'], 18) : '')
             });
             save_rulefile_button.addEventListener('click', handle_save_rulefile);
             left_group.appendChild(save_rulefile_button);

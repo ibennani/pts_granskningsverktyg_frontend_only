@@ -111,7 +111,11 @@ export const UploadViewComponent = (function () {
 
                     local_dispatch({
                         type: local_StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
-                        payload: { ruleFileContent: json_content }
+                        payload: {
+                            ruleFileContent: json_content,
+                            originalRuleFileContentString: JSON.stringify(json_content, null, 2),
+                            originalRuleFileFilename: file.name || ''
+                        }
                     });
                     
                     // --- HÄR ÄR ÄNDRINGEN ---
