@@ -15,6 +15,7 @@ export const ActionTypes = {
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
     SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    UPDATE_RULEFILE_CONTENT: 'UPDATE_RULEFILE_CONTENT',
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
@@ -325,6 +326,15 @@ function root_reducer(current_state, action) {
             return {
                 ...current_state,
                 ruleFileContent: action.payload.ruleFileContent
+            };
+
+        case ActionTypes.UPDATE_RULEFILE_CONTENT:
+            return {
+                ...current_state,
+                ruleFileContent: {
+                    ...current_state.ruleFileContent,
+                    ...action.payload.ruleFileContent
+                }
             };
         
         case ActionTypes.SET_UI_FILTER_SETTINGS:

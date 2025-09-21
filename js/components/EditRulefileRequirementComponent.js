@@ -55,24 +55,42 @@ export const EditRulefileRequirementComponent = (function () {
         local_requirement_data.tips = form_element_ref.querySelector('#tips')?.value || '';
         local_requirement_data.examples = form_element_ref.querySelector('#examples')?.value || '';
         
-        if (local_requirement_data.standardReference) {
-            local_requirement_data.standardReference.text = form_element_ref.querySelector('#standardReferenceText')?.value || '';
-            local_requirement_data.standardReference.url = form_element_ref.querySelector('#standardReferenceUrl')?.value || '';
+        if (!local_requirement_data.standardReference) {
+            local_requirement_data.standardReference = { text: '', url: '' };
         }
-        if (local_requirement_data.metadata) {
-            local_requirement_data.metadata.mainCategory.text = form_element_ref.querySelector('#mainCategoryText')?.value || '';
-            local_requirement_data.metadata.subCategory.text = form_element_ref.querySelector('#subCategoryText')?.value || '';
-            local_requirement_data.metadata.impact.isCritical = form_element_ref.querySelector('#isCritical')?.checked || false;
-            local_requirement_data.metadata.impact.primaryScore = parseInt(form_element_ref.querySelector('#primaryScore')?.value, 10) || 0;
-            local_requirement_data.metadata.impact.secondaryScore = parseInt(form_element_ref.querySelector('#secondaryScore')?.value, 10) || 0;
+        local_requirement_data.standardReference.text = form_element_ref.querySelector('#standardReferenceText')?.value || '';
+        local_requirement_data.standardReference.url = form_element_ref.querySelector('#standardReferenceUrl')?.value || '';
+
+        if (!local_requirement_data.metadata) {
+            local_requirement_data.metadata = {};
         }
+        if (!local_requirement_data.metadata.mainCategory) {
+            local_requirement_data.metadata.mainCategory = { text: '' };
+        }
+        local_requirement_data.metadata.mainCategory.text = form_element_ref.querySelector('#mainCategoryText')?.value || '';
+
+        if (!local_requirement_data.metadata.subCategory) {
+            local_requirement_data.metadata.subCategory = { text: '' };
+        }
+        local_requirement_data.metadata.subCategory.text = form_element_ref.querySelector('#subCategoryText')?.value || '';
+
+        if (!local_requirement_data.metadata.impact) {
+            local_requirement_data.metadata.impact = {};
+        }
+        local_requirement_data.metadata.impact.isCritical = form_element_ref.querySelector('#isCritical')?.checked || false;
+        local_requirement_data.metadata.impact.primaryScore = parseInt(form_element_ref.querySelector('#primaryScore')?.value, 10) || 0;
+        local_requirement_data.metadata.impact.secondaryScore = parseInt(form_element_ref.querySelector('#secondaryScore')?.value, 10) || 0;
 
         local_requirement_data.contentType = Array.from(form_element_ref.querySelectorAll('input[name="contentType"]:checked')).map(cb => cb.value);
-        
-        local_requirement_data.classifications = Array.from(form_element_ref.querySelectorAll('input[name="classification"]:checked')).map(cb => ({
+
+        const existing_classifications = Array.isArray(local_requirement_data.classifications) ? local_requirement_data.classifications : [];
+        const preserved_classifications = existing_classifications.filter(c => c?.taxonomyId && c.taxonomyId !== 'wcag22-pour');
+        const selected_pour_concept_ids = Array.from(form_element_ref.querySelectorAll('input[name="classification"]:checked')).map(cb => cb.value);
+        const unique_pour_concepts = Array.from(new Set(selected_pour_concept_ids)).map(conceptId => ({
             taxonomyId: 'wcag22-pour',
-            conceptId: cb.value
+            conceptId
         }));
+        local_requirement_data.classifications = [...preserved_classifications, ...unique_pour_concepts];
 
         const checks_data = [];
         form_element_ref.querySelectorAll('.check-item-edit').forEach(check_el => {
@@ -249,10 +267,8 @@ export const EditRulefileRequirementComponent = (function () {
                 const wrapper = Helpers_create_element('div', { class_name: 'form-check' });
                 const checkbox = Helpers_create_element('input', {
                     id: `classification-${concept.id}`,
-                    name: 'classification',
-                    value: concept.id,
                     class_name: 'form-check-input',
-                    attributes: { type: 'checkbox' }
+                    attributes: { type: 'checkbox', name: 'classification', value: concept.id }
                 });
                 if (selected_concepts.has(concept.id)) {
                     checkbox.checked = true;
@@ -390,12 +406,12 @@ export const EditRulefileRequirementComponent = (function () {
         
         const help_texts_section = Helpers_create_element('div', { class_name: 'audit-section' });
         help_texts_section.appendChild(Helpers_create_element('h2', { text_content: t('help_texts_title') }));
-        help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', true));
-        help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', true));
-        help_texts_section.appendChild(_create_form_group('requirement_exceptions', 'exceptions', true));
-        help_texts_section.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', true));
-        help_texts_section.appendChild(_create_form_group('requirement_tips', 'tips', true));
-        help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', true));
+        help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', local_requirement_data.expectedObservation, true));
+        help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', local_requirement_data.instructions, true));
+        help_texts_section.appendChild(_create_form_group('requirement_exceptions', 'exceptions', local_requirement_data.exceptions, true));
+        help_texts_section.appendChild(_create_form_group('requirement_common_errors', 'commonErrors', local_requirement_data.commonErrors, true));
+        help_texts_section.appendChild(_create_form_group('requirement_tips', 'tips', local_requirement_data.tips, true));
+        help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', local_requirement_data.examples, true));
         form_element_ref.appendChild(help_texts_section);
         
         const checks_container_wrapper = Helpers_create_element('div', { class_name: 'checks-container-edit' });

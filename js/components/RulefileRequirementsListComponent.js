@@ -11,6 +11,7 @@ export const RulefileRequirementsListComponent = (function () {
     let local_getState;
     let local_dispatch;
     let local_StoreActionTypes;
+    let local_subscribe_func; // *** NY ***
 
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_load_css, Helpers_natural_sort;
@@ -21,6 +22,7 @@ export const RulefileRequirementsListComponent = (function () {
     let toolbar_component_instance = null;
     let is_dom_initialized = false;
     let plate_element_ref = null;
+    let unsubscribe_from_store_function = null; // *** NY ***
 
     const SORT_OPTIONS = [
         { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
@@ -55,7 +57,7 @@ export const RulefileRequirementsListComponent = (function () {
                 router_ref('rulefile_edit_requirement', { id: requirementId });
                 break;
             case 'delete-req':
-                // --- KORRIGERING: Peka till rätt vy för bekräftelse ---
+                // *** KORRIGERING AV FELAKTIGT VY-NAMN ***
                 router_ref('confirm_delete', { type: 'requirement', reqId: requirementId });
                 break;
         }
@@ -68,19 +70,32 @@ export const RulefileRequirementsListComponent = (function () {
         });
     }
 
-    async function init(_app_container, _router_cb, _params, _getState, _dispatch, _StoreActionTypes) {
+    // *** NY FUNKTION FÖR ATT HANTERA STATE-UPPDATERINGAR ***
+    function handle_state_update() {
+        if (is_dom_initialized) {
+            _populate_dynamic_content();
+        }
+    }
+
+    async function init(_app_container, _router_cb, _params, _getState, _dispatch, _StoreActionTypes, _subscribe) {
         assign_globals_once();
         app_container_ref = _app_container;
         router_ref = _router_cb;
         local_getState = _getState;
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes;
+        local_subscribe_func = _subscribe; // *** NY ***
 
         if (NotificationComponent_get_global_message_element_reference) {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
 
         await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
+        
+        // *** NYTT: Starta prenumerationen ***
+        if (typeof local_subscribe_func === 'function') {
+            unsubscribe_from_store_function = local_subscribe_func(handle_state_update);
+        }
         
         is_dom_initialized = false;
     }
@@ -252,6 +267,12 @@ export const RulefileRequirementsListComponent = (function () {
     }
 
     function destroy() {
+        // *** NYTT: Avsluta prenumerationen ***
+        if (typeof unsubscribe_from_store_function === 'function') {
+            unsubscribe_from_store_function();
+            unsubscribe_from_store_function = null;
+        }
+
         if (content_div_for_delegation) {
             content_div_for_delegation.removeEventListener('click', handle_list_click);
             content_div_for_delegation = null;
