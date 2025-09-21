@@ -55,7 +55,8 @@ export const RulefileRequirementsListComponent = (function () {
                 router_ref('rulefile_edit_requirement', { id: requirementId });
                 break;
             case 'delete-req':
-                router_ref('rulefile_confirm_delete_requirement', { id: requirementId });
+                // --- KORRIGERING: Peka till rätt vy för bekräftelse ---
+                router_ref('confirm_delete', { type: 'requirement', reqId: requirementId });
                 break;
         }
     }
@@ -198,7 +199,10 @@ export const RulefileRequirementsListComponent = (function () {
         if (focusSelector) {
             sessionStorage.removeItem('focusAfterLoad');
             const elementToFocus = plate_element_ref.querySelector(focusSelector);
-            elementToFocus?.focus();
+            if (elementToFocus) {
+                elementToFocus.focus();
+                window.customFocusApplied = true;
+            }
         } else if (sessionStorage.getItem('focusOnH1AfterLoad')) {
             sessionStorage.removeItem('focusOnH1AfterLoad');
             plate_element_ref.querySelector('#rulefile-list-h1')?.focus();
@@ -248,14 +252,10 @@ export const RulefileRequirementsListComponent = (function () {
     }
 
     function destroy() {
-        // --- KORRIGERING HÄR ---
-        // Se till att eventlyssnaren tas bort korrekt.
         if (content_div_for_delegation) {
             content_div_for_delegation.removeEventListener('click', handle_list_click);
             content_div_for_delegation = null;
         }
-        // --- SLUT PÅ KORRIGERING ---
-
         if (toolbar_component_instance) {
             toolbar_component_instance.destroy();
             toolbar_component_instance = null;
