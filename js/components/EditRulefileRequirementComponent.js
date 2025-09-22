@@ -253,7 +253,8 @@ export const EditRulefileRequirementComponent = (function () {
                             const focus_target = {
                                 type: 'check',
                                 checkId: moved_check.id,
-                                actionOrder: action_order
+                                actionOrder: action_order,
+                                forceScroll: true
                             };
                             _rerender_all_sections({
                                 focusTarget: focus_target,
@@ -261,7 +262,7 @@ export const EditRulefileRequirementComponent = (function () {
                                     type: 'check',
                                     checkId: moved_check.id,
                                     animationClass: 'item-swap-animation',
-                                    animationDuration: 2000
+                                    animationDuration: 1000
                                 },
                                 previousLayout: previous_layout
                             });
@@ -319,11 +320,11 @@ export const EditRulefileRequirementComponent = (function () {
                         if (current_pc_index !== -1) {
                             const direction = action === 'move-pass-criterion-up' ? -1 : 1;
                             const target_pc_index = current_pc_index + direction;
-                                if (target_pc_index >= 0 && target_pc_index < check_for_move.passCriteria.length) {
-                                    const [moved_pc] = check_for_move.passCriteria.splice(current_pc_index, 1);
-                                    check_for_move.passCriteria.splice(target_pc_index, 0, moved_pc);
-                                    const available_pc_actions = [];
-                                    if (target_pc_index > 0) available_pc_actions.push('move-pass-criterion-up');
+                            if (target_pc_index >= 0 && target_pc_index < check_for_move.passCriteria.length) {
+                                const [moved_pc] = check_for_move.passCriteria.splice(current_pc_index, 1);
+                                check_for_move.passCriteria.splice(target_pc_index, 0, moved_pc);
+                                const available_pc_actions = [];
+                                if (target_pc_index > 0) available_pc_actions.push('move-pass-criterion-up');
                                 if (target_pc_index < check_for_move.passCriteria.length - 1) available_pc_actions.push('move-pass-criterion-down');
                                 let preferred_pc_action;
                                 if (direction === -1 && available_pc_actions.includes('move-pass-criterion-up')) {
@@ -343,7 +344,8 @@ export const EditRulefileRequirementComponent = (function () {
                                     type: 'passCriterion',
                                     checkId: check_id,
                                     passCriterionId: moved_pc.id,
-                                    actionOrder: pc_action_order
+                                    actionOrder: pc_action_order,
+                                    forceScroll: true
                                 };
                                 _rerender_all_sections({
                                     focusTarget: focus_target_pc,
@@ -352,7 +354,7 @@ export const EditRulefileRequirementComponent = (function () {
                                         checkId: check_id,
                                         passCriterionId: moved_pc.id,
                                         animationClass: 'item-swap-animation',
-                                        animationDuration: 2000
+                                        animationDuration: 1000
                                     },
                                     previousLayout: previous_layout
                                 });
@@ -646,6 +648,37 @@ export const EditRulefileRequirementComponent = (function () {
 
     function _apply_focus_target(focus_target, animation_duration = 0) {
         if (!focus_target || !form_element_ref) return;
+        const shouldForceScroll = focus_target.forceScroll === true;
+
+        if (focus_target.type === 'control' && typeof focus_target.selector === 'string') {
+            const control_element = form_element_ref.querySelector(focus_target.selector);
+            if (!control_element) return;
+
+            if (shouldForceScroll && typeof control_element.scrollIntoView === 'function') {
+                requestAnimationFrame(() => {
+                    try {
+                        control_element.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                    } catch (error) {
+                        control_element.scrollIntoView();
+                    }
+                });
+            }
+
+            const focusDelayControl = Math.max(120, Math.min(animation_duration || 300, 500));
+            setTimeout(() => {
+                try {
+                    if (shouldForceScroll) {
+                        control_element.focus();
+                    } else {
+                        control_element.focus({ preventScroll: true });
+                    }
+                } catch (error) {
+                    control_element.focus();
+                }
+            }, focusDelayControl);
+            return;
+        }
+
         let container = null;
         if (focus_target.type === 'check') {
             container = form_element_ref.querySelector(`.check-item-edit[data-check-id="${focus_target.checkId}"]`);
@@ -668,27 +701,39 @@ export const EditRulefileRequirementComponent = (function () {
         if (!button_to_focus) {
             button_to_focus = container.querySelector('button[data-action^="move-"]') || container.querySelector('button');
         }
-        if (button_to_focus) {
-            const rect = container.getBoundingClientRect();
-            const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-            const topBuffer = Math.min(160, viewportHeight / 4);
-            const bottomBuffer = topBuffer;
-            const outOfView = rect.top < topBuffer || rect.bottom > viewportHeight - bottomBuffer;
+        if (!button_to_focus) return;
 
-            if (outOfView) {
-                const targetTop = Math.max(0, window.scrollY + rect.top - (viewportHeight / 2) + (rect.height / 2));
-                window.scrollTo({ top: targetTop, behavior: 'smooth' });
-            }
+        const rect = container.getBoundingClientRect();
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const topBuffer = Math.min(160, viewportHeight / 4);
+        const bottomBuffer = topBuffer;
+        const outOfView = rect.top < topBuffer || rect.bottom > viewportHeight - bottomBuffer;
 
-            const focusDelay = Math.max(120, Math.min(animation_duration || 300, 500));
-            setTimeout(() => {
+        if (shouldForceScroll && typeof container.scrollIntoView === 'function') {
+            requestAnimationFrame(() => {
                 try {
-                    button_to_focus.focus({ preventScroll: true });
+                    container.scrollIntoView({ block: 'center', behavior: 'smooth' });
                 } catch (error) {
-                    button_to_focus.focus();
+                    container.scrollIntoView();
                 }
-            }, focusDelay);
+            });
+        } else if (outOfView) {
+            const targetTop = Math.max(0, window.scrollY + rect.top - (viewportHeight / 2) + (rect.height / 2));
+            window.scrollTo({ top: targetTop, behavior: 'smooth' });
         }
+
+        const focusDelay = Math.max(120, Math.min(animation_duration || 300, 500));
+        setTimeout(() => {
+            try {
+                if (shouldForceScroll) {
+                    button_to_focus.focus();
+                } else {
+                    button_to_focus.focus({ preventScroll: true });
+                }
+            } catch (error) {
+                button_to_focus.focus();
+            }
+        }, focusDelay);
     }
 
     function _apply_animation_info(animate_info) {
