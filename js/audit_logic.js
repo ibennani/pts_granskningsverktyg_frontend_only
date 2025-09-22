@@ -205,10 +205,11 @@
     }
 
 
-    function find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object) {
+    function find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, exclude_key = null) {
         if (!sample_object || !rule_file_content?.requirements) return null;
         const ordered_keys = get_ordered_relevant_requirement_keys(rule_file_content, sample_object, 'default');
         for (const req_key of ordered_keys) {
+            if (exclude_key && req_key === exclude_key) continue; // Hoppa över det aktuella kravet
             const req_def = rule_file_content.requirements[req_key];
             if (!req_def) continue;
             const status = calculate_requirement_status(req_def, sample_object.requirementResults?.[req_key]);

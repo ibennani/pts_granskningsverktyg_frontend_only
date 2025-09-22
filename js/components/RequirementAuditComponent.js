@@ -194,7 +194,7 @@ export const RequirementAuditComponent = (function () {
                 if (current_index < ordered_requirement_keys.length - 1) navigate(current_index + 1);
                 break;
             case 'next_unhandled':
-                 const next_key = window.AuditLogic.find_first_incomplete_requirement_key_for_sample(local_getState().ruleFileContent, current_sample);
+                 const next_key = window.AuditLogic.find_first_incomplete_requirement_key_for_sample(local_getState().ruleFileContent, current_sample, params_ref.requirementId);
                  if (next_key) {
                      router_ref('requirement_audit', { sampleId: params_ref.sampleId, requirementId: next_key });
                  } else {
@@ -289,7 +289,8 @@ export const RequirementAuditComponent = (function () {
             is_last_requirement: ordered_requirement_keys.indexOf(params_ref.requirementId) === ordered_requirement_keys.length - 1,
             sample_object: current_sample,
             rule_file_content: state.ruleFileContent,
-            requirement_result: current_result
+            requirement_result: current_result,
+            current_requirement_id: params_ref.requirementId
         };
         top_navigation_instance.render(nav_options);
         bottom_navigation_instance.render(nav_options);

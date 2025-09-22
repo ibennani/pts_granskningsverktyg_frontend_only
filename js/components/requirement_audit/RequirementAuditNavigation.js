@@ -32,7 +32,8 @@ export const RequirementAuditNavigationFactory = function () { // Ändrad till F
             is_last_requirement,
             sample_object,
             rule_file_content,
-            requirement_result
+            requirement_result,
+            current_requirement_id
         } = options;
 
         const t = Translation_t;
@@ -87,7 +88,7 @@ export const RequirementAuditNavigationFactory = function () { // Ändrad till F
             }
 
             // Next unhandled button
-            const next_unhandled_key = AuditLogic_find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object);
+            const next_unhandled_key = AuditLogic_find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, current_requirement_id);
             if (next_unhandled_key !== null) {
                 const next_unhandled_btn = Helpers_create_element('button', { 
                     class_name: 'button button-primary',
