@@ -1,5 +1,7 @@
 // js/components/ViewRulefileRequirementComponent.js
 
+import { marked } from '../utils/markdown.js';
+
 export const ViewRulefileRequirementComponent = (function () {
     'use-strict';
 

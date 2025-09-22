@@ -1,5 +1,7 @@
 // js/components/requirement_audit/RequirementInfoSections.js
 
+import { marked } from '../../utils/markdown.js';
+
 export const RequirementInfoSections = (function () {
     'use-strict';
     

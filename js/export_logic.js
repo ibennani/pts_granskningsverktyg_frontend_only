@@ -1,5 +1,7 @@
 // js/export_logic.js
 
+import ExcelJS from 'exceljs/dist/exceljs.min.js';
+
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
         return window.Translation.t;
@@ -121,7 +123,7 @@ async function export_to_excel(current_audit) {
         return;
     }
 
-    if (typeof ExcelJS === 'undefined') {
+    if (!ExcelJS) {
         show_global_message_internal(t('excel_library_not_loaded'), 'error');
         console.error("ExcelJS library is not loaded.");
         return;

@@ -1,5 +1,7 @@
 // js/components/requirement_audit/ChecklistHandler.js
 
+import { marked } from '../../utils/markdown.js';
+
 export const ChecklistHandler = (function () {
     'use-strict';
 

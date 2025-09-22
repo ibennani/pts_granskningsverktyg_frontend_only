@@ -1,5 +1,7 @@
 // js/components/AddSampleFormComponent.js
 
+import { marked } from '../utils/markdown.js';
+
 export const AddSampleFormComponent = (function () {
     'use-strict';
 

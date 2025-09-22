@@ -1,5 +1,10 @@
 // js/main.js
 
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 import './utils/helpers.js';
 import './translation_logic.js';
 import './components/NotificationComponent.js';

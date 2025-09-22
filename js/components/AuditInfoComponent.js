@@ -1,5 +1,7 @@
 // js/components/AuditInfoComponent.js
 
+import { marked } from '../utils/markdown.js';
+
 export const AuditInfoComponent = (function () {
     'use-strict';
 

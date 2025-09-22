@@ -1,5 +1,7 @@
 // js/features/markdown_toolbar.js
 
+import { marked } from '../utils/markdown.js';
+
 (function () { // IIFE för att undvika globala konflikter
     'use-strict';
 
