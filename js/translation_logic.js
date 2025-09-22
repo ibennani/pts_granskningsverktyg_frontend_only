@@ -1,89 +1,97 @@
-(function () { // IIFE start
+// js/translation_logic.js
+
+(function () {
     'use strict';
+
+    const translationModules = import.meta.glob('./i18n/*.json', { eager: true });
 
     window.Translation = window.Translation || {};
 
-    let current_language_tag = 'sv-SE';
-    let loaded_translations = {};
     const supported_languages = {
         'sv-SE': 'Svenska (Sverige)',
         'en-GB': 'English (UK)'
     };
-    let initial_load_promise = null;
+
     const DEFAULT_LANGUAGE_TAG = 'sv-SE';
 
-    async function load_language_file(lang_tag_to_load) {
-        let effective_lang_tag = lang_tag_to_load;
-        let file_to_fetch = effective_lang_tag;
+    let current_language_tag = DEFAULT_LANGUAGE_TAG;
+    let loaded_translations = {};
+    let initial_load_promise = null;
 
-        if (!supported_languages[effective_lang_tag]) {
-            console.warn(`[Translation] Language tag "${effective_lang_tag}" is not directly in supported_languages list.`);
-            const base_lang = effective_lang_tag.split('-')[0];
-            const matching_supported_base = Object.keys(supported_languages).find(
-                key => key.startsWith(base_lang + '-') || key === base_lang
-            );
-            if (matching_supported_base) {
-                console.log(`[Translation] Falling back from "${effective_lang_tag}" to supported regional/base variant "${matching_supported_base}".`);
-                file_to_fetch = matching_supported_base;
-                effective_lang_tag = matching_supported_base;
-            } else {
-                console.warn(`[Translation] No regional/base variant for "${effective_lang_tag}" (base: "${base_lang}") found. Falling back to default: ${DEFAULT_LANGUAGE_TAG}.`);
-                file_to_fetch = DEFAULT_LANGUAGE_TAG;
-                effective_lang_tag = DEFAULT_LANGUAGE_TAG;
-            }
+    function log(...args) {
+        console.log('[Translation]', ...args);
+    }
+
+    function warn(...args) {
+        console.warn('[Translation]', ...args);
+    }
+
+    function error(...args) {
+        console.error('[Translation]', ...args);
+    }
+
+    function getModuleKey(lang_tag) {
+        return `./i18n/${lang_tag}.json`;
+    }
+
+    function resolve_effective_language_tag(requested_tag) {
+        if (supported_languages[requested_tag]) {
+            return requested_tag;
         }
-        if (current_language_tag === effective_lang_tag && Object.keys(loaded_translations).length > 0 && loaded_translations['app_title']) {
-            console.log(`[Translation] Language "${effective_lang_tag}" is already loaded and current (skipped fetch).`);
-            return loaded_translations;
+
+        const base_lang = requested_tag.split('-')[0];
+        const matching_supported_base = Object.keys(supported_languages).find(
+            key => key === base_lang || key.startsWith(`${base_lang}-`)
+        );
+        if (matching_supported_base) {
+            warn(`Language tag "${requested_tag}" not supported directly. Falling back to "${matching_supported_base}".`);
+            return matching_supported_base;
         }
-        try {
-            const response = await fetch(`js/i18n/${file_to_fetch}.json?v=${new Date().getTime()}`);
-            if (!response.ok) {
-                const failed_url = new URL(`js/i18n/${file_to_fetch}.json`, window.location.href).href;
-                throw new Error(`Failed to load language file ${failed_url}: ${response.status} ${response.statusText}`);
-            }
-            const new_translations = await response.json();
-            console.log(`[Translation] Fetched translations for "${file_to_fetch}":`, JSON.parse(JSON.stringify(new_translations)));
-            loaded_translations = new_translations;
-            current_language_tag = effective_lang_tag;
-            console.log(`[Translation] Global 'loaded_translations' updated for "${current_language_tag}". app_title is now: "${loaded_translations['app_title']}"`);
-            document.documentElement.lang = current_language_tag;
-            return loaded_translations;
-        } catch (error) {
-            console.error(`[Translation] Error loading or parsing language file for "${file_to_fetch}":`, error);
+
+        warn(`Language tag "${requested_tag}" not supported. Falling back to default "${DEFAULT_LANGUAGE_TAG}".`);
+        return DEFAULT_LANGUAGE_TAG;
+    }
+
+    async function load_language_file(lang_tag_to_load) {
+        const effective_lang_tag = resolve_effective_language_tag(lang_tag_to_load || DEFAULT_LANGUAGE_TAG);
+        const moduleKey = getModuleKey(effective_lang_tag);
+        const moduleData = translationModules[moduleKey];
+
+        if (!moduleData) {
+            error(`No bundled translations found for "${effective_lang_tag}" (module key: ${moduleKey}). Falling back to default.`);
             if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
-                console.warn(`[Translation] Falling back to default language '${DEFAULT_LANGUAGE_TAG}' due to error.`);
-                return await load_language_file(DEFAULT_LANGUAGE_TAG);
-            } else if (Object.keys(loaded_translations).length === 0) {
-                console.error(`[Translation] CRITICAL: Could not load default language file '${DEFAULT_LANGUAGE_TAG}'.`);
-                loaded_translations = { app_title: "Audit Tool - Language File Error" };
-                document.documentElement.lang = 'en';
+                return load_language_file(DEFAULT_LANGUAGE_TAG);
             }
+            loaded_translations = { app_title: 'Audit Tool - Missing translations' };
+            current_language_tag = DEFAULT_LANGUAGE_TAG;
+            document.documentElement.lang = 'en';
             return loaded_translations;
         }
+
+        const new_translations = moduleData.default || moduleData;
+        loaded_translations = JSON.parse(JSON.stringify(new_translations));
+        current_language_tag = effective_lang_tag;
+        document.documentElement.lang = current_language_tag;
+
+        log(`Loaded translations for "${current_language_tag}". app_title: "${loaded_translations['app_title']}"`);
+        return loaded_translations;
     }
 
     async function set_language(lang_tag) {
-        console.log(`[Translation] set_language called with: ${lang_tag}. Current: ${current_language_tag}`);
-        if (current_language_tag === lang_tag && Object.keys(loaded_translations).length > 0 && loaded_translations['app_title']) {
-            console.log(`[Translation] Language ${lang_tag} already active, but dispatching event anyway for UI refresh.`);
-        }
+        log(`set_language called with: ${lang_tag}. Current: ${current_language_tag}`);
         await load_language_file(lang_tag);
-        console.log(`[Translation] Dispatching languageChanged event for ${current_language_tag} (after load). app_title: "${loaded_translations['app_title']}"`);
         document.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang_tag: current_language_tag } }));
     }
 
     function t(key, replacements = {}) {
-        const current_translations_for_t = loaded_translations;
-        let translation = current_translations_for_t[key];
-        if (translation === undefined) {
-            console.warn(`[Translation] t(): Key "${key}" not found for lang "${current_language_tag}". Using key as fallback.`);
+        const translation_value = loaded_translations?.[key];
+        if (translation_value === undefined) {
+            warn(`t(): Missing key "${key}" for lang "${current_language_tag}". Returning key.`);
             return `**${key}**`;
         }
-        translation = translation.replace(/{([^{}]+)}/g, (match, placeholder_key) => {
-            return replacements[placeholder_key] !== undefined ? replacements[placeholder_key] : match;
-        });
-        return translation;
+        return translation_value.replace(/{([^{}]+)}/g, (match, placeholder_key) => (
+            replacements[placeholder_key] !== undefined ? replacements[placeholder_key] : match
+        ));
     }
 
     window.Translation.set_language = set_language;
@@ -91,25 +99,15 @@
     window.Translation.get_current_language_code = () => current_language_tag;
     window.Translation.get_supported_languages = () => ({ ...supported_languages });
 
-    let browser_lang_tag_resolved = (navigator.language || DEFAULT_LANGUAGE_TAG);
-    const base_browser_lang_check = browser_lang_tag_resolved.split('-')[0];
-    let found_supported_browser_lang = false;
-    for (const key_lang in supported_languages) {
-        if (key_lang === browser_lang_tag_resolved || key_lang.startsWith(base_browser_lang_check + '-')) {
-            browser_lang_tag_resolved = key_lang;
-            found_supported_browser_lang = true;
-            break;
-        }
-    }
-    if (!found_supported_browser_lang) {
-        browser_lang_tag_resolved = DEFAULT_LANGUAGE_TAG;
+    function resolve_browser_language() {
+        const navigator_lang = navigator.language || DEFAULT_LANGUAGE_TAG;
+        return resolve_effective_language_tag(navigator_lang);
     }
 
-    console.log("[Translation] Initial browser language resolved to:", browser_lang_tag_resolved);
-    initial_load_promise = load_language_file(browser_lang_tag_resolved);
+    const initial_lang = resolve_browser_language();
+    log('Initial browser language resolved to:', initial_lang);
+    initial_load_promise = load_language_file(initial_lang);
 
     window.Translation.ensure_initial_load = () => initial_load_promise;
-
-    console.log("[Translation] IIFE executed, window.Translation keys:", Object.keys(window.Translation));
-
-})(); // IIFE end
+    log('Translation bootstrap completed.');
+})();
