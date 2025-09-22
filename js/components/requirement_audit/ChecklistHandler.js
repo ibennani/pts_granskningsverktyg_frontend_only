@@ -115,7 +115,7 @@ export const ChecklistHandler = (function () {
 
         container_ref.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
         
-        requirement_definition_ref.checks.forEach(check_definition => {
+        requirement_definition_ref.checks.forEach((check_definition, check_index) => {
             const check_wrapper = Helpers_create_element('div', { 
                 class_name: 'check-item',
                 attributes: {'data-check-id': check_definition.id }
@@ -146,16 +146,18 @@ export const ChecklistHandler = (function () {
             check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'check-status-display' }));
             
             const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
-            (check_definition.passCriteria || []).forEach(pc_def => {
+            (check_definition.passCriteria || []).forEach((pc_def, pc_index) => {
                 const pc_item_li = Helpers_create_element('li', { 
                     class_name: 'pass-criterion-item', 
                     attributes: {'data-pc-id': pc_def.id }
                 });
 
                 // --- ÄNDRING: Använd Markdown-parser ---
+                const numbering = `${check_index + 1}.${pc_index + 1}`;
+                const numbering_prefix = `<strong>${t('pass_criterion_label')} ${numbering}:</strong> `;
                 const requirement_content_div = Helpers_create_element('div', { 
                     class_name: ['pass-criterion-requirement', 'markdown-content'],
-                    html_content: _safe_parse_markdown_inline(pc_def.requirement)
+                    html_content: `${numbering_prefix}${_safe_parse_markdown_inline(pc_def.requirement)}`
                 });
                 pc_item_li.appendChild(requirement_content_div);
                 

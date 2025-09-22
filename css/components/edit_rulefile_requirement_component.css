@@ -1,5 +1,21 @@
 /* css/components/edit_rulefile_requirement_component.css */
 
+:root {
+    --swap-border-start: rgba(0, 92, 191, 1);
+    --swap-border-mid: rgba(0, 92, 191, 0.6);
+    --swap-border-end: rgba(0, 92, 191, 0);
+    --swap-shadow-start: rgba(0, 123, 255, 0.35);
+    --swap-shadow-mid: rgba(0, 123, 255, 0.22);
+}
+
+[data-theme="dark"] {
+    --swap-border-start: rgba(255, 198, 84, 1);
+    --swap-border-mid: rgba(255, 198, 84, 0.65);
+    --swap-border-end: rgba(255, 198, 84, 0);
+    --swap-shadow-start: rgba(255, 198, 84, 0.55);
+    --swap-shadow-mid: rgba(255, 198, 84, 0.35);
+}
+
 /* Sektion för grundläggande info och hjälptexter */
 .edit-rulefile-requirement-view .audit-section {
     margin-bottom: 2rem;
@@ -23,12 +39,6 @@
     position: relative;
 }
 
-.check-item-edit > .delete-item-btn {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-}
-
 [data-theme="dark"] .check-item-edit {
     background-color: color-mix(in srgb, var(--background-color) 95%, black);
 }
@@ -44,18 +54,78 @@
     position: relative;
 }
 
-.pc-item-edit > .delete-item-btn {
-    position: absolute;
-    top: 0;
-    right: 0;
-    /* --- KORRIGERING: Lägg till lite marginal under --- */
-    margin-bottom: 0.5rem; 
-}
-
 /* --- NY REGEL: Lägg till skiljelinje mellan kriterier --- */
 .pc-item-edit:not(:last-of-type) {
     padding-bottom: 1.5rem;
     border-bottom: 1px dashed var(--secondary-color);
+}
+
+.form-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.form-group-header label {
+    margin: 0;
+}
+
+.form-group-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+}
+
+.form-group-header-actions .delete-item-btn {
+    margin-left: auto;
+}
+
+.move-item-btn {
+    white-space: nowrap;
+}
+
+
+.new-item-animation {
+    animation: fadeInHighlight 0.5s ease;
+}
+
+.item-swap-animation {
+    animation: swapHighlight 2s ease;
+    border: 3px solid transparent;
+    animation-fill-mode: forwards;
+}
+
+@keyframes fadeInHighlight {
+    0% {
+        box-shadow: 0 0 0 6px rgba(0, 123, 255, 0.25);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    }
+}
+
+@keyframes swapHighlight {
+    0% {
+        border-color: var(--swap-border-start);
+        box-shadow: 0 0 0 14px var(--swap-shadow-start);
+        opacity: 1;
+    }
+    50% {
+        border-color: var(--swap-border-start);
+        box-shadow: 0 0 0 14px var(--swap-shadow-start);
+        opacity: 1;
+    }
+    75% {
+        border-color: var(--swap-border-mid);
+        box-shadow: 0 0 0 22px var(--swap-shadow-mid);
+    }
+    100% {
+        border-color: var(--swap-border-end);
+        box-shadow: 0 0 0 0 var(--swap-shadow-start);
+        opacity: 1;
+    }
 }
 
 /* HIERARKISKA INNEHÅLLSTYPER */
@@ -136,9 +206,25 @@
   to { opacity: 1; transform: translateY(0); max-height: 500px; }
 }
 
+@keyframes swapHighlight {
+  0% { transform: translateY(var(--swap-offset, 0)); opacity: 0.7; }
+  20% { transform: translateY(0); opacity: 1; }
+  50% { box-shadow: 0 0 18px rgba(48, 123, 246, 0.45); }
+  100% { box-shadow: none; opacity: 1; }
+}
+
 .new-item-animation {
   animation: fadeInSlideDown 0.3s ease-out forwards;
   overflow: hidden;
+}
+
+.item-swap-animation {
+  position: relative;
+  animation: swapHighlight 1s ease forwards;
+}
+
+.swap-animation-active {
+  pointer-events: none;
 }
 
 .checks-container-edit > .button-primary {

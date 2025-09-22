@@ -1,5 +1,17 @@
 // js/main.js
 
+import './utils/helpers.js';
+import './translation_logic.js';
+import './components/NotificationComponent.js';
+import './components/ProgressBarComponent.js';
+import './audit_logic.js';
+import './export_logic.js';
+import './logic/save_audit_logic.js';
+import './validation_logic.js';
+import './logic/rulefile_updater_logic.js';
+import './logic/ScoreCalculator.js';
+import './features/markdown_toolbar.js';
+
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
@@ -373,6 +385,13 @@ window.StoreActionTypes = StoreActionTypes;
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 if (current_view_name_rendered !== 'confirm_sample_edit') {
+                    if (current_view_name_rendered === 'rulefile_edit_requirement') {
+                        const skip_count = Number(window.skipRulefileRequirementRender) || 0;
+                        if (skip_count > 0) {
+                            window.skipRulefileRequirementRender = skip_count - 1;
+                            return;
+                        }
+                    }
                     current_view_component_instance.render();
                 }
             }

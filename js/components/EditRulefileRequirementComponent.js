@@ -19,6 +19,40 @@ export const EditRulefileRequirementComponent = (function () {
     let form_element_ref;
     let local_requirement_data = null;
 
+    function _create_move_check_button(direction, check) {
+        const t = Translation_t;
+        const is_up = direction === 'up';
+        const icon_name = is_up ? 'arrow_upward' : 'arrow_downward';
+        return Helpers_create_element('button', {
+            type: 'button',
+            class_name: 'button button-default button-small move-item-btn',
+            attributes: {
+                'data-action': is_up ? 'move-check-up' : 'move-check-down',
+                'aria-label': t(is_up ? 'move_check_up_aria_label' : 'move_check_down_aria_label', {
+                    conditionText: check.condition || t('aria_label_empty_content')
+                })
+            },
+            html_content: `<span>${t(is_up ? 'move_item_up' : 'move_item_down')}</span>` + Helpers_get_icon_svg(icon_name, ['currentColor'], 16)
+        });
+    }
+
+    function _create_move_pass_criterion_button(direction, check, pass_criterion) {
+        const t = Translation_t;
+        const is_up = direction === 'up';
+        const icon_name = is_up ? 'arrow_upward' : 'arrow_downward';
+        return Helpers_create_element('button', {
+            type: 'button',
+            class_name: 'button button-default button-small move-item-btn',
+            attributes: {
+                'data-action': is_up ? 'move-pass-criterion-up' : 'move-pass-criterion-down',
+                'aria-label': t(is_up ? 'move_pass_criterion_up_aria_label' : 'move_pass_criterion_down_aria_label', {
+                    criterionText: pass_criterion.requirement || t('aria_label_empty_content')
+                })
+            },
+            html_content: `<span>${t(is_up ? 'move_item_up' : 'move_item_down')}</span>` + Helpers_get_icon_svg(icon_name, ['currentColor'], 16)
+        });
+    }
+
     function assign_globals_once() {
         if (Translation_t) return;
         Translation_t = window.Translation.t;
@@ -150,18 +184,34 @@ export const EditRulefileRequirementComponent = (function () {
         // Uppdatera modellen från DOM innan vi ändrar modellen
         _update_local_data_from_form();
 
+        const previous_layout = _capture_positions();
+
         const action = button.dataset.action;
         let check_id, pc_id;
 
         switch (action) {
             case 'add-check':
+                const new_check_id = `new-check-${Helpers_generate_uuid_v4()}`;
                 local_requirement_data.checks.push({
-                    id: `new-check-${Helpers_generate_uuid_v4()}`,
+                    id: new_check_id,
                     condition: '',
                     logic: 'AND',
                     passCriteria: []
                 });
-                _rerender_all_sections(); // Rendera om hela formuläret
+                _rerender_all_sections({
+                    focusTarget: {
+                        type: 'check',
+                        checkId: new_check_id,
+                        actionOrder: ['move-check-up', 'move-check-down', 'delete-check']
+                    },
+                    animateInfo: {
+                        type: 'check',
+                        checkId: new_check_id,
+                        animationClass: 'new-item-animation',
+                        animationDuration: 500
+                    },
+                    previousLayout: previous_layout
+                });
                 break;
 
             case 'delete-check':
@@ -171,16 +221,81 @@ export const EditRulefileRequirementComponent = (function () {
                 }
                 break;
 
+            case 'move-check-up':
+            case 'move-check-down':
+                check_id = button.closest('.check-item-edit')?.dataset.checkId;
+                if (check_id) {
+                    const checks = local_requirement_data.checks || [];
+                    const current_index = checks.findIndex(c => c.id === check_id);
+                    if (current_index !== -1) {
+                        const direction = action === 'move-check-up' ? -1 : 1;
+                        const target_index = current_index + direction;
+                        if (target_index >= 0 && target_index < checks.length) {
+                            const [moved_check] = checks.splice(current_index, 1);
+                            checks.splice(target_index, 0, moved_check);
+                            const available_actions = [];
+                            if (target_index > 0) available_actions.push('move-check-up');
+                            if (target_index < checks.length - 1) available_actions.push('move-check-down');
+                            let preferred_action;
+                            if (direction === -1 && available_actions.includes('move-check-up')) {
+                                preferred_action = 'move-check-up';
+                            } else if (direction === 1 && available_actions.includes('move-check-down')) {
+                                preferred_action = 'move-check-down';
+                            } else {
+                                preferred_action = direction === -1 ? 'move-check-down' : 'move-check-up';
+                            }
+                            const action_order = [];
+                            if (preferred_action && available_actions.includes(preferred_action)) {
+                                action_order.push(preferred_action);
+                            }
+                            available_actions.forEach(a => { if (!action_order.includes(a)) action_order.push(a); });
+                            action_order.push('delete-check');
+                            const focus_target = {
+                                type: 'check',
+                                checkId: moved_check.id,
+                                actionOrder: action_order
+                            };
+                            _rerender_all_sections({
+                                focusTarget: focus_target,
+                                animateInfo: {
+                                    type: 'check',
+                                    checkId: moved_check.id,
+                                    animationClass: 'item-swap-animation',
+                                    animationDuration: 1000
+                                },
+                                previousLayout: previous_layout
+                            });
+                        }
+                    }
+                }
+                break;
+
             case 'add-pass-criterion':
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 const check = local_requirement_data.checks.find(c => c.id === check_id);
                 if (check) {
+                    const new_pc_id = `new-pc-${Helpers_generate_uuid_v4()}`;
                     check.passCriteria.push({
-                        id: `new-pc-${Helpers_generate_uuid_v4()}`,
+                        id: new_pc_id,
                         requirement: '',
                         failureStatementTemplate: ''
                     });
-                    _rerender_all_sections(); // Rendera om hela formuläret
+                    _rerender_all_sections({
+                        focusTarget: {
+                            type: 'passCriterion',
+                            checkId: check_id,
+                            passCriterionId: new_pc_id,
+                            actionOrder: ['move-pass-criterion-up', 'move-pass-criterion-down', 'delete-pass-criterion']
+                        },
+                        animateInfo: {
+                            type: 'passCriterion',
+                            checkId: check_id,
+                            passCriterionId: new_pc_id,
+                            animationClass: 'new-item-animation',
+                            animationDuration: 500
+                        },
+                        previousLayout: previous_layout
+                    });
                 }
                 break;
 
@@ -192,13 +307,68 @@ export const EditRulefileRequirementComponent = (function () {
                     router_ref('confirm_delete', { type: 'criterion', reqId: params_ref.id, checkId: check_id, pcId: pc_id });
                 }
                 break;
+
+            case 'move-pass-criterion-up':
+            case 'move-pass-criterion-down':
+                check_id = button.closest('.check-item-edit')?.dataset.checkId;
+                pc_id = button.closest('.pc-item-edit')?.dataset.pcId;
+                if (check_id && pc_id) {
+                    const check_for_move = local_requirement_data.checks.find(c => c.id === check_id);
+                    if (check_for_move && Array.isArray(check_for_move.passCriteria)) {
+                        const current_pc_index = check_for_move.passCriteria.findIndex(pc => pc.id === pc_id);
+                        if (current_pc_index !== -1) {
+                            const direction = action === 'move-pass-criterion-up' ? -1 : 1;
+                            const target_pc_index = current_pc_index + direction;
+                                if (target_pc_index >= 0 && target_pc_index < check_for_move.passCriteria.length) {
+                                    const [moved_pc] = check_for_move.passCriteria.splice(current_pc_index, 1);
+                                    check_for_move.passCriteria.splice(target_pc_index, 0, moved_pc);
+                                    const available_pc_actions = [];
+                                    if (target_pc_index > 0) available_pc_actions.push('move-pass-criterion-up');
+                                if (target_pc_index < check_for_move.passCriteria.length - 1) available_pc_actions.push('move-pass-criterion-down');
+                                let preferred_pc_action;
+                                if (direction === -1 && available_pc_actions.includes('move-pass-criterion-up')) {
+                                    preferred_pc_action = 'move-pass-criterion-up';
+                                } else if (direction === 1 && available_pc_actions.includes('move-pass-criterion-down')) {
+                                    preferred_pc_action = 'move-pass-criterion-down';
+                                } else {
+                                    preferred_pc_action = direction === -1 ? 'move-pass-criterion-down' : 'move-pass-criterion-up';
+                                }
+                                const pc_action_order = [];
+                                if (preferred_pc_action && available_pc_actions.includes(preferred_pc_action)) {
+                                    pc_action_order.push(preferred_pc_action);
+                                }
+                                available_pc_actions.forEach(a => { if (!pc_action_order.includes(a)) pc_action_order.push(a); });
+                                pc_action_order.push('delete-pass-criterion');
+                                const focus_target_pc = {
+                                    type: 'passCriterion',
+                                    checkId: check_id,
+                                    passCriterionId: moved_pc.id,
+                                    actionOrder: pc_action_order
+                                };
+                                _rerender_all_sections({
+                                    focusTarget: focus_target_pc,
+                                    animateInfo: {
+                                        type: 'passCriterion',
+                                        checkId: check_id,
+                                        passCriterionId: moved_pc.id,
+                                        animationClass: 'item-swap-animation',
+                                        animationDuration: 1000
+                                    },
+                                    previousLayout: previous_layout
+                                });
+                            }
+                        }
+                    }
+                }
+                break;
         }
     }
 
-    function _create_form_group(label_key, id, value, is_textarea = false, input_type = 'text') {
+    function _create_form_group(label_key, id, value, is_textarea = false, input_type = 'text', label_text_override = null) {
         const t = Translation_t;
         const form_group = Helpers_create_element('div', { class_name: 'form-group' });
-        form_group.appendChild(Helpers_create_element('label', { attributes: { for: id }, text_content: t(label_key) }));
+        const label_text = label_text_override || t(label_key);
+        form_group.appendChild(Helpers_create_element('label', { attributes: { for: id }, text_content: label_text }));
         
         let input;
         if (is_textarea) {
@@ -384,12 +554,18 @@ export const EditRulefileRequirementComponent = (function () {
         return section_wrapper;
     }
     
-    function _rerender_all_sections(animate_last_item = false) {
+    function _rerender_all_sections(options = {}) {
+        if (typeof options === 'boolean') {
+            options = { animate_last_item: options };
+        }
+        const focus_target = options.focusTarget || null;
+        const focus_animation_duration = options.animateInfo?.animationDuration || 0;
+        const previous_layout = options.previousLayout || null;
         const t = Translation_t;
         const scroll_position = window.scrollY;
         
         // Spara referens till det element som hade fokus
-        const active_element_id = document.activeElement ? document.activeElement.id : null;
+        const active_element_id = (!focus_target && document.activeElement) ? document.activeElement.id : null;
 
         form_element_ref.innerHTML = ''; // Rensa hela formuläret
 
@@ -416,7 +592,8 @@ export const EditRulefileRequirementComponent = (function () {
         
         const checks_container_wrapper = Helpers_create_element('div', { class_name: 'checks-container-edit' });
         form_element_ref.appendChild(checks_container_wrapper);
-        _rerender_checks_section(animate_last_item);
+        _rerender_checks_section(options);
+        _apply_flip_animation(previous_layout, options.animateInfo);
         
         form_element_ref.appendChild(_create_classification_section(local_requirement_data.metadata, local_requirement_data.classifications));
         form_element_ref.appendChild(_create_impact_section(local_requirement_data.metadata));
@@ -436,9 +613,18 @@ export const EditRulefileRequirementComponent = (function () {
             const elementToFocus = document.getElementById(active_element_id);
             elementToFocus?.focus();
         }
+
+        if (focus_target) {
+            requestAnimationFrame(() => {
+                _apply_focus_target(focus_target, focus_animation_duration);
+            });
+        }
     }
 
-    function _rerender_checks_section(animate_last_item = false) {
+    function _rerender_checks_section(options = {}) {
+        if (typeof options === 'boolean') {
+            options = { animate_last_item: options };
+        }
         const t = Translation_t;
         let checks_section = form_element_ref.querySelector('.checks-container-edit');
         if (!checks_section) return;
@@ -446,20 +632,182 @@ export const EditRulefileRequirementComponent = (function () {
         checks_section.innerHTML = '';
         checks_section.appendChild(Helpers_create_element('h2', { id: 'checks-section-heading', attributes: {tabindex: '-1'}, text_content: t('checks_title') }));
 
-        (local_requirement_data.checks || []).forEach((check) => {
-            const check_el = _create_check_fieldset(check);
+        const checks = local_requirement_data.checks || [];
+        checks.forEach((check, index) => {
+            const check_el = _create_check_fieldset(check, index, checks.length);
             checks_section.appendChild(check_el);
         });
 
         const add_check_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-primary'], attributes: { 'data-action': 'add-check' }, text_content: t('add_check_button') });
         checks_section.appendChild(add_check_button);
+
+        _apply_animation_info(options.animateInfo);
+    }
+
+    function _apply_focus_target(focus_target, animation_duration = 0) {
+        if (!focus_target || !form_element_ref) return;
+        let container = null;
+        if (focus_target.type === 'check') {
+            container = form_element_ref.querySelector(`.check-item-edit[data-check-id="${focus_target.checkId}"]`);
+        } else if (focus_target.type === 'passCriterion') {
+            const check_container = form_element_ref.querySelector(`.check-item-edit[data-check-id="${focus_target.checkId}"]`);
+            container = check_container?.querySelector(`.pc-item-edit[data-pc-id="${focus_target.passCriterionId}"]`);
+        }
+        if (!container) return;
+
+        const action_order = Array.isArray(focus_target.actionOrder) ? focus_target.actionOrder : [];
+        let button_to_focus = null;
+        for (const action_name of action_order) {
+            if (typeof action_name !== 'string' || !action_name) continue;
+            const candidate = container.querySelector(`button[data-action="${action_name}"]`);
+            if (candidate) {
+                button_to_focus = candidate;
+                break;
+            }
+        }
+        if (!button_to_focus) {
+            button_to_focus = container.querySelector('button[data-action^="move-"]') || container.querySelector('button');
+        }
+        if (button_to_focus) {
+            const rect = container.getBoundingClientRect();
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+            const topBuffer = Math.min(160, viewportHeight / 4);
+            const bottomBuffer = topBuffer;
+            const outOfView = rect.top < topBuffer || rect.bottom > viewportHeight - bottomBuffer;
+
+            if (outOfView) {
+                const targetTop = Math.max(0, window.scrollY + rect.top - (viewportHeight / 2) + (rect.height / 2));
+                window.scrollTo({ top: targetTop, behavior: 'smooth' });
+            }
+
+            const focusDelay = Math.max(120, Math.min(animation_duration || 300, 500));
+            setTimeout(() => {
+                try {
+                    button_to_focus.focus({ preventScroll: true });
+                } catch (error) {
+                    button_to_focus.focus();
+                }
+            }, focusDelay);
+        }
+    }
+
+    function _apply_animation_info(animate_info) {
+        if (!animate_info || !form_element_ref) return;
+        const animation_class = animate_info.animationClass || 'new-item-animation';
+        const animation_duration = animate_info.animationDuration || 400;
+
+        requestAnimationFrame(() => {
+            let target_element = null;
+            if (animate_info.type === 'check') {
+                target_element = form_element_ref.querySelector(`.check-item-edit[data-check-id="${animate_info.checkId}"]`);
+            } else if (animate_info.type === 'passCriterion') {
+                const check_container = form_element_ref.querySelector(`.check-item-edit[data-check-id="${animate_info.checkId}"]`);
+                target_element = check_container?.querySelector(`.pc-item-edit[data-pc-id="${animate_info.passCriterionId}"]`);
+            }
+            if (!target_element) return;
+
+            const zIndexValue = (animate_info.animationClass === 'item-swap-animation') ? '50' : '20';
+            target_element.style.zIndex = zIndexValue;
+            target_element.classList.add(animation_class);
+
+            if (animate_info.animationClass === 'item-swap-animation') {
+                const is_dark = document.documentElement.getAttribute('data-theme') === 'dark';
+                const start_color = is_dark ? 'rgba(120, 180, 255, 0.65)' : 'rgba(0, 123, 255, 0.45)';
+                const end_color = is_dark ? 'rgba(120, 180, 255, 0)' : 'rgba(0, 123, 255, 0)';
+                target_element.animate([
+                    { boxShadow: `0 0 0 6px ${start_color}` },
+                    { boxShadow: `0 0 0 0 ${end_color}` }
+                ], {
+                    duration: animation_duration,
+                    easing: 'ease-out'
+                });
+            }
+
+            setTimeout(() => {
+                target_element.classList.remove(animation_class);
+                target_element.style.removeProperty('z-index');
+            }, animation_duration);
+        });
+    }
+
+    function _capture_positions() {
+        if (!form_element_ref) return null;
+        const layout = { checks: {}, passCriteria: {} };
+        form_element_ref.querySelectorAll('.check-item-edit').forEach(checkEl => {
+            const check_id = checkEl.dataset.checkId;
+            if (!check_id) return;
+            layout.checks[check_id] = checkEl.getBoundingClientRect();
+            checkEl.querySelectorAll('.pc-item-edit').forEach(pcEl => {
+                const pc_id = pcEl.dataset.pcId;
+                if (!pc_id) return;
+                layout.passCriteria[`${check_id}::${pc_id}`] = pcEl.getBoundingClientRect();
+            });
+        });
+        return layout;
+    }
+
+    function _apply_flip_animation(previous_layout, animate_info) {
+        if (!previous_layout || !form_element_ref) return;
+        const flip_duration = animate_info?.animationDuration || 250;
+
+        requestAnimationFrame(() => {
+            const animate_element = (element, prev_rect, context) => {
+                if (!element || !prev_rect) return;
+                const new_rect = element.getBoundingClientRect();
+                const delta_x = prev_rect.left - new_rect.left;
+                const delta_y = prev_rect.top - new_rect.top;
+                if (Math.abs(delta_x) < 1 && Math.abs(delta_y) < 1) return;
+                const is_target = animate_info && (
+                    (animate_info.type === 'check' && context?.checkId === animate_info.checkId && !context?.passCriterionId) ||
+                    (animate_info.type === 'passCriterion' && context?.checkId === animate_info.checkId && context?.passCriterionId === animate_info.passCriterionId)
+                );
+                if (is_target) {
+                    element.style.zIndex = '50';
+                }
+                const animation = element.animate([
+                    { transform: `translate(${delta_x}px, ${delta_y}px)` },
+                    { transform: 'translate(0, 0)' }
+                ], {
+                    duration: flip_duration,
+                    easing: 'ease-out'
+                });
+                animation.onfinish = animation.oncancel = () => {
+                    if (is_target) {
+                        element.style.removeProperty('z-index');
+                    }
+                };
+            };
+
+            form_element_ref.querySelectorAll('.check-item-edit').forEach(checkEl => {
+                const check_id = checkEl.dataset.checkId;
+                animate_element(checkEl, previous_layout.checks?.[check_id], { checkId: check_id });
+                checkEl.querySelectorAll('.pc-item-edit').forEach(pcEl => {
+                    const pc_id = pcEl.dataset.pcId;
+                    animate_element(pcEl, previous_layout.passCriteria?.[`${check_id}::${pc_id}`], { checkId: check_id, passCriterionId: pc_id });
+                });
+            });
+        });
     }
     
-    function _create_check_fieldset(check) {
+    function _create_check_fieldset(check, index, total_checks) {
         const t = Translation_t;
         const sane_check_id = Helpers_sanitize_id_for_css_selector(check.id);
         const check_el = Helpers_create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
-        
+
+        const header_wrapper = Helpers_create_element('div', { class_name: 'form-group-header' });
+        const check_label_text = `${t('check_item_title')} ${index + 1}`;
+        header_wrapper.appendChild(Helpers_create_element('label', {
+            attributes: { for: `check_${sane_check_id}_condition` },
+            text_content: check_label_text
+        }));
+
+        const header_actions = Helpers_create_element('div', { class_name: 'form-group-header-actions' });
+        if (index > 0) {
+            header_actions.appendChild(_create_move_check_button('up', check));
+        }
+        if (index < total_checks - 1) {
+            header_actions.appendChild(_create_move_check_button('down', check));
+        }
         const delete_check_btn = Helpers_create_element('button', {
             type: 'button', 
             class_name: 'button button-danger button-small delete-item-btn', 
@@ -467,9 +815,11 @@ export const EditRulefileRequirementComponent = (function () {
                 'data-action': 'delete-check',
                 'aria-label': t('delete_check_aria_label', { conditionText: check.condition || t('aria_label_empty_content') })
             }, 
-            html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_check_button')}</span>`
+            html_content: `<span>${t('delete_check_button')}</span>` + Helpers_get_icon_svg('delete')
         });
-        check_el.appendChild(delete_check_btn);
+        header_actions.appendChild(delete_check_btn);
+        header_wrapper.appendChild(header_actions);
+        check_el.appendChild(header_wrapper);
         
         check_el.appendChild(_create_form_group('check_condition_label', `check_${sane_check_id}_condition`, check.condition, true));
 
@@ -487,8 +837,9 @@ export const EditRulefileRequirementComponent = (function () {
         check_el.appendChild(logic_fieldset);
         
         const pc_container = Helpers_create_element('div', { class_name: 'pc-container-edit' });
-        (check.passCriteria || []).forEach((pc) => {
-            pc_container.appendChild(_create_pc_item(pc, sane_check_id));
+        const pass_criteria = check.passCriteria || [];
+        pass_criteria.forEach((pc, pc_index) => {
+            pc_container.appendChild(_create_pc_item(check, pc, sane_check_id, pc_index, pass_criteria.length, index));
         });
         
         const add_pc_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-default', 'button-small'], attributes: { 'data-action': 'add-pass-criterion' }, text_content: t('add_criterion_button') });
@@ -498,10 +849,28 @@ export const EditRulefileRequirementComponent = (function () {
         return check_el;
     }
 
-    function _create_pc_item(pc, sane_check_id) {
+    function _create_pc_item(check, pc, sane_check_id, pc_index, total_pass_criteria, check_index) {
         const t = Translation_t;
         const sane_pc_id = Helpers_sanitize_id_for_css_selector(pc.id);
         const pc_el = Helpers_create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
+
+        const numbering = `${check_index + 1}.${pc_index + 1}`;
+        const numbered_label_text = `${t('pass_criterion_label')} ${numbering}`;
+
+        const header_wrapper = Helpers_create_element('div', { class_name: 'form-group-header' });
+        header_wrapper.appendChild(Helpers_create_element('span', {
+            class_name: 'form-group-header-title',
+            text_content: numbered_label_text
+        }));
+
+        const header_actions = Helpers_create_element('div', { class_name: 'form-group-header-actions' });
+        if (pc_index > 0) {
+            header_actions.appendChild(_create_move_pass_criterion_button('up', check, pc));
+        }
+        if (pc_index < total_pass_criteria - 1) {
+            header_actions.appendChild(_create_move_pass_criterion_button('down', check, pc));
+        }
+
         const delete_pc_btn = Helpers_create_element('button', {
             type: 'button', 
             class_name: 'button button-danger button-small delete-item-btn', 
@@ -509,10 +878,17 @@ export const EditRulefileRequirementComponent = (function () {
                 'data-action': 'delete-pass-criterion',
                 'aria-label': t('delete_criterion_aria_label', { criterionText: pc.requirement || t('aria_label_empty_content') })
             }, 
-            html_content: Helpers_get_icon_svg('delete') + `<span>${t('delete_criterion_button')}</span>`
+            html_content: `<span>${t('delete_criterion_button')}</span>` + Helpers_get_icon_svg('delete')
         });
-        pc_el.appendChild(delete_pc_btn);
-        pc_el.appendChild(_create_form_group('pass_criterion_label', `pc_${sane_check_id}_${sane_pc_id}_requirement`, pc.requirement, true));
+        header_actions.appendChild(delete_pc_btn);
+        header_wrapper.appendChild(header_actions);
+        pc_el.appendChild(header_wrapper);
+        const requirement_group = _create_form_group('pass_criterion_field_label', `pc_${sane_check_id}_${sane_pc_id}_requirement`, pc.requirement, true);
+        const requirement_textarea = requirement_group.querySelector('textarea');
+        if (requirement_textarea) {
+            requirement_textarea.setAttribute('aria-label', numbered_label_text);
+        }
+        pc_el.appendChild(requirement_group);
         pc_el.appendChild(_create_form_group('failure_template_label', `pc_${sane_check_id}_${sane_pc_id}_failureTemplate`, pc.failureStatementTemplate, true));
         return pc_el;
     }

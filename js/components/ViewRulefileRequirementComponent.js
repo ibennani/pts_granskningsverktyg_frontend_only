@@ -117,7 +117,7 @@ export const ViewRulefileRequirementComponent = (function () {
         const top_nav_bar = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         const back_button_top = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: Helpers_get_icon_svg('arrow_back') + `<span>${t('back_to_requirement_list')}</span>`
+            html_content: `<span>${t('back_to_requirement_list')}</span>` + Helpers_get_icon_svg('arrow_back')
         });
         back_button_top.addEventListener('click', () => router_ref('rulefile_requirements'));
         top_nav_bar.appendChild(back_button_top);
@@ -154,17 +154,32 @@ export const ViewRulefileRequirementComponent = (function () {
         // Checkpoints
         const checks_container = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
         checks_container.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
-        (requirement.checks || []).forEach(check => {
+        (requirement.checks || []).forEach((check, check_index) => {
             const check_wrapper = Helpers_create_element('div', { class_name: 'check-item status-not_audited', style: 'border-left-width: 3px;' });
-            const condition_h3 = Helpers_create_element('h3', { class_name: 'check-condition-title', html_content: _safe_parse_markdown(check.condition, true) });
+            const condition_h3 = Helpers_create_element('h3', { class_name: 'check-condition-title', html_content: _safe_parse_markdown(check.condition) });
             check_wrapper.appendChild(condition_h3);
+            const check_number_label = Helpers_create_element('p', {
+                class_name: 'check-number-label',
+                text_content: `${t('check_item_title')} ${check_index + 1}`
+            });
+            check_wrapper.appendChild(check_number_label);
             const logicText = check.logic ? check.logic.toUpperCase() : 'AND';
             check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'text-muted', html_content: `<strong>${t('check_logic_display')}</strong> ${logicText}`}));
             if (check.passCriteria && check.passCriteria.length > 0) {
                 const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
-                check.passCriteria.forEach(pc => {
+                check.passCriteria.forEach((pc, pc_index) => {
                     const pc_item = Helpers_create_element('li', { class_name: 'pass-criterion-item' });
-                    pc_item.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-requirement', html_content: _safe_parse_markdown(pc.requirement, true) }));
+                    const numbering = `${check_index + 1}.${pc_index + 1}`;
+                    const numbering_label = Helpers_create_element('p', {
+                        class_name: 'pass-criterion-number-label',
+                        text_content: `${t('pass_criterion_label')} ${numbering}`
+                    });
+                    const criterion_heading = Helpers_create_element('div', {
+                        class_name: ['pass-criterion-heading', 'markdown-content'],
+                        html_content: _safe_parse_markdown(pc.requirement)
+                    });
+                    pc_item.appendChild(numbering_label);
+                    pc_item.appendChild(criterion_heading);
                     if(pc.failureStatementTemplate) {
                         const template_div = Helpers_create_element('div', { class_name: 'failure-template-display' });
                         template_div.innerHTML = `<strong>${t('failure_statement_template_display')}</strong>`;
@@ -250,7 +265,7 @@ export const ViewRulefileRequirementComponent = (function () {
         const bottom_nav_bar = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
         const back_button_bottom = Helpers_create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: Helpers_get_icon_svg('arrow_back') + `<span>${t('back_to_requirement_list')}</span>`
+            html_content: `<span>${t('back_to_requirement_list')}</span>` + Helpers_get_icon_svg('arrow_back')
         });
         back_button_bottom.addEventListener('click', () => router_ref('rulefile_requirements'));
         bottom_nav_bar.appendChild(back_button_bottom);

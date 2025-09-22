@@ -44,7 +44,7 @@ export const RequirementAuditNavigationFactory = function () { // Ändrad till F
         // "Back to list" button
         const back_btn = Helpers_create_element('button', {
             class_name: 'button button-default',
-            html_content: Helpers_get_icon_svg('arrow_back', [], 18) + `<span>${t('back_to_requirement_list')}</span>`
+            html_content: `<span>${t('back_to_requirement_list')}</span>` + Helpers_get_icon_svg('arrow_back', [], 18)
         });
         back_btn.addEventListener('click', () => on_navigate_callback('back_to_list'));
         nav_group_left.appendChild(back_btn);
@@ -70,7 +70,7 @@ export const RequirementAuditNavigationFactory = function () { // Ändrad till F
             if (!is_first_requirement) {
                 const prev_btn = Helpers_create_element('button', { 
                     class_name: 'button button-secondary',
-                    html_content: Helpers_get_icon_svg('arrow_back', [], 18) + `<span>${t('previous_requirement')}</span>`
+                    html_content: `<span>${t('previous_requirement')}</span>` + Helpers_get_icon_svg('arrow_back', [], 18)
                 });
                 prev_btn.addEventListener('click', () => on_navigate_callback('previous'));
                 nav_group_right.appendChild(prev_btn);
