@@ -106,16 +106,16 @@ import { marked } from '../utils/markdown.js';
         toolbar.setAttribute('aria-controls', textarea.id);
 
         const buttons = [
-            { format: 'bold', icon: 'fa-bold', tooltipKey: 'md_tooltip_bold' },
-            { format: 'italic', icon: 'fa-italic', tooltipKey: 'md_tooltip_italic' },
-            { format: 'code', icon: 'fa-code', tooltipKey: 'md_tooltip_code' },
+            { format: 'bold', icon: 'fa-bold' },
+            { format: 'italic', icon: 'fa-italic' },
+            { format: 'code', icon: 'fa-code' },
             { type: 'separator' },
-            { format: 'heading', icon: 'fa-heading', tooltipKey: 'md_tooltip_heading' },
-            { format: 'ul', icon: 'fa-list-ul', tooltipKey: 'md_tooltip_ul' },
-            { format: 'ol', icon: 'fa-list-ol', tooltipKey: 'md_tooltip_ol' },
-            { format: 'link', icon: 'fa-link', tooltipKey: 'md_tooltip_link' },
+            { format: 'heading', icon: 'fa-heading' },
+            { format: 'ul', icon: 'fa-list-ul' },
+            { format: 'ol', icon: 'fa-list-ol' },
+            { format: 'link', icon: 'fa-link' },
             { type: 'spacer' },
-            { format: 'preview', icon: 'fa-eye', tooltipKey: 'md_tooltip_preview' }
+            { format: 'preview', icon: 'fa-eye' }
         ];
 
         buttons.forEach(btnConfig => {
@@ -136,8 +136,6 @@ import { marked } from '../utils/markdown.js';
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'md-toolbar-btn';
-            button.setAttribute('aria-label', t(btnConfig.tooltipKey));
-            button.title = t(btnConfig.tooltipKey);
             button.innerHTML = `<i class="fa-solid ${btnConfig.icon}" aria-hidden="true"></i>`;
 
             if (btnConfig.format === 'preview') {

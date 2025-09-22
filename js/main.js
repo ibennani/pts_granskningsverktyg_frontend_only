@@ -416,8 +416,18 @@ window.StoreActionTypes = StoreActionTypes;
         update_app_chrome_texts();
     } 
 
+    function update_build_timestamp() {
+        const buildTimestampElement = document.getElementById('build-timestamp');
+        if (buildTimestampElement && window.BUILD_INFO) {
+            const buildDate = window.BUILD_INFO.date;
+            const buildTime = window.BUILD_INFO.time;
+            buildTimestampElement.textContent = `Build ${buildDate} kl ${buildTime}`;
+        }
+    }
+
     async function init_app() { 
         set_initial_theme();
+        update_build_timestamp();
         await window.Translation.ensure_initial_load();
         initState();
 

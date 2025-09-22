@@ -127,7 +127,7 @@ export const AuditInfoComponent = (function () {
             let parsed_comment = md.internalComment;
             if (typeof marked !== 'undefined') {
                 const renderer = new marked.Renderer();
-                renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
                 renderer.html = (html_token) => {
                     const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                         ? html_token.text

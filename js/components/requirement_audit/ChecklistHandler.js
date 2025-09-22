@@ -25,7 +25,7 @@ export const ChecklistHandler = (function () {
         }
 
         const renderer = new marked.Renderer();
-        renderer.link = (href, title, text) => `<a href="${href}" title="${title || ''}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
         renderer.html = (html) => window.Helpers.escape_html(html);
 
         return marked.parseInline(String(markdown_string || ''), { renderer, breaks: true, gfm: true });

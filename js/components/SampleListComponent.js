@@ -128,7 +128,6 @@ export const SampleListComponent = (function () {
 
             if (sample_needs_review && get_icon_svg) {
                 desc_h3.innerHTML = get_icon_svg('update', ['currentColor'], 20) + ' ';
-                desc_h3.title = t('sample_has_updated_reqs_tooltip');
             }
             
             const sample_description_text = sample.description || t('undefined_description');

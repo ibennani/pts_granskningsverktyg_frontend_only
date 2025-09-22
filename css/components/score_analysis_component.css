@@ -45,31 +45,6 @@
     box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--focus-ring-color-outer);
 }
 
-.score-analysis__help-button:focus-visible + .visually-hidden[role="tooltip"],
-.score-analysis__help-button:hover + .visually-hidden[role="tooltip"] {
-    clip: auto;
-    height: auto;
-    width: max-content;
-    max-width: 300px;
-    margin: 0;
-    overflow: visible;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(0.5rem);
-    background-color: var(--plate-background-color);
-    border: 1px solid var(--border-color);
-    padding: 0.5rem 1rem;
-    border-radius: var(--border-radius);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    z-index: 10;
-    font-size: 0.875rem;
-    font-weight: 400;
-    line-height: 1.5;
-    color: var(--text-color);
-    text-align: left;
-}
-
 
 /* --- Total Score --- */
 .score-analysis-total__title, .score-analysis-principles__title {
