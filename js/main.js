@@ -49,14 +49,56 @@ window.StoreActionTypes = StoreActionTypes;
 (function () {
     'use-strict';
 
-    const app_container = document.getElementById('app-container');
-    const top_action_bar_container = document.getElementById('global-action-bar-top');
-    const bottom_action_bar_container = document.getElementById('global-action-bar-bottom');
+    // Robust DOM-element kontroll med fallback-alternativ
+    let app_container = document.getElementById('app-container');
+    let top_action_bar_container = document.getElementById('global-action-bar-top');
+    let bottom_action_bar_container = document.getElementById('global-action-bar-bottom');
 
-    if (!app_container || !top_action_bar_container || !bottom_action_bar_container) {
-        console.error("[Main.js] CRITICAL: App container or action bar containers not found in DOM!");
-        document.body.innerHTML = "<p style='color:red; font-weight:bold;'>Application Error: Core containers not found. Check HTML.</p>";
-        return;
+    // Fallback för app_container - kritiskt element
+    if (!app_container) {
+        console.error("[Main.js] CRITICAL: App container not found in DOM! Creating fallback container.");
+        app_container = document.createElement('div');
+        app_container.id = 'app-container';
+        app_container.style.cssText = 'min-height: 100vh; padding: 20px;';
+        
+        // Lägg till i body om body finns, annars i documentElement
+        if (document.body) {
+            document.body.appendChild(app_container);
+        } else {
+            document.documentElement.appendChild(app_container);
+        }
+    }
+
+    // Fallback för action bar containers - mindre kritiskt
+    if (!top_action_bar_container) {
+        console.warn("[Main.js] Top action bar container not found. Creating fallback container.");
+        top_action_bar_container = document.createElement('div');
+        top_action_bar_container.id = 'global-action-bar-top';
+        top_action_bar_container.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-bottom: 1px solid #dee2e6;';
+        
+        if (document.body) {
+            document.body.insertBefore(top_action_bar_container, document.body.firstChild);
+        } else {
+            app_container.insertBefore(top_action_bar_container, app_container.firstChild);
+        }
+    }
+
+    if (!bottom_action_bar_container) {
+        console.warn("[Main.js] Bottom action bar container not found. Creating fallback container.");
+        bottom_action_bar_container = document.createElement('div');
+        bottom_action_bar_container.id = 'global-action-bar-bottom';
+        bottom_action_bar_container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6;';
+        
+        if (document.body) {
+            document.body.appendChild(bottom_action_bar_container);
+        } else {
+            app_container.appendChild(bottom_action_bar_container);
+        }
+    }
+
+    // Lägg till en varning om att fallback-element skapades
+    if (!document.getElementById('app-container') || !document.getElementById('global-action-bar-top') || !document.getElementById('global-action-bar-bottom')) {
+        console.warn("[Main.js] Some core containers were missing and fallback versions were created. Check HTML structure.");
     }
 
     let current_view_component_instance = null;
@@ -370,7 +412,13 @@ window.StoreActionTypes = StoreActionTypes;
 
     function on_language_changed_event() { 
         update_app_chrome_texts();
-        updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
+        try {
+            const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
+            updatePageTitle(current_view_name_rendered, parsed_params);
+        } catch (error) {
+            console.warn('[Main.js] Failed to parse current view params for page title update:', error);
+            updatePageTitle(current_view_name_rendered, {});
+        }
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             current_view_component_instance.render();
         }
@@ -380,21 +428,40 @@ window.StoreActionTypes = StoreActionTypes;
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
         if (window.MarkdownToolbar?.init) { window.MarkdownToolbar.init(); }
-        document.addEventListener('languageChanged', on_language_changed_event);
-        window.addEventListener('hashchange', handle_hash_change);
-        window.addEventListener('beforeunload', () => {
+        // Lagra referenser till event listeners för senare cleanup
+        const language_changed_handler = on_language_changed_event;
+        const hash_change_handler = handle_hash_change;
+        const beforeunload_handler = () => {
             const current_state = getState();
             if (window.Store && typeof window.Store.forceSaveStateToLocalStorage === 'function') {
                 window.Store.forceSaveStateToLocalStorage(current_state);
             }
-        });
+        };
+        
+        document.addEventListener('languageChanged', language_changed_handler);
+        window.addEventListener('hashchange', hash_change_handler);
+        window.addEventListener('beforeunload', beforeunload_handler);
+        
+        // Exponera cleanup-funktion globalt
+        window.cleanupGlobalEventListeners = () => {
+            document.removeEventListener('languageChanged', language_changed_handler);
+            window.removeEventListener('hashchange', hash_change_handler);
+            window.removeEventListener('beforeunload', beforeunload_handler);
+            console.info('[Main.js] Global event listeners cleaned up');
+        };
         subscribe((new_state) => { 
             const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
             top_action_bar_instance.render();
             if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
                 bottom_action_bar_instance.render();
             }
-            updatePageTitle(current_view_name_rendered, JSON.parse(current_view_params_rendered_json));
+            try {
+                const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
+                updatePageTitle(current_view_name_rendered, parsed_params);
+            } catch (error) {
+                console.warn('[Main.js] Failed to parse current view params for page title update:', error);
+                updatePageTitle(current_view_name_rendered, {});
+            }
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
             if (current_view_name_rendered === view_name_from_hash && 

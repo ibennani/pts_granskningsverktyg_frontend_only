@@ -119,38 +119,98 @@
     }
 
     function calculate_requirement_status(requirement_object, requirement_result_object) {
-        if (!requirement_object?.checks || requirement_object.checks.length === 0) {
+        // Förbättrad null-säkerhet och validering
+        if (!requirement_object || typeof requirement_object !== 'object') {
+            console.warn('[AuditLogic] calculate_requirement_status: Invalid requirement_object');
+            return "not_audited";
+        }
+        
+        if (!requirement_object.checks || !Array.isArray(requirement_object.checks) || requirement_object.checks.length === 0) {
             return requirement_result_object?.status || "not_audited";
         }
-        if (!requirement_result_object?.checkResults) return "not_audited";
         
-        let has_failed_check = false, has_partially_audited_check = false, has_not_audited_check = false;
-        
-        for (const check_definition of requirement_object.checks) {
-            const checkResultForDef = requirement_result_object.checkResults[check_definition.id];
-            const status = checkResultForDef 
-                ? calculate_check_status(check_definition, checkResultForDef.passCriteria, checkResultForDef.overallStatus)
-                : 'not_audited';
-
-            if (status === "failed") { has_failed_check = true; break; }
-            if (status === "partially_audited") has_partially_audited_check = true;
-            if (status === "not_audited") has_not_audited_check = true;
+        if (!requirement_result_object || typeof requirement_result_object !== 'object' || !requirement_result_object.checkResults) {
+            return "not_audited";
         }
+        
+        try {
+            let has_failed_check = false, has_partially_audited_check = false, has_not_audited_check = false;
+            
+            for (const check_definition of requirement_object.checks) {
+                // Validera check_definition
+                if (!check_definition || typeof check_definition !== 'object' || !check_definition.id) {
+                    console.warn('[AuditLogic] calculate_requirement_status: Invalid check_definition:', check_definition);
+                    has_not_audited_check = true;
+                    continue;
+                }
+                
+                const checkResultForDef = requirement_result_object.checkResults[check_definition.id];
+                let status = 'not_audited';
+                
+                if (checkResultForDef) {
+                    try {
+                        status = calculate_check_status(check_definition, checkResultForDef.passCriteria, checkResultForDef.overallStatus);
+                    } catch (error) {
+                        console.warn('[AuditLogic] calculate_requirement_status: Error calculating check status:', error);
+                        status = 'not_audited';
+                    }
+                }
 
-        if (has_failed_check) return "failed";
-        if (has_partially_audited_check) return "partially_audited";
-        if (has_not_audited_check) return "not_audited";
-        return "passed";
+                if (status === "failed") { 
+                    has_failed_check = true; 
+                    break; 
+                }
+                if (status === "partially_audited") has_partially_audited_check = true;
+                if (status === "not_audited") has_not_audited_check = true;
+            }
+
+            if (has_failed_check) return "failed";
+            if (has_partially_audited_check) return "partially_audited";
+            if (has_not_audited_check) return "not_audited";
+            return "passed";
+        } catch (error) {
+            console.error('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);
+            return "not_audited";
+        }
     }
 
     function get_relevant_requirements_for_sample(rule_file_content, sample) {
-        if (!rule_file_content?.requirements || !sample) return [];
-        const all_reqs = Object.values(rule_file_content.requirements);
-        if (!sample.selectedContentTypes?.length) return all_reqs;
-        return all_reqs.filter(req => {
-            if (!req.contentType || req.contentType.length === 0) return true;
-            return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
-        });
+        // Förbättrad null-säkerhet och validering
+        if (!rule_file_content || typeof rule_file_content !== 'object') {
+            console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid rule_file_content');
+            return [];
+        }
+        
+        if (!rule_file_content.requirements || typeof rule_file_content.requirements !== 'object') {
+            console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid or missing requirements object');
+            return [];
+        }
+        
+        if (!sample || typeof sample !== 'object') {
+            console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid sample object');
+            return [];
+        }
+        
+        try {
+            const all_reqs = Object.values(rule_file_content.requirements).filter(req => {
+                // Validera att varje requirement är ett giltigt objekt
+                return req && typeof req === 'object' && req.id;
+            });
+            
+            if (!sample.selectedContentTypes || !Array.isArray(sample.selectedContentTypes) || sample.selectedContentTypes.length === 0) {
+                return all_reqs;
+            }
+            
+            return all_reqs.filter(req => {
+                if (!req.contentType || !Array.isArray(req.contentType) || req.contentType.length === 0) {
+                    return true;
+                }
+                return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
+            });
+        } catch (error) {
+            console.error('[AuditLogic] get_relevant_requirements_for_sample: Error processing requirements:', error);
+            return [];
+        }
     }
 
     function get_ordered_relevant_requirement_keys(rule_file_content, sample_object, sort_option = 'default') {

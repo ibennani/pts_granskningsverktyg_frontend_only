@@ -68,6 +68,10 @@ let internal_state = { ...initial_state };
 let listeners = [];
 let autosaveDebounceTimer = null;
 
+// Dispatch queue för att förhindra race conditions
+let dispatch_queue = [];
+let is_dispatching = false;
+
 function get_current_iso_datetime_utc_internal() {
     return new Date().toISOString();
 }
@@ -405,30 +409,136 @@ function forceSaveStateToLocalStorage(state_to_save) {
 function dispatch(action) {
     if (!action || typeof action.type !== 'string') {
         console.error('[State.js] Invalid action dispatched. Action must be an object with a "type" property.', action);
-        return;
+        return Promise.reject(new Error('Invalid action'));
     }
+    
+    // Om vi redan dispatchar, lägg till i kö istället för att köra direkt
+    if (is_dispatching) {
+        return new Promise((resolve, reject) => {
+            dispatch_queue.push({ action, resolve, reject });
+        });
+    }
+    
+    return process_dispatch(action);
+}
+
+async function process_dispatch(action) {
+    is_dispatching = true;
+    
     try {
-        const previous_state_for_comparison = internal_state;
-        const new_state = root_reducer(internal_state, action);
+        await execute_single_dispatch(action);
         
-        if (new_state !== previous_state_for_comparison) {
-            internal_state = new_state;
-            saveStateToSessionStorage(internal_state);
-
-            clearTimeout(autosaveDebounceTimer);
-            autosaveDebounceTimer = setTimeout(() => {
-                saveStateToLocalStorage(internal_state);
-            }, 3000);
-
-            notify_listeners(); 
+        // Processa alla väntande actions i kön
+        while (dispatch_queue.length > 0) {
+            const { action: queuedAction, resolve, reject } = dispatch_queue.shift();
+            try {
+                await execute_single_dispatch(queuedAction);
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
         }
-    } catch (error) {
-        console.error('[State.js] Error in dispatch or reducer:', error, 'Action:', action);
+    } finally {
+        is_dispatching = false;
     }
 }
 
+function execute_single_dispatch(action) {
+    return new Promise((resolve, reject) => {
+        let state_before_dispatch = null;
+        let state_after_reducer = null;
+        
+        try {
+            // Spara tillståndet innan dispatch för potentiell återställning
+            state_before_dispatch = JSON.parse(JSON.stringify(internal_state));
+            
+            const previous_state_for_comparison = internal_state;
+            state_after_reducer = root_reducer(internal_state, action);
+            
+            if (state_after_reducer !== previous_state_for_comparison) {
+                // Validera att det nya tillståndet är giltigt innan vi använder det
+                if (!state_after_reducer || typeof state_after_reducer !== 'object') {
+                    throw new Error(`Reducer returned invalid state for action type: ${action.type}`);
+                }
+                
+                // Kontrollera att kritiska egenskaper finns kvar
+                if (!state_after_reducer.hasOwnProperty('saveFileVersion') || 
+                    !state_after_reducer.hasOwnProperty('auditStatus')) {
+                    throw new Error(`Reducer returned state missing critical properties for action type: ${action.type}`);
+                }
+                
+                internal_state = state_after_reducer;
+                
+                // Spara till session storage med felhantering
+                try {
+                    saveStateToSessionStorage(internal_state);
+                } catch (saveError) {
+                    console.warn('[State.js] Failed to save state to sessionStorage:', saveError);
+                    // Fortsätt ändå, detta är inte kritiskt
+                }
+
+                // Sätt upp autosave med felhantering
+                clearTimeout(autosaveDebounceTimer);
+                autosaveDebounceTimer = setTimeout(() => {
+                    try {
+                        saveStateToLocalStorage(internal_state);
+                    } catch (autosaveError) {
+                        console.warn('[State.js] Failed to autosave state to localStorage:', autosaveError);
+                        // Autosave-fel är inte kritiskt, fortsätt
+                    }
+                }, 3000);
+
+                // Notifiera listeners med felhantering
+                try {
+                    notify_listeners();
+                } catch (listenerError) {
+                    console.warn('[State.js] Error notifying state listeners:', listenerError);
+                    // Listener-fel ska inte stoppa state-uppdateringen
+                }
+            }
+            
+            resolve();
+            
+        } catch (error) {
+            console.error('[State.js] Critical error in dispatch or reducer:', error, 'Action:', action);
+            
+            // Om state blev korrupt, försök återställa från backup
+            if (state_before_dispatch && state_before_dispatch !== internal_state) {
+                console.warn('[State.js] Attempting to restore state from backup due to reducer error');
+                try {
+                    internal_state = state_before_dispatch;
+                    
+                    // Spara den återställda staten
+                    saveStateToSessionStorage(internal_state);
+                    
+                    // Notifiera listeners om återställningen
+                    notify_listeners();
+                    
+                    console.info('[State.js] State successfully restored from backup');
+                } catch (restoreError) {
+                    console.error('[State.js] Failed to restore state from backup:', restoreError);
+                    // Om återställning misslyckas, logga felet men låt applikationen fortsätta
+                }
+            }
+            
+            // Kasta felet vidare för att låta anropande kod hantera det om möjligt
+            reject(new Error(`State dispatch failed for action type '${action.type}': ${error.message}`));
+        }
+    });
+}
+
 function getState() {
-    return JSON.parse(JSON.stringify(internal_state));
+    try {
+        return JSON.parse(JSON.stringify(internal_state));
+    } catch (error) {
+        console.error('[State.js] Failed to serialize state in getState:', error);
+        // Returnera en minimal säker state om serialisering misslyckas
+        return {
+            ...initial_state,
+            saveFileVersion: APP_STATE_VERSION,
+            auditStatus: 'error'
+        };
+    }
 }
 
 function subscribe(listener_function) {

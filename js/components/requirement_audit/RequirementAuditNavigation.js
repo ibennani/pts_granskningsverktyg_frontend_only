@@ -106,7 +106,15 @@ export const RequirementAuditNavigationFactory = function () { // Ändrad till F
     }
 
     function destroy() {
-        if (container_ref) container_ref.innerHTML = '';
+        if (container_ref) {
+            // Ta bort alla event listeners innan vi rensar HTML
+            const buttons = container_ref.querySelectorAll('button');
+            buttons.forEach(button => {
+                // Skapa en kopia av event listeners för att ta bort dem
+                button.replaceWith(button.cloneNode(true));
+            });
+            container_ref.innerHTML = '';
+        }
     }
 
     // Return an object for this specific instance

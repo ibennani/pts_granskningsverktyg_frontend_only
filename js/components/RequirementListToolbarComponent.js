@@ -272,6 +272,17 @@ export const RequirementListToolbarComponent = (function () {
     function destroy() {
         clearTimeout(search_debounce_timer);
         close_filter_panel();
+        
+        // Rensa document-level event listeners
+        if (handle_panel_keydown_ref) {
+            document.removeEventListener('keydown', handle_panel_keydown_ref);
+            handle_panel_keydown_ref = null;
+        }
+        if (close_on_outside_click_ref) {
+            document.removeEventListener('click', close_on_outside_click_ref, { capture: true });
+            close_on_outside_click_ref = null;
+        }
+        
         if (container_ref) container_ref.innerHTML = '';
         is_dom_built = false;
         container_ref = null;

@@ -164,7 +164,15 @@ export const AuditOverviewComponent = (function () {
         
         await init_sub_components();
 
-        await Helpers_load_css(CSS_PATH).catch(error => console.warn("Failed to load CSS for AuditOverviewComponent:", error));
+        try {
+            await window.Helpers.load_css_safely(CSS_PATH, 'AuditOverviewComponent', { 
+                timeout: 5000, 
+                maxRetries: 2 
+            });
+        } catch (error) {
+            // Fel hanteras redan i load_css_safely med användarvarning
+            console.warn('[AuditOverviewComponent] Continuing without CSS due to loading failure');
+        }
 
         if (!unsubscribe_from_store_function && typeof local_subscribe_func === 'function') {
             unsubscribe_from_store_function = local_subscribe_func(handle_store_update);

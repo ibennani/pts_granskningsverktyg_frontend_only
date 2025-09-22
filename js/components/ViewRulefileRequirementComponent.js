@@ -278,7 +278,15 @@ export const ViewRulefileRequirementComponent = (function () {
     }
 
     function destroy() {
-        app_container_ref.innerHTML = '';
+        if (app_container_ref) {
+            // Rensa event listeners innan vi rensar HTML
+            const buttons = app_container_ref.querySelectorAll('button');
+            buttons.forEach(button => {
+                // Skapa en kopia för att ta bort event listeners
+                button.replaceWith(button.cloneNode(true));
+            });
+            app_container_ref.innerHTML = '';
+        }
         plate_element_ref = null;
     }
 

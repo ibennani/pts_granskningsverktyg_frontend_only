@@ -146,8 +146,16 @@ export const UploadViewComponent = (function () {
             global_message_element_ref = window.NotificationComponent.get_global_message_element_reference();
         }
 
-        if (window.Helpers?.load_css) {
-            await window.Helpers.load_css(CSS_PATH).catch(e => console.warn(e));
+        if (window.Helpers?.load_css_safely) {
+            try {
+                await window.Helpers.load_css_safely(CSS_PATH, 'UploadViewComponent', { 
+                    timeout: 5000, 
+                    maxRetries: 2 
+                });
+            } catch (error) {
+                // Fel hanteras redan i load_css_safely med användarvarning
+                console.warn('[UploadViewComponent] Continuing without CSS due to loading failure');
+            }
         }
     }
 

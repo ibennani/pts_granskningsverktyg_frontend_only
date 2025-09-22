@@ -62,6 +62,65 @@
             }
         }
 
+        // Validera requirements-objektet
+        const requirements = json_object.requirements;
+        if (typeof requirements !== 'object' || requirements === null) {
+            return { isValid: false, message: t('rule_file_requirements_must_be_object') };
+        }
+
+        // Validera att requirements har minst ett krav
+        const requirement_keys = Object.keys(requirements);
+        if (requirement_keys.length === 0) {
+            return { isValid: false, message: t('rule_file_must_have_at_least_one_requirement') };
+        }
+
+        // Validera varje requirement
+        for (const [req_id, req_obj] of Object.entries(requirements)) {
+            if (!req_obj || typeof req_obj !== 'object') {
+                return { isValid: false, message: `Requirement '${req_id}' must be an object` };
+            }
+            
+            // Validera obligatoriska fält
+            if (!req_obj.title || typeof req_obj.title !== 'string' || req_obj.title.trim() === '') {
+                return { isValid: false, message: `Requirement '${req_id}' must have a non-empty title` };
+            }
+            
+            if (!req_obj.id || typeof req_obj.id !== 'string' || req_obj.id.trim() === '') {
+                return { isValid: false, message: `Requirement '${req_id}' must have a valid id` };
+            }
+            
+            // Validera checks om de finns
+            if (req_obj.checks && Array.isArray(req_obj.checks)) {
+                for (const [check_index, check_obj] of req_obj.checks.entries()) {
+                    if (!check_obj || typeof check_obj !== 'object') {
+                        return { isValid: false, message: `Requirement '${req_id}', check ${check_index} must be an object` };
+                    }
+                    
+                    if (!check_obj.id || typeof check_obj.id !== 'string' || check_obj.id.trim() === '') {
+                        return { isValid: false, message: `Requirement '${req_id}', check ${check_index} must have a valid id` };
+                    }
+                    
+                    // Validera passCriteria om de finns
+                    if (check_obj.passCriteria && Array.isArray(check_obj.passCriteria)) {
+                        for (const [pc_index, pc_obj] of check_obj.passCriteria.entries()) {
+                            if (!pc_obj || typeof pc_obj !== 'object') {
+                                return { isValid: false, message: `Requirement '${req_id}', check ${check_index}, passCriterion ${pc_index} must be an object` };
+                            }
+                            
+                            if (!pc_obj.id || typeof pc_obj.id !== 'string' || pc_obj.id.trim() === '') {
+                                return { isValid: false, message: `Requirement '${req_id}', check ${check_index}, passCriterion ${pc_index} must have a valid id` };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Validera contentType om det finns
+            if (req_obj.contentType && !Array.isArray(req_obj.contentType)) {
+                return { isValid: false, message: `Requirement '${req_id}' contentType must be an array if provided` };
+            }
+        }
+
         console.log("[ValidationLogic] Validation passed for hierarchical structure.");
         return { isValid: true, message: t('rule_file_loaded_successfully') };
     }

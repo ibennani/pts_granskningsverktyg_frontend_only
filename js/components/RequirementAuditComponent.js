@@ -65,22 +65,69 @@ export const RequirementAuditComponent = (function () {
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes; 
         
-        await Helpers_load_css(CSS_PATH);
+        try {
+            await window.Helpers.load_css_safely(CSS_PATH, 'RequirementAuditComponent', { 
+                timeout: 5000, 
+                maxRetries: 2 
+            });
+        } catch (error) {
+            // Fel hanteras redan i load_css_safely med användarvarning
+            console.warn('[RequirementAuditComponent] Continuing without CSS due to loading failure');
+        }
     }
     
     function load_and_prepare_view_data() {
         const state = local_getState();
-        if (!state?.ruleFileContent || !params_ref?.sampleId || !params_ref?.requirementId) return false;
         
-        current_sample = state.samples.find(s => s.id === params_ref.sampleId);
-        current_requirement = state.ruleFileContent.requirements[params_ref.requirementId];
+        // Förbättrad data-validering med bättre felmeddelanden
+        if (!state || typeof state !== 'object') {
+            console.warn('[RequirementAuditComponent] No valid state available for data loading');
+            return false;
+        }
         
-        if (!current_sample || !current_requirement) return false;
+        if (!state.ruleFileContent || typeof state.ruleFileContent !== 'object') {
+            console.warn('[RequirementAuditComponent] No valid ruleFileContent available for data loading');
+            return false;
+        }
+        
+        if (!params_ref?.sampleId) {
+            console.warn('[RequirementAuditComponent] No sampleId available for data loading');
+            return false;
+        }
+        
+        if (!params_ref?.requirementId) {
+            console.warn('[RequirementAuditComponent] No requirementId available for data loading');
+            return false;
+        }
+        
+        if (!Array.isArray(state.samples)) {
+            console.warn('[RequirementAuditComponent] No valid samples array available for data loading');
+            return false;
+        }
+        
+        current_sample = state.samples.find(s => s && s.id === params_ref.sampleId);
+        if (!current_sample) {
+            console.warn('[RequirementAuditComponent] Sample not found:', params_ref.sampleId);
+            return false;
+        }
+        
+        current_requirement = state.ruleFileContent.requirements?.[params_ref.requirementId];
+        if (!current_requirement) {
+            console.warn('[RequirementAuditComponent] Requirement not found:', params_ref.requirementId);
+            return false;
+        }
         
         const result_from_store = (current_sample.requirementResults || {})[params_ref.requirementId];
         
         current_result = result_from_store 
-            ? JSON.parse(JSON.stringify(result_from_store)) 
+            ? (() => {
+                try {
+                    return JSON.parse(JSON.stringify(result_from_store));
+                } catch (error) {
+                    console.warn('[RequirementAuditComponent] Failed to clone result from store:', error);
+                    return { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, checkResults: {} };
+                }
+            })()
             : { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, checkResults: {} };
 
         (current_requirement.checks || []).forEach(check_def => {
@@ -104,7 +151,13 @@ export const RequirementAuditComponent = (function () {
     }
 
     function handle_checklist_status_change(change_info) {
-        let modified_result = JSON.parse(JSON.stringify(current_result));
+        let modified_result;
+        try {
+            modified_result = JSON.parse(JSON.stringify(current_result));
+        } catch (error) {
+            console.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
+            return;
+        }
         const check_result = modified_result.checkResults[change_info.checkId];
         const check_definition = current_requirement.checks.find(c => c.id === change_info.checkId);
 
@@ -132,7 +185,13 @@ export const RequirementAuditComponent = (function () {
     function debounced_save_comments() {
         clearTimeout(debounceTimerComments);
         debounceTimerComments = setTimeout(() => {
-            const modified_result = JSON.parse(JSON.stringify(current_result));
+            let modified_result;
+            try {
+                modified_result = JSON.parse(JSON.stringify(current_result));
+            } catch (error) {
+                console.warn('[RequirementAuditComponent] Failed to clone current result for comment save:', error);
+                return;
+            }
             let changed = false;
             if (comment_to_auditor_input && modified_result.commentToAuditor !== comment_to_auditor_input.value) {
                 modified_result.commentToAuditor = comment_to_auditor_input.value;
@@ -150,7 +209,13 @@ export const RequirementAuditComponent = (function () {
 
     function handle_autosave(change_info) {
         if (change_info.type === 'pc_observation') {
-            const modified_result = JSON.parse(JSON.stringify(current_result));
+            let modified_result;
+            try {
+                modified_result = JSON.parse(JSON.stringify(current_result));
+            } catch (error) {
+                console.warn('[RequirementAuditComponent] Failed to clone current result for autosave:', error);
+                return;
+            }
             modified_result.checkResults[change_info.checkId].passCriteria[change_info.pcId].observationDetail = change_info.value;
             dispatch_result_update(modified_result);
         }
@@ -202,7 +267,13 @@ export const RequirementAuditComponent = (function () {
                  }
                 break;
             case 'confirm_reviewed_status':
-                let result = JSON.parse(JSON.stringify(current_result));
+                let result;
+                try {
+                    result = JSON.parse(JSON.stringify(current_result));
+                } catch (error) {
+                    console.warn('[RequirementAuditComponent] Failed to clone current result for confirm status:', error);
+                    return;
+                }
                 delete result.needsReview;
                 dispatch_result_update(result);
                 router_ref('requirement_list', { sampleId: params_ref.sampleId });
@@ -363,10 +434,22 @@ export const RequirementAuditComponent = (function () {
     
     function destroy() { 
         clearTimeout(debounceTimerComments);
+        
+        // Rensa event listeners från input-elementen
+        if (comment_to_auditor_input) {
+            comment_to_auditor_input.removeEventListener('input', debounced_save_comments);
+            comment_to_auditor_input = null;
+        }
+        if (comment_to_actor_input) {
+            comment_to_actor_input.removeEventListener('input', debounced_save_comments);
+            comment_to_actor_input = null;
+        }
+        
         checklist_handler_instance?.destroy();
         info_sections_instance?.destroy();
         top_navigation_instance?.destroy();
         bottom_navigation_instance?.destroy();
+        
         if (app_container_ref) app_container_ref.innerHTML = '';
     }
     

@@ -9,19 +9,84 @@
         });
     }
 
-    function load_css(href) {
+    function load_css(href, options = {}) {
         return new Promise((resolve, reject) => {
             if (document.querySelector(`link[href="${href}"]`)) {
                 resolve();
                 return;
             }
+            
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = href;
-            link.onload = () => resolve();
-            link.onerror = () => reject(new Error(`Failed to load CSS: ${href}`));
+            
+            // Timeout för CSS-laddning
+            const timeout = options.timeout || 10000; // 10 sekunder default
+            let timeoutId;
+            
+            link.onload = () => {
+                clearTimeout(timeoutId);
+                resolve();
+            };
+            
+            link.onerror = () => {
+                clearTimeout(timeoutId);
+                reject(new Error(`Failed to load CSS: ${href}`));
+            };
+            
+            // Timeout-hantering
+            timeoutId = setTimeout(() => {
+                reject(new Error(`CSS load timeout: ${href}`));
+                // Ta bort länken om den inte laddades i tid
+                if (link.parentNode) {
+                    link.parentNode.removeChild(link);
+                }
+            }, timeout);
+            
             document.head.appendChild(link);
         });
+    }
+
+    // Förbättrad CSS-laddningsfunktion med retry-logik
+    async function load_css_with_retry(href, options = {}) {
+        const maxRetries = options.maxRetries || 3;
+        const retryDelay = options.retryDelay || 1000;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                await load_css(href, options);
+                return; // Framgång!
+            } catch (error) {
+                console.warn(`CSS load attempt ${attempt}/${maxRetries} failed for ${href}:`, error.message);
+                
+                if (attempt === maxRetries) {
+                    // Sista försöket misslyckades
+                    console.error(`All CSS load attempts failed for ${href}. Component may render without proper styling.`);
+                    throw error;
+                }
+                
+                // Vänta innan nästa försök
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
+        }
+    }
+
+    // Säker CSS-laddning med användarvarning vid fel
+    async function load_css_safely(href, componentName = 'Unknown', options = {}) {
+        try {
+            await load_css_with_retry(href, options);
+        } catch (error) {
+            console.error(`[${componentName}] Critical CSS loading failed:`, error);
+            
+            // Visa varning till användaren om styling kan vara fel
+            if (window.NotificationComponent?.show_global_message) {
+                const message = `Varning: Vissa stilar för ${componentName} kunde inte laddas korrekt.`;
+                window.NotificationComponent.show_global_message(message, 'warning');
+            }
+            
+            // Kasta felet vidare så att komponenten kan hantera det
+            throw error;
+        }
     }
 
     function format_iso_to_local_datetime(iso_string, lang_code = 'sv-SE') {
@@ -259,6 +324,8 @@
     window.Helpers = {
         generate_uuid_v4,
         load_css,
+        load_css_with_retry,
+        load_css_safely,
         format_iso_to_local_datetime,
         format_iso_to_relative_time,
         get_current_iso_datetime_utc,
