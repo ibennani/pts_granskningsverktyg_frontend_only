@@ -6,6 +6,25 @@
     margin-bottom: 1rem;
 }
 
+.metadata-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    margin-bottom: 1.5rem;
+}
+
+.metadata-header h1 {
+    margin: 0;
+}
+
+.metadata-edit-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .metadata-definition-list {
     margin: 0;
     padding: 0;

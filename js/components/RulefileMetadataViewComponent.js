@@ -14,7 +14,6 @@ export const RulefileMetadataViewComponent = (function () {
     let Helpers_get_icon_svg;
     let Helpers_add_protocol_if_missing;
     let NotificationComponent_get_global_message_element_reference;
-    let Helpers_format_iso_to_local_datetime;
 
     let is_css_loaded = false;
 
@@ -24,7 +23,6 @@ export const RulefileMetadataViewComponent = (function () {
         Helpers_create_element = window.Helpers?.create_element;
         Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
         Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
-        Helpers_format_iso_to_local_datetime = window.Helpers?.format_iso_to_local_datetime;
         NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
     }
 
@@ -250,6 +248,21 @@ export const RulefileMetadataViewComponent = (function () {
         });
     }
 
+    function _format_date_display(iso_string) {
+        if (!iso_string) return '';
+        try {
+            const date = new Date(iso_string);
+            if (Number.isNaN(date.getTime())) return iso_string;
+            const locale = window.Translation?.getCurrentLocale?.()
+                || window.Translation?.currentLocale
+                || (typeof navigator !== 'undefined' ? navigator.language : 'sv-SE');
+            return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
+        } catch (error) {
+            console.warn('[RulefileMetadataViewComponent] Failed to format date', iso_string, error);
+            return iso_string;
+        }
+    }
+
     function render() {
         _ensure_dependencies();
         const t = Translation_t;
@@ -262,7 +275,22 @@ export const RulefileMetadataViewComponent = (function () {
             plate.appendChild(global_message_element);
         }
 
-        plate.appendChild(Helpers_create_element('h1', { text_content: t('rulefile_metadata_title') }));
+        const header_wrapper = Helpers_create_element('div', { class_name: 'metadata-header' });
+        const heading = Helpers_create_element('h1', { text_content: t('rulefile_metadata_title') });
+        const edit_button = Helpers_create_element('button', {
+            class_name: ['button', 'button-secondary', 'metadata-edit-button'],
+            attributes: {
+                type: 'button',
+                'aria-label': t('rulefile_metadata_edit_button_aria')
+            },
+            html_content: `<span>${t('rulefile_metadata_edit_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('edit') : '')
+        });
+        edit_button.addEventListener('click', () => router_ref('rulefile_metadata_edit'));
+
+        header_wrapper.appendChild(heading);
+        header_wrapper.appendChild(edit_button);
+
+        plate.appendChild(header_wrapper);
         plate.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_metadata_intro') }));
 
         const current_state = typeof local_getState === 'function' ? local_getState() : {};
@@ -271,15 +299,21 @@ export const RulefileMetadataViewComponent = (function () {
         if (!metadata) {
             plate.appendChild(Helpers_create_element('p', { class_name: 'metadata-empty', text_content: t('rulefile_metadata_missing') }));
         } else {
+            const monitoringText = metadata.monitoringType?.text || metadata.monitoringType?.label || '';
+            const monitoringKey = metadata.monitoringType?.type || '';
+            const monitoringDisplay = monitoringText
+                ? (monitoringKey && monitoringKey !== monitoringText ? `${monitoringText} (${monitoringKey})` : monitoringText)
+                : monitoringKey;
+
             const general_section = _create_section('rulefile_metadata_section_general', [
                 _create_definition_list([
                     [t('rulefile_metadata_field_title'), metadata.title],
                     [t('rulefile_metadata_field_description'), metadata.description],
                     [t('rulefile_metadata_field_version'), metadata.version],
                     [t('rulefile_metadata_field_language'), metadata.language],
-                    [t('rulefile_metadata_field_monitoring_type'), metadata.monitoringType],
-                    [t('rulefile_metadata_field_date_created'), Helpers_format_iso_to_local_datetime ? Helpers_format_iso_to_local_datetime(metadata.dateCreated) : metadata.dateCreated],
-                    [t('rulefile_metadata_field_date_modified'), Helpers_format_iso_to_local_datetime ? Helpers_format_iso_to_local_datetime(metadata.dateModified) : metadata.dateModified],
+                    [t('rulefile_metadata_field_monitoring_type'), monitoringDisplay],
+                    [t('rulefile_metadata_field_date_created'), _format_date_display(metadata.dateCreated)],
+                    [t('rulefile_metadata_field_date_modified'), _format_date_display(metadata.dateModified)],
                     [t('rulefile_metadata_field_license'), metadata.license]
                 ])
             ]);
@@ -294,7 +328,7 @@ export const RulefileMetadataViewComponent = (function () {
             const source_link_node = _create_source_link(metadata.source?.url);
             const source_entries = [
                 [t('rulefile_metadata_field_source_title'), metadata.source?.title],
-                [t('rulefile_metadata_field_source_retrieved'), metadata.source?.retrievedDate],
+                [t('rulefile_metadata_field_source_retrieved'), _format_date_display(metadata.source?.retrievedDate)],
                 [t('rulefile_metadata_field_source_format'), metadata.source?.format]
             ];
             const source_section_nodes = [];
