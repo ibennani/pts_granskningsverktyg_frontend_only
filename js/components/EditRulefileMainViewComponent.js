@@ -46,19 +46,18 @@ export const EditRulefileMainViewComponent = (function () {
         
         const edit_reqs_button = Helpers_create_element('button', {
             class_name: ['button', 'button-primary'],
+            attributes: { type: 'button' },
             html_content: `<span>${t('edit_rulefile_requirements_button')}</span>` + Helpers_get_icon_svg('list')
         });
         edit_reqs_button.addEventListener('click', () => router_ref('rulefile_requirements'));
         
         const edit_meta_button = Helpers_create_element('button', {
             class_name: ['button', 'button-secondary'],
+            attributes: { type: 'button' },
             html_content: `<span>${t('edit_rulefile_metadata_button')}</span>` + Helpers_get_icon_svg('edit')
         });
-        // TODO: Peka denna till rätt vy när den är skapad. För nu är den inaktiv.
-        edit_meta_button.setAttribute('aria-disabled', 'true');
-        edit_meta_button.style.cursor = 'not-allowed';
-        edit_meta_button.title = t('feature_not_implemented_yet');
-        
+        edit_meta_button.addEventListener('click', () => router_ref('rulefile_metadata'));
+
         button_group.append(edit_reqs_button, edit_meta_button);
         plate_element.appendChild(button_group);
 

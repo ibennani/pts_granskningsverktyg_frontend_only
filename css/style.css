@@ -77,6 +77,10 @@
     --gradient-success-color: #84fab0;
     --gradient-warning-color: #fbd786;
     --gradient-danger-color: #f7797d;
+
+    --surface-emphasis-bg: color-mix(in srgb, var(--plate-background-color) 96%, #000000 4%);
+    --surface-emphasis-border: color-mix(in srgb, var(--border-color) 85%, #000000 15%);
+    --surface-tag-bg: color-mix(in srgb, var(--plate-background-color) 92%, var(--border-color) 8%);
 }
 
 [data-theme="dark"] {
@@ -148,6 +152,10 @@
     --gradient-success-color: var(--success-color);
     --gradient-warning-color: var(--warning-color);
     --gradient-danger-color: var(--danger-color);
+
+    --surface-emphasis-bg: color-mix(in srgb, var(--plate-background-color) 88%, #ffffff 12%);
+    --surface-emphasis-border: color-mix(in srgb, var(--border-color) 60%, #ffffff 40%);
+    --surface-tag-bg: color-mix(in srgb, var(--plate-background-color) 80%, var(--border-color) 20%);
 }
 
 

@@ -29,6 +29,7 @@ import { RulefileRequirementsListComponent } from './components/RulefileRequirem
 import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequirementComponent.js';
 import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
+import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
@@ -120,6 +121,9 @@ window.StoreActionTypes = StoreActionTypes;
                     break;
                 case 'rulefile_edit_requirement':
                     title_prefix = t('rulefile_edit_requirement_title');
+                    break;
+                case 'rulefile_metadata':
+                    title_prefix = t('rulefile_metadata_title');
                     break;
                 case 'confirm_delete':
                     switch(params.type) {
@@ -232,7 +236,7 @@ window.StoreActionTypes = StoreActionTypes;
 
         updatePageTitle(view_name_to_render, params_to_render);
 
-        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata'];
+        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata'];
         top_action_bar_instance.render();
         if (views_without_bottom_bar.includes(view_name_to_render)) {
             bottom_action_bar_container.style.display = 'none';
@@ -285,7 +289,8 @@ window.StoreActionTypes = StoreActionTypes;
             case 'edit_rulefile_main': ComponentClass = EditRulefileMainViewComponent; break;
             case 'rulefile_requirements': ComponentClass = RulefileRequirementsListComponent; break;
             case 'rulefile_view_requirement': ComponentClass = ViewRulefileRequirementComponent; break;
-            case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
+                case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
+                case 'rulefile_metadata': ComponentClass = RulefileMetadataViewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
@@ -374,7 +379,7 @@ window.StoreActionTypes = StoreActionTypes;
             }
         });
         subscribe((new_state) => { 
-            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata'];
+            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata'];
             top_action_bar_instance.render();
             if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
                 bottom_action_bar_instance.render();
