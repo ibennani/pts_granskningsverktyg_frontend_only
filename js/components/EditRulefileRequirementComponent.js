@@ -261,7 +261,7 @@ export const EditRulefileRequirementComponent = (function () {
                                     type: 'check',
                                     checkId: moved_check.id,
                                     animationClass: 'item-swap-animation',
-                                    animationDuration: 1000
+                                    animationDuration: 2000
                                 },
                                 previousLayout: previous_layout
                             });
@@ -352,7 +352,7 @@ export const EditRulefileRequirementComponent = (function () {
                                         checkId: check_id,
                                         passCriterionId: moved_pc.id,
                                         animationClass: 'item-swap-animation',
-                                        animationDuration: 1000
+                                        animationDuration: 2000
                                     },
                                     previousLayout: previous_layout
                                 });

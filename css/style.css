@@ -153,9 +153,9 @@
     --gradient-warning-color: var(--warning-color);
     --gradient-danger-color: var(--danger-color);
 
-    --surface-emphasis-bg: color-mix(in srgb, var(--plate-background-color) 88%, #ffffff 12%);
-    --surface-emphasis-border: color-mix(in srgb, var(--border-color) 60%, #ffffff 40%);
-    --surface-tag-bg: color-mix(in srgb, var(--plate-background-color) 80%, var(--border-color) 20%);
+    --surface-emphasis-bg: color-mix(in srgb, var(--background-color) 70%, #000000 30%);
+    --surface-emphasis-border: color-mix(in srgb, var(--border-color) 35%, #000000 65%);
+    --surface-tag-bg: color-mix(in srgb, var(--background-color) 65%, var(--border-color) 35%);
 }
 
 
