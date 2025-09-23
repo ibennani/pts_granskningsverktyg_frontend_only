@@ -1,0 +1,25 @@
+{
+  "hash": "76d6130f",
+  "configHash": "c0e53cfc",
+  "lockfileHash": "8f6e3b69",
+  "browserHash": "aaf7c2e9",
+  "optimized": {
+    "exceljs/dist/exceljs.min.js": {
+      "src": "../../node_modules/exceljs/dist/exceljs.min.js",
+      "file": "exceljs_dist_exceljs__min__js.js",
+      "fileHash": "699d5759",
+      "needsInterop": true
+    },
+    "marked": {
+      "src": "../../node_modules/marked/lib/marked.esm.js",
+      "file": "marked.js",
+      "fileHash": "97427b41",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-VUNV25KB": {
+      "file": "chunk-VUNV25KB.js"
+    }
+  }
+}
