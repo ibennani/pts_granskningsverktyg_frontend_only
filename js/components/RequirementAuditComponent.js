@@ -4,6 +4,7 @@
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationFactory } from './requirement_audit/RequirementAuditNavigation.js'; // Updated import
+import { waitForDependencies } from '../utils/safe_init_helper.js';
 
 export const RequirementAuditComponent = (function () { 
 
@@ -41,8 +42,12 @@ export const RequirementAuditComponent = (function () {
     let current_result = null;
     let ordered_requirement_keys = [];
     
-    function assign_globals_once() { 
+    async function assign_globals_once() { 
         if (Translation_t) return;
+        
+        // Wait for dependencies to be ready
+        await waitForDependencies(['Translation', 'Helpers', 'NotificationComponent', 'AuditLogic']);
+        
         Translation_t = window.Translation?.t;
         Helpers_create_element = window.Helpers?.create_element;
         Helpers_load_css = window.Helpers?.load_css;
@@ -54,10 +59,15 @@ export const RequirementAuditComponent = (function () {
         AuditLogic_calculate_check_status = window.AuditLogic?.calculate_check_status;
         AuditLogic_calculate_requirement_status = window.AuditLogic?.calculate_requirement_status;
         AuditLogic_get_ordered_relevant_requirement_keys = window.AuditLogic?.get_ordered_relevant_requirement_keys;
+        
+        // Verify critical dependencies
+        if (!Translation_t || !Helpers_create_element || !Helpers_load_css) {
+            throw new Error('Required dependencies not available for RequirementAuditComponent');
+        }
     }
     
     async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes) { 
-        assign_globals_once();
+        await assign_globals_once();
         app_container_ref = _app_container;
         router_ref = _router;
         params_ref = _params;

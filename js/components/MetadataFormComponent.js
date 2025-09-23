@@ -1,5 +1,7 @@
 // js/components/MetadataFormComponent.js
 
+import { createSafeAssignFunction, waitForDependencies } from '../utils/safe_init_helper.js';
+
 export const MetadataFormComponent = (function () {
     'use-strict';
 
@@ -19,24 +21,52 @@ export const MetadataFormComponent = (function () {
     let form_element_ref;
     let case_number_input, actor_name_input, actor_link_input, auditor_name_input, case_handler_input, internal_comment_input;
 
-    function assign_globals_once() {
+    // Create safe assign function for this component's dependencies
+    const safeAssignGlobals = createSafeAssignFunction([
+        'Translation', 'Helpers', 'NotificationComponent'
+    ]);
+
+    async function assign_globals_once() {
         if (Translation_t) return;
+        
+        const success = await safeAssignGlobals({
+            Translation_t: () => window.Translation?.t,
+            Helpers_create_element: () => window.Helpers?.create_element,
+            Helpers_get_icon_svg: () => window.Helpers?.get_icon_svg,
+            Helpers_add_protocol_if_missing: () => window.Helpers?.add_protocol_if_missing,
+            Helpers_load_css: () => window.Helpers?.load_css,
+            NotificationComponent_show_global_message: () => window.NotificationComponent?.show_global_message
+        });
+        
+        if (!success) {
+            throw new Error('Required dependencies not available for MetadataFormComponent');
+        }
+        
+        // Assign the values
         Translation_t = window.Translation?.t;
         Helpers_create_element = window.Helpers?.create_element;
         Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
         Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
         Helpers_load_css = window.Helpers?.load_css;
-        NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message; // NY
+        NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;
     }
 
     async function init(_form_container, _callbacks) {
-        assign_globals_once();
+        // Wait for dependencies to be ready
+        await waitForDependencies(['Translation', 'Helpers', 'NotificationComponent']);
+        
+        await assign_globals_once();
         form_container_ref = _form_container;
         
         on_submit_callback = _callbacks.onSubmit;
         on_cancel_callback = _callbacks.onCancel || null;
 
-        await Helpers_load_css(CSS_PATH);
+        if (Helpers_load_css) {
+            await Helpers_load_css(CSS_PATH);
+        } else {
+            console.error('MetadataFormComponent: Helpers.load_css not available');
+            throw new Error('Required dependency Helpers.load_css not available');
+        }
     }
 
     function handle_form_submit(event) {

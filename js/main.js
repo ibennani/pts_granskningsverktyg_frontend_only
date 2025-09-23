@@ -16,6 +16,8 @@ import './validation_logic.js';
 import './logic/rulefile_updater_logic.js';
 import './logic/ScoreCalculator.js';
 import './features/markdown_toolbar.js';
+import './utils/dependency_manager.js';
+import { dependencyManager } from './utils/dependency_manager.js';
 
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
@@ -36,6 +38,7 @@ import { EditRulefileRequirementComponent } from './components/EditRulefileRequi
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
 import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
+import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 
 import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
 
@@ -44,6 +47,7 @@ window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState, forceSaveStateToLocalStorage };
 window.StoreActionTypes = StoreActionTypes;
+window.dependencyManager = dependencyManager;
 
 
 (function () {
@@ -104,6 +108,7 @@ window.StoreActionTypes = StoreActionTypes;
     let current_view_component_instance = null;
     let current_view_name_rendered = null;
     let current_view_params_rendered_json = "{}"; 
+    let error_boundary_instance = null;
     
     const top_action_bar_instance = GlobalActionBarComponentFactory();
     const bottom_action_bar_instance = GlobalActionBarComponentFactory();
@@ -209,11 +214,41 @@ window.StoreActionTypes = StoreActionTypes;
             console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
         }
-        if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') { top_action_bar_instance.render(); }
-        if (bottom_action_bar_instance && typeof bottom_action_bar_instance.render === 'function') { bottom_action_bar_instance.render(); }
+        try {
+            if (top_action_bar_instance && typeof top_action_bar_instance.render === 'function') { 
+                top_action_bar_instance.render(); 
+            }
+        } catch (error) {
+            console.error("[Main.js] Error rendering top action bar:", error);
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                error_boundary_instance.show_error({
+                    message: `Top action bar render failed: ${error.message}`,
+                    stack: error.stack,
+                    component: 'TopActionBar'
+                });
+            }
+        }
+        
+        try {
+            if (bottom_action_bar_instance && typeof bottom_action_bar_instance.render === 'function') { 
+                bottom_action_bar_instance.render(); 
+            }
+        } catch (error) {
+            console.error("[Main.js] Error rendering bottom action bar:", error);
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                error_boundary_instance.show_error({
+                    message: `Bottom action bar render failed: ${error.message}`,
+                    stack: error.stack,
+                    component: 'BottomActionBar'
+                });
+            }
+        }
     }
 
     async function init_global_components() {
+        // Wait for dependency manager to be ready
+        await window.dependencyManager?.initialize();
+        
         if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
             console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
@@ -227,8 +262,39 @@ window.StoreActionTypes = StoreActionTypes;
             NotificationComponent: window.NotificationComponent,
             SaveAuditLogic: window.SaveAuditLogic
         };
-        await top_action_bar_instance.init(top_action_bar_container, common_deps);
-        await bottom_action_bar_instance.init(bottom_action_bar_container, common_deps);
+        try {
+            await top_action_bar_instance.init(top_action_bar_container, common_deps);
+        } catch (error) {
+            console.error("[Main.js] Failed to initialize top action bar:", error);
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                error_boundary_instance.show_error({
+                    message: `Top action bar initialization failed: ${error.message}`,
+                    stack: error.stack,
+                    component: 'TopActionBar'
+                });
+            }
+        }
+        
+        try {
+            await bottom_action_bar_instance.init(bottom_action_bar_container, common_deps);
+        } catch (error) {
+            console.error("[Main.js] Failed to initialize bottom action bar:", error);
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                error_boundary_instance.show_error({
+                    message: `Bottom action bar initialization failed: ${error.message}`,
+                    stack: error.stack,
+                    component: 'BottomActionBar'
+                });
+            }
+        }
+        
+        // Initialize error boundary
+        try {
+            error_boundary_instance = ErrorBoundaryComponent;
+            await error_boundary_instance.init(app_container);
+        } catch (error) {
+            console.error("[Main.js] Failed to initialize error boundary:", error);
+        }
     }
     
     function set_initial_theme() {
@@ -313,9 +379,29 @@ window.StoreActionTypes = StoreActionTypes;
                     current_view_component_instance.destroy();
                 } catch (err) {
                     console.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
+                    // Log error to error boundary if available
+                    if (error_boundary_instance && error_boundary_instance.show_error) {
+                        error_boundary_instance.show_error({
+                            message: `Component destruction failed: ${err.message}`,
+                            stack: err.stack,
+                            component: 'RequirementListComponent'
+                        });
+                    }
                 }
             } else {
-                current_view_component_instance.destroy();
+                try {
+                    current_view_component_instance.destroy();
+                } catch (err) {
+                    console.error('[Main.js] Error destroying component:', err);
+                    // Log error to error boundary if available
+                    if (error_boundary_instance && error_boundary_instance.show_error) {
+                        error_boundary_instance.show_error({
+                            message: `Component destruction failed: ${err.message}`,
+                            stack: err.stack,
+                            component: current_view_name_rendered || 'Unknown'
+                        });
+                    }
+                }
             }
         }
         app_container.innerHTML = ''; 
@@ -356,6 +442,14 @@ window.StoreActionTypes = StoreActionTypes;
         }
 
         try {
+            // Clear any previous error boundary display
+            if (error_boundary_instance && error_boundary_instance.clear_error) {
+                error_boundary_instance.clear_error();
+            }
+
+            // Wait for dependencies to be ready before component initialization
+            await dependencyManager.waitForDependencies();
+
             current_view_component_instance = ComponentClass; 
 
             if (!current_view_component_instance || typeof current_view_component_instance.init !== 'function' || typeof current_view_component_instance.render !== 'function') {
@@ -386,14 +480,39 @@ window.StoreActionTypes = StoreActionTypes;
 
         } catch (error) {
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
-            const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
-            if(app_container) {
-                const error_h1 = document.createElement('h1');
-                error_h1.textContent = t("error_loading_view_details");
-                const error_p = document.createElement('p');
-                error_p.textContent = t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message});
-                app_container.appendChild(error_h1);
-                app_container.appendChild(error_p);
+            
+            // Use error boundary if available, otherwise fall back to simple error display
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                const retry_callback = () => {
+                    console.log(`[Main.js] Retrying view ${view_name_to_render}`);
+                    render_view(view_name_to_render, params_to_render);
+                };
+                
+                error_boundary_instance.show_error({
+                    message: error.message,
+                    stack: error.stack,
+                    component: view_name_to_render
+                });
+                
+                // Re-initialize error boundary with retry callback
+                if (error_boundary_instance.init) {
+                    try {
+                        await error_boundary_instance.init(app_container, retry_callback);
+                    } catch (retry_error) {
+                        console.error("[Main.js] Failed to re-initialize error boundary:", retry_error);
+                    }
+                }
+            } else {
+                // Fallback to simple error display
+                const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
+                if(app_container) {
+                    const error_h1 = document.createElement('h1');
+                    error_h1.textContent = t("error_loading_view_details");
+                    const error_p = document.createElement('p');
+                    error_p.textContent = t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message});
+                    app_container.appendChild(error_h1);
+                    app_container.appendChild(error_p);
+                }
             }
         }
     }
@@ -459,13 +578,47 @@ window.StoreActionTypes = StoreActionTypes;
             document.removeEventListener('languageChanged', language_changed_handler);
             window.removeEventListener('hashchange', hash_change_handler);
             window.removeEventListener('beforeunload', beforeunload_handler);
+            
+            // Clean up error boundary
+            if (error_boundary_instance && typeof error_boundary_instance.destroy === 'function') {
+                try {
+                    error_boundary_instance.destroy();
+                } catch (error) {
+                    console.error('[Main.js] Error cleaning up error boundary:', error);
+                }
+            }
+            
             console.info('[Main.js] Global event listeners cleaned up');
         };
         subscribe((new_state) => { 
             const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
-            top_action_bar_instance.render();
+            
+            try {
+                top_action_bar_instance.render();
+            } catch (error) {
+                console.error("[Main.js] Error in subscription top action bar render:", error);
+                if (error_boundary_instance && error_boundary_instance.show_error) {
+                    error_boundary_instance.show_error({
+                        message: `Top action bar subscription render failed: ${error.message}`,
+                        stack: error.stack,
+                        component: 'TopActionBar'
+                    });
+                }
+            }
+            
             if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
-                bottom_action_bar_instance.render();
+                try {
+                    bottom_action_bar_instance.render();
+                } catch (error) {
+                    console.error("[Main.js] Error in subscription bottom action bar render:", error);
+                    if (error_boundary_instance && error_boundary_instance.show_error) {
+                        error_boundary_instance.show_error({
+                            message: `Bottom action bar subscription render failed: ${error.message}`,
+                            stack: error.stack,
+                            component: 'BottomActionBar'
+                        });
+                    }
+                }
             }
             try {
                 const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
@@ -486,7 +639,18 @@ window.StoreActionTypes = StoreActionTypes;
                             return;
                         }
                     }
-                    current_view_component_instance.render();
+                    try {
+                        current_view_component_instance.render();
+                    } catch (error) {
+                        console.error("[Main.js] Error in subscription current view render:", error);
+                        if (error_boundary_instance && error_boundary_instance.show_error) {
+                            error_boundary_instance.show_error({
+                                message: `Current view render failed: ${error.message}`,
+                                stack: error.stack,
+                                component: current_view_name_rendered || 'Unknown'
+                            });
+                        }
+                    }
                 }
             }
         });
