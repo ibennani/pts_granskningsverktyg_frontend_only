@@ -146,7 +146,10 @@ export const SampleListComponent = (function () {
             const type_text = sample_subcategories_map.get(sample.sampleType) || sample.sampleType;
             const type_info_string = `${type_text || ''} (${category_text || ''})`;
             const type_p = create_element('p');
-            type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${escape_html(type_info_string)}`;
+            const strong_element = create_element('strong', { text_content: t('page_type') });
+            type_p.appendChild(strong_element);
+            type_p.appendChild(document.createTextNode(': '));
+            type_p.appendChild(document.createTextNode(escape_html(type_info_string)));
             info_div.appendChild(type_p);
 
             const relevant_reqs = get_relevant_requirements_for_sample(state.ruleFileContent, sample);

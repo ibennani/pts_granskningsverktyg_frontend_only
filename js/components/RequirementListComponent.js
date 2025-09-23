@@ -207,7 +207,10 @@ export const RequirementListComponent = (function () {
         const type_info_string = `${current_sample_object.sampleType || ''} (${category_text || ''})`;
         
         const sample_type_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-page-type' });
-        sample_type_p.innerHTML = `<strong>${t('page_type')}:</strong> ${Helpers_escape_html(type_info_string)}`;
+        const strong_element = Helpers_create_element('strong', { text_content: t('page_type') });
+        sample_type_p.appendChild(strong_element);
+        sample_type_p.appendChild(document.createTextNode(': '));
+        sample_type_p.appendChild(document.createTextNode(Helpers_escape_html(type_info_string)));
         header_div.appendChild(sample_type_p);
         
         const all_relevant_requirements = AuditLogic_get_relevant_requirements_for_sample(current_global_state.ruleFileContent, current_sample_object);
@@ -218,7 +221,10 @@ export const RequirementListComponent = (function () {
         }).length;
         
         const sample_audit_status_p = Helpers_create_element('p', { class_name: 'sample-info-display sample-audit-progress' });
-        sample_audit_status_p.innerHTML = `<strong>${t('requirements_audited_for_sample')}:</strong> ${audited_requirements_count}/${total_relevant_requirements}`;
+        const strong_element2 = Helpers_create_element('strong', { text_content: t('requirements_audited_for_sample') });
+        sample_audit_status_p.appendChild(strong_element2);
+        sample_audit_status_p.appendChild(document.createTextNode(': '));
+        sample_audit_status_p.appendChild(document.createTextNode(`${audited_requirements_count}/${total_relevant_requirements}`));
         header_div.appendChild(sample_audit_status_p);
 
         if (window.ProgressBarComponent) {

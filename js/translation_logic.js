@@ -89,8 +89,20 @@
             warn(`t(): Missing key "${key}" for lang "${current_language_tag}". Returning key.`);
             return `**${key}**`;
         }
+        
+        // Sanitize replacement values to prevent XSS
+        const sanitized_replacements = {};
+        for (const [replacement_key, replacement_value] of Object.entries(replacements)) {
+            if (typeof replacement_value === 'string') {
+                // Escape HTML in replacement values
+                sanitized_replacements[replacement_key] = window.Helpers?.escape_html(replacement_value) || replacement_value;
+            } else {
+                sanitized_replacements[replacement_key] = replacement_value;
+            }
+        }
+        
         return translation_value.replace(/{([^{}]+)}/g, (match, placeholder_key) => (
-            replacements[placeholder_key] !== undefined ? replacements[placeholder_key] : match
+            sanitized_replacements[placeholder_key] !== undefined ? sanitized_replacements[placeholder_key] : match
         ));
     }
 

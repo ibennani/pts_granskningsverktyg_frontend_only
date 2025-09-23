@@ -346,7 +346,12 @@ window.StoreActionTypes = StoreActionTypes;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
-                app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)})}</p>`;
+                const error_h1 = document.createElement('h1');
+                error_h1.textContent = t("error_loading_view_details");
+                const error_p = document.createElement('p');
+                error_p.textContent = t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)});
+                app_container.appendChild(error_h1);
+                app_container.appendChild(error_p);
                 return;
         }
 
@@ -382,7 +387,14 @@ window.StoreActionTypes = StoreActionTypes;
         } catch (error) {
             console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
             const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
-            if(app_container) app_container.innerHTML = `<h1>${t("error_loading_view_details")}</h1><p>${t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message})}</p>`;
+            if(app_container) {
+                const error_h1 = document.createElement('h1');
+                error_h1.textContent = t("error_loading_view_details");
+                const error_p = document.createElement('p');
+                error_p.textContent = t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message});
+                app_container.appendChild(error_h1);
+                app_container.appendChild(error_p);
+            }
         }
     }
 

@@ -325,13 +325,15 @@ export const RequirementAuditComponent = (function () {
         container.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title') }));
     
         const fg1 = Helpers_create_element('div', { class_name: 'form-group' });
-        fg1.innerHTML = `<label for="commentToAuditor">${t('comment_to_auditor')}</label>`;
+        const label1 = Helpers_create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
+        fg1.appendChild(label1);
         comment_to_auditor_input = Helpers_create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
         comment_to_auditor_input.addEventListener('input', debounced_save_comments);
         fg1.appendChild(comment_to_auditor_input);
 
         const fg2 = Helpers_create_element('div', { class_name: 'form-group' });
-        fg2.innerHTML = `<label for="commentToActor">${t('comment_to_actor')}</label>`;
+        const label2 = Helpers_create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
+        fg2.appendChild(label2);
         comment_to_actor_input = Helpers_create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
         comment_to_actor_input.addEventListener('input', debounced_save_comments);
         fg2.appendChild(comment_to_actor_input);

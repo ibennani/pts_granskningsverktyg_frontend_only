@@ -181,7 +181,11 @@ export const ChecklistHandler = (function () {
                 pc_item_li.appendChild(pc_actions_div);
 
                 const observation_wrapper = Helpers_create_element('div', { class_name: 'pc-observation-detail-wrapper form-group' });
-                observation_wrapper.innerHTML = `<label for="pc-observation-${check_definition.id}-${pc_def.id}">${t('pc_observation_detail_label')}</label>`;
+                const observation_label = Helpers_create_element('label', { 
+                    attributes: { for: `pc-observation-${check_definition.id}-${pc_def.id}` }, 
+                    text_content: t('pc_observation_detail_label') 
+                });
+                observation_wrapper.appendChild(observation_label);
                 const observation_textarea = Helpers_create_element('textarea', {
                     id: `pc-observation-${check_definition.id}-${pc_def.id}`,
                     class_name: 'form-control pc-observation-detail-textarea',
@@ -224,7 +228,14 @@ export const ChecklistHandler = (function () {
             
             const status_text_container = check_wrapper.querySelector('.check-status-display');
             const status_text = t(`audit_status_${calculated_check_status}`);
-            status_text_container.innerHTML = `<strong>${t('check_status')}:</strong> <span class="status-text status-${calculated_check_status}">${status_text}</span>`;
+            const strong_element = Helpers_create_element('strong', { text_content: t('check_status') });
+            status_text_container.appendChild(strong_element);
+            status_text_container.appendChild(document.createTextNode(': '));
+            const status_span = Helpers_create_element('span', { 
+                class_name: `status-text status-${calculated_check_status}`, 
+                text_content: status_text 
+            });
+            status_text_container.appendChild(status_span);
             
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
@@ -242,7 +253,14 @@ export const ChecklistHandler = (function () {
 
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
                 const pc_status_text = t(`audit_status_${current_pc_status}`);
-                pc_status_text_container.innerHTML = `<strong>${t('status')}:</strong> <span class="status-text status-${current_pc_status}">${pc_status_text}</span>`;
+                const pc_strong_element = Helpers_create_element('strong', { text_content: t('status') });
+                pc_status_text_container.appendChild(pc_strong_element);
+                pc_status_text_container.appendChild(document.createTextNode(': '));
+                const pc_status_span = Helpers_create_element('span', { 
+                    class_name: `status-text status-${current_pc_status}`, 
+                    text_content: pc_status_text 
+                });
+                pc_status_text_container.appendChild(pc_status_span);
 
                 const passed_btn = pc_item_li.querySelector('button[data-action="set-pc-passed"]');
                 const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');

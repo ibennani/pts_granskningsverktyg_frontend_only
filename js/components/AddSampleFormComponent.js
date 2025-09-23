@@ -66,7 +66,11 @@ export const AddSampleFormComponent = (function () {
 
         if (!selected_category) return;
 
-        sample_type_select.innerHTML = `<option value="">${get_t_internally()('select_option')}</option>`;
+        const default_option = Helpers.create_element('option', { 
+            value: '', 
+            text_content: get_t_internally()('select_option') 
+        });
+        sample_type_select.appendChild(default_option);
         (selected_category.categories || []).forEach(subcat => {
             sample_type_select.appendChild(Helpers.create_element('option', { value: subcat.id, text_content: subcat.text }));
         });
@@ -153,9 +157,15 @@ export const AddSampleFormComponent = (function () {
         const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
         const sample_type_id = sample_type_select.value;
         const sample_type_text = sample_type_select.options[sample_type_select.selectedIndex]?.text;
-        const description = description_input.value.trim();
-        let url_val = url_input.value.trim();
-        const selected_content_types = Array.from(content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')).map(cb => cb.value);
+        // Sanitize inputs to prevent XSS
+        const sanitize_input = (input) => {
+            if (typeof input !== 'string') return '';
+            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        };
+
+        const description = sanitize_input(description_input.value);
+        let url_val = sanitize_input(url_input.value);
+        const selected_content_types = Array.from(content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')).map(cb => sanitize_input(cb.value));
 
         if (!sample_category_id) { NotificationComponent.show_global_message(t('field_is_required', {fieldName: t('sample_category_title')}), 'error'); return; }
         if (!sample_type_id) { NotificationComponent.show_global_message(t('field_is_required', {fieldName: t('sample_type_label')}), 'error'); sample_type_select.focus(); return; }
@@ -267,7 +277,15 @@ export const AddSampleFormComponent = (function () {
         // --- Actions ---
         const actions_div = Helpers.create_element('div', { class_name: 'form-actions' });
         const save_button = Helpers.create_element('button', { class_name: ['button', 'button-primary'], attributes: { type: 'submit' }});
-        save_button.innerHTML = `<span>${current_editing_sample_id ? t('save_changes_button') : t('save_sample_button')}</span>` + Helpers.get_icon_svg(current_editing_sample_id ? 'save' : 'add');
+        const button_text = current_editing_sample_id ? t('save_changes_button') : t('save_sample_button');
+        const button_span = Helpers.create_element('span', { text_content: button_text });
+        save_button.appendChild(button_span);
+        if (Helpers.get_icon_svg) {
+            const icon_svg = Helpers.get_icon_svg(current_editing_sample_id ? 'save' : 'add');
+            if (icon_svg) {
+                save_button.insertAdjacentHTML('beforeend', icon_svg);
+            }
+        }
         actions_div.appendChild(save_button);
         form_element.appendChild(actions_div);
         

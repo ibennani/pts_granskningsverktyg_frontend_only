@@ -154,7 +154,8 @@ export const RequirementListToolbarComponent = (function () {
         const toolbar = Helpers_create_element('div', { class_name: 'requirements-list-toolbar' });
 
         const search_group = Helpers_create_element('div', { class_name: 'toolbar-group search-group' });
-        search_group.innerHTML = `<label for="req-list-search">${t('search_in_help_texts_label')}</label>`;
+        const search_label = Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t('search_in_help_texts_label') });
+        search_group.appendChild(search_label);
         const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' } });
         search_input.addEventListener('input', handle_search_input);
         search_group.appendChild(search_input);
@@ -162,7 +163,8 @@ export const RequirementListToolbarComponent = (function () {
 
         if (component_config.showStatusFilter) {
             const filter_group = Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
-            filter_group.innerHTML = `<label>${t('filter_by_status_label')}</label>`;
+            const filter_label = Helpers_create_element('label', { text_content: t('filter_by_status_label') });
+            filter_group.appendChild(filter_label);
             filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
             filter_button_ref.addEventListener('click', toggle_filter_panel);
             filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
@@ -173,7 +175,8 @@ export const RequirementListToolbarComponent = (function () {
         
         if (component_config.sortOptions && component_config.sortOptions.length > 0) {
             const sort_group = Helpers_create_element('div', { class_name: 'toolbar-group sort-group' });
-            sort_group.innerHTML = `<label for="req-list-sort">${t('sort_by_label')}</label>`;
+            const sort_label = Helpers_create_element('label', { attributes: { for: 'req-list-sort' }, text_content: t('sort_by_label') });
+            sort_group.appendChild(sort_label);
             const sort_select = Helpers_create_element('select', { id: 'req-list-sort', class_name: 'form-control' });
             
             component_config.sortOptions.forEach(opt => {

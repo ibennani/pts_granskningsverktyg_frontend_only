@@ -228,7 +228,8 @@ export const RulefileRequirementsListComponent = (function () {
         }
 
         if (!current_global_state || !current_global_state.ruleFileContent) {
-            content_div_for_delegation.innerHTML = `<p>${t('error_no_rulefile_loaded_for_metadata')}</p>`;
+            const error_p = Helpers_create_element('p', { text_content: t('error_no_rulefile_loaded_for_metadata') });
+            content_div_for_delegation.appendChild(error_p);
             return;
         }
 

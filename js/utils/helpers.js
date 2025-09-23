@@ -167,6 +167,51 @@
             .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
     }
 
+    function sanitize_html(html_string) {
+        if (typeof html_string !== 'string' || !html_string) return '';
+        
+        // Create a temporary div to parse HTML safely
+        const temp_div = document.createElement('div');
+        temp_div.innerHTML = html_string;
+        
+        // Remove dangerous elements and attributes
+        const dangerous_elements = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'];
+        dangerous_elements.forEach(tag => {
+            temp_div.querySelectorAll(tag).forEach(el => el.remove());
+        });
+        
+        // Remove dangerous attributes
+        const dangerous_attributes = ['onload', 'onerror', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'onchange', 'onsubmit'];
+        temp_div.querySelectorAll('*').forEach(el => {
+            dangerous_attributes.forEach(attr => {
+                if (el.hasAttribute(attr)) {
+                    el.removeAttribute(attr);
+                }
+            });
+            // Ensure all links open in new tab safely
+            if (el.tagName === 'A') {
+                el.setAttribute('target', '_blank');
+                el.setAttribute('rel', 'noopener noreferrer');
+            }
+        });
+        
+        return temp_div.innerHTML;
+    }
+
+    function safe_set_inner_html(element, content, options = {}) {
+        if (!element || typeof content !== 'string') return;
+        
+        const { allow_html = false, sanitize = true } = options;
+        
+        if (allow_html && sanitize) {
+            element.innerHTML = sanitize_html(content);
+        } else if (allow_html) {
+            element.innerHTML = content;
+        } else {
+            element.textContent = content;
+        }
+    }
+
     function create_element(tag_name, options = {}) {
         const element = document.createElement(tag_name);
         if (options.class_name) {
@@ -330,6 +375,8 @@
         format_iso_to_relative_time,
         get_current_iso_datetime_utc,
         escape_html,
+        sanitize_html,
+        safe_set_inner_html,
         create_element,
         get_icon_svg,
         add_protocol_if_missing,

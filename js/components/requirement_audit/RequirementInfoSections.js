@@ -35,14 +35,24 @@ export const RequirementInfoSections = (function () {
         
         if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
             const renderer = new marked.Renderer();
-            renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+            renderer.link = (href, title, text) => {
+                const safe_href = window.Helpers.escape_html(href);
+                const safe_text = window.Helpers.escape_html(text);
+                return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
+            };
             renderer.html = (html_token) => {
                 const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                     ? html_token.text
                     : String(html_token || '');
                 return window.Helpers.escape_html(text_to_escape);
             };
-            content_element.innerHTML = marked.parse(String(content_data), { renderer: renderer, breaks: true, gfm: true });
+            // Use safe HTML sanitization for markdown content
+            const parsed_markdown = marked.parse(String(content_data), { renderer: renderer, breaks: true, gfm: true });
+            if (window.Helpers.sanitize_html) {
+                content_element.innerHTML = window.Helpers.sanitize_html(parsed_markdown);
+            } else {
+                content_element.textContent = String(content_data);
+            }
         } else {
             content_element.textContent = String(content_data);
         }

@@ -136,7 +136,10 @@ import { marked } from '../utils/markdown.js';
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'md-toolbar-btn';
-            button.innerHTML = `<i class="fa-solid ${btnConfig.icon}" aria-hidden="true"></i>`;
+            const icon_element = document.createElement('i');
+            icon_element.className = `fa-solid ${btnConfig.icon}`;
+            icon_element.setAttribute('aria-hidden', 'true');
+            button.appendChild(icon_element);
 
             if (btnConfig.format === 'preview') {
                 button.setAttribute('aria-pressed', String(isPreviewInitiallyVisible));
@@ -309,10 +312,16 @@ import { marked } from '../utils/markdown.js';
         }
 
         try {
-            previewDiv.innerHTML = marked.parse(markdownText, { breaks: true, gfm: true, renderer: renderer });
+            const parsed_markdown = marked.parse(markdownText, { breaks: true, gfm: true, renderer: renderer });
+            // Use safe HTML sanitization for markdown preview
+            if (window.Helpers && window.Helpers.sanitize_html) {
+                previewDiv.innerHTML = window.Helpers.sanitize_html(parsed_markdown);
+            } else {
+                previewDiv.textContent = markdownText;
+            }
         } catch (error) {
             console.error("Error parsing Markdown:", error);
-            previewDiv.innerHTML = `<p style="color: red;">Error rendering preview. Check console for details.</p>`;
+            previewDiv.textContent = "Error rendering preview. Check console for details.";
         }
     }
     

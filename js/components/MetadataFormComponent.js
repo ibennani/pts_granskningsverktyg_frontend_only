@@ -59,13 +59,19 @@ export const MetadataFormComponent = (function () {
             actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
         }
 
+        // Sanitize all form inputs to prevent XSS
+        const sanitize_input = (input) => {
+            if (typeof input !== 'string') return '';
+            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        };
+
         const form_data = {
-            caseNumber: case_number_input.value.trim(),
-            actorName: actor_name_value,
-            actorLink: actor_link_value,
-            auditorName: auditor_name_input.value.trim(),
-            caseHandler: case_handler_input.value.trim(),
-            internalComment: internal_comment_input.value.trim()
+            caseNumber: sanitize_input(case_number_input.value),
+            actorName: sanitize_input(actor_name_value),
+            actorLink: sanitize_input(actor_link_value),
+            auditorName: sanitize_input(auditor_name_input.value),
+            caseHandler: sanitize_input(case_handler_input.value),
+            internalComment: sanitize_input(internal_comment_input.value)
         };
 
         if (typeof on_submit_callback === 'function') {

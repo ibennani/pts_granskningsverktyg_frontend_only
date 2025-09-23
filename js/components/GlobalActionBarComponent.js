@@ -222,10 +222,24 @@ export const GlobalActionBarComponentFactory = function () {
         function update_theme_button_content(theme) {
             const icon_color = getComputedStyle(document.documentElement).getPropertyValue('--button-default-text').trim();
             if (theme === 'dark') {
-                theme_toggle_button.innerHTML = `<span class="button-text">${t('light_mode')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('light_mode', [icon_color], 18) : '');
+                const light_span = Helpers.create_element('span', { class_name: 'button-text', text_content: t('light_mode') });
+                theme_toggle_button.appendChild(light_span);
+                if (Helpers.get_icon_svg) {
+                    const light_icon = Helpers.get_icon_svg('light_mode', [icon_color], 18);
+                    if (light_icon) {
+                        theme_toggle_button.insertAdjacentHTML('beforeend', light_icon);
+                    }
+                }
                 theme_toggle_button.setAttribute('aria-label', t('light_mode'));
             } else {
-                theme_toggle_button.innerHTML = `<span class="button-text">${t('dark_mode')}</span>` + (Helpers.get_icon_svg ? Helpers.get_icon_svg('dark_mode', [icon_color], 18) : '');
+                const dark_span = Helpers.create_element('span', { class_name: 'button-text', text_content: t('dark_mode') });
+                theme_toggle_button.appendChild(dark_span);
+                if (Helpers.get_icon_svg) {
+                    const dark_icon = Helpers.get_icon_svg('dark_mode', [icon_color], 18);
+                    if (dark_icon) {
+                        theme_toggle_button.insertAdjacentHTML('beforeend', dark_icon);
+                    }
+                }
                 theme_toggle_button.setAttribute('aria-label', t('dark_mode'));
             }
         }

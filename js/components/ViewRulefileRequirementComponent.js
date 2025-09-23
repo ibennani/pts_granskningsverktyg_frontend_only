@@ -184,7 +184,8 @@ export const ViewRulefileRequirementComponent = (function () {
                     pc_item.appendChild(criterion_heading);
                     if(pc.failureStatementTemplate) {
                         const template_div = Helpers_create_element('div', { class_name: 'failure-template-display' });
-                        template_div.innerHTML = `<strong>${t('failure_statement_template_display')}</strong>`;
+                        const template_strong = Helpers_create_element('strong', { text_content: t('failure_statement_template_display') });
+                        template_div.appendChild(template_strong);
                         template_div.appendChild(Helpers_create_element('p', { text_content: pc.failureStatementTemplate }));
                         pc_item.appendChild(template_div);
                     }
