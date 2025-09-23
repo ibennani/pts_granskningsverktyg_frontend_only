@@ -16,6 +16,8 @@ import './validation_logic.js';
 import './logic/rulefile_updater_logic.js';
 import './logic/ScoreCalculator.js';
 import './features/markdown_toolbar.js';
+import './utils/dependency_manager.js';
+import { dependencyManager } from './utils/dependency_manager.js';
 
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
@@ -45,6 +47,7 @@ window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState, forceSaveStateToLocalStorage };
 window.StoreActionTypes = StoreActionTypes;
+window.dependencyManager = dependencyManager;
 
 
 (function () {
@@ -243,6 +246,9 @@ window.StoreActionTypes = StoreActionTypes;
     }
 
     async function init_global_components() {
+        // Wait for dependency manager to be ready
+        await window.dependencyManager?.initialize();
+        
         if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
             console.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
@@ -440,6 +446,9 @@ window.StoreActionTypes = StoreActionTypes;
             if (error_boundary_instance && error_boundary_instance.clear_error) {
                 error_boundary_instance.clear_error();
             }
+
+            // Wait for dependencies to be ready before component initialization
+            await dependencyManager.waitForDependencies();
 
             current_view_component_instance = ComponentClass; 
 
