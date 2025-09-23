@@ -5,6 +5,7 @@
     const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
 
     let global_message_element = null;
+    let event_listeners = new Set(); // Track event listeners for cleanup
     // Translation och Helpers kommer att hämtas från window när de behövs inuti funktioner
     // Detta gör komponenten mindre beroende av att de finns exakt när assign_globals körs,
     // men assign_globals i andra komponenter kommer fortfarande att fejla om de inte finns.
@@ -57,7 +58,10 @@
                     class_name: 'global-message-close-btn', html_content: '×',
                     attributes: { 'aria-label': t('close'), title: t('close') }
                 });
-                close_button.addEventListener('click', clear_global_message, { once: true });
+                const closeHandler = () => clear_global_message();
+                close_button.addEventListener('click', closeHandler, { once: true });
+                // Track the event listener for cleanup
+                event_listeners.add({ element: close_button, event: 'click', handler: closeHandler });
                 global_message_element.appendChild(close_button);
                 global_message_element.setAttribute('role', 'alert');
             } else {
@@ -83,12 +87,23 @@
 
     function clear_global_message() {
         if (global_message_element) {
+            // Clean up any existing event listeners
+            const btn = global_message_element.querySelector('.global-message-close-btn');
+            if(btn) {
+                // Remove from tracked listeners
+                for (const listener of event_listeners) {
+                    if (listener.element === btn) {
+                        btn.removeEventListener(listener.event, listener.handler);
+                        event_listeners.delete(listener);
+                    }
+                }
+                btn.remove();
+            }
+            
             global_message_element.textContent = '';
             global_message_element.setAttribute('hidden', 'true');
             global_message_element.className = 'global-message-content';
             global_message_element.removeAttribute('role');
-            const btn = global_message_element.querySelector('.global-message-close-btn');
-            if(btn) btn.remove();
         }
     }
 
@@ -115,11 +130,28 @@
         return global_message_element;
     }
 
+    function cleanup() {
+        // Clean up all tracked event listeners
+        for (const listener of event_listeners) {
+            if (listener.element && listener.element.removeEventListener) {
+                listener.element.removeEventListener(listener.event, listener.handler);
+            }
+        }
+        event_listeners.clear();
+        
+        // Clear global message element reference
+        if (global_message_element) {
+            global_message_element.innerHTML = '';
+            global_message_element = null;
+        }
+    }
+
     const public_api = {
         init,
         show_global_message,
         clear_global_message,
-        get_global_message_element_reference
+        get_global_message_element_reference,
+        cleanup
     };
 
     window.NotificationComponent = public_api;

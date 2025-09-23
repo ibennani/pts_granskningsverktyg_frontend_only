@@ -156,8 +156,14 @@ export const ScoreAnalysisComponent = (function () {
 
     function destroy() {
         if (container_ref) {
+            // Clear all child elements to prevent memory leaks
+            while (container_ref.firstChild) {
+                container_ref.removeChild(container_ref.firstChild);
+            }
             container_ref.innerHTML = '';
         }
+        
+        // Nullify all references to help with garbage collection
         container_ref = null;
         Helpers = null;
         Translation = null;
