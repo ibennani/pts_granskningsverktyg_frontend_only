@@ -1,6 +1,7 @@
 // js/export_logic.js
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink } from 'docx';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -276,9 +277,416 @@ async function export_to_excel(current_audit) {
     }
 }
 
+async function export_to_word(current_audit) {
+    const t = get_t_internal();
+    if (!current_audit) {
+        show_global_message_internal(t('no_audit_data_to_save'), 'error');
+        return;
+    }
+
+    try {
+        const children = [];
+        
+        // Förstasida - Granskningsöversikt
+        children.push(create_overview_page(current_audit, t));
+        
+        // Kravsidor - endast krav med underkännanden
+        const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
+        for (const req of requirements_with_deficiencies) {
+            const req_children = create_requirement_page(req, current_audit, t);
+            children.push(...req_children);
+        }
+
+        const doc = new Document({
+            sections: [{
+                properties: {},
+                children: children
+            }],
+            styles: {
+                default: {
+                    document: {
+                        run: {
+                            font: "Calibri",
+                            size: 22
+                        },
+                        paragraph: {
+                            spacing: {
+                                after: 200,
+                                line: 360,
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading1: {
+                        run: {
+                            font: "Calibri Light",
+                            size: 24,
+                            bold: true
+                        }
+                    },
+                    heading2: {
+                        run: {
+                            font: "Calibri Light", 
+                            size: 22,
+                            bold: true
+                        }
+                    },
+                    heading3: {
+                        run: {
+                            font: "Calibri Light",
+                            size: 20,
+                            bold: true
+                        }
+                    }
+                }
+            }
+        });
+
+        const buffer = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(buffer);
+        const link = document.createElement('a');
+
+        const report_prefix = t('filename_audit_report_prefix');
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
+        const filename = `${report_prefix}_${actor_name}_${new Date().toISOString().split('T')[0]}.docx`;
+
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        show_global_message_internal(t('audit_saved_as_file', {filename: filename}), 'success');
+
+    } catch (error) {
+        console.error("Error exporting to Word:", error);
+        show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
+    }
+}
+
+function create_overview_page(current_audit, t) {
+    const lang_code = window.Translation.get_current_language_code();
+    const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
+    
+    // Skapa tabell för förstasida
+    const table = new Table({
+        rows: [
+            new TableRow({
+                children: [
+                    new TableCell({
+                        children: [
+                            new Paragraph({
+                                children: [create_heading_text(t('case_number'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.auditMetadata.caseNumber || '', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('actor_name'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.auditMetadata.actorName || '', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('auditor_name'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.auditMetadata.auditorName || '', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('rule_file_title'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.ruleFileContent.metadata.title || '', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('version_rulefile'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.ruleFileContent.metadata.version || '', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('status'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(t(`audit_status_${current_audit.auditStatus}`), 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('start_time'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : '', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('internal_comment'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(current_audit.auditMetadata.internalComment || '', 22)]
+                            })
+                        ],
+                        width: { size: 50, type: WidthType.PERCENTAGE }
+                    }),
+                    new TableCell({
+                        children: [
+                            new Paragraph({
+                                children: [create_heading_text(t('total_requirements_reviewed'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(`${get_total_requirements_count(current_audit)} (${get_requirements_percentage(current_audit)}%)`, 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('deficiency_index_title'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(score_analysis ? window.Helpers.format_number_locally(score_analysis.totalScore, lang_code) : '---', 22)]
+                            }),
+                            new Paragraph({ children: [new TextRun({ text: "" })] }),
+                            
+                            new Paragraph({
+                                children: [create_heading_text(t('principle_breakdown'), 2)],
+                                heading: HeadingLevel.HEADING_2
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(t('perceivable'), 22)]
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(t('operable'), 22)]
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(t('understandable'), 22)]
+                            }),
+                            new Paragraph({
+                                children: [create_body_text(t('robust'), 22)]
+                            })
+                        ],
+                        width: { size: 50, type: WidthType.PERCENTAGE }
+                    })
+                ]
+            })
+        ],
+        width: { size: 100, type: WidthType.PERCENTAGE }
+    });
+
+    return table;
+}
+
+function create_requirement_page(requirement, current_audit, t) {
+    const children = [];
+    
+    // H1: Kravets titel
+    children.push(new Paragraph({
+        children: [create_heading_text(requirement.title, 1)],
+        heading: HeadingLevel.HEADING_1
+    }));
+    
+    // Standardreferens hyperlänkad
+    if (requirement.standardReference?.text) {
+        const referenceText = requirement.standardReference.text;
+        const referenceUrl = requirement.standardReference.url;
+        
+        if (referenceUrl) {
+            children.push(new Paragraph({
+                children: [new ExternalHyperlink({
+                    children: [new TextRun({ text: referenceText, color: "0563C1", underline: { type: UnderlineType.SINGLE } })],
+                    link: window.Helpers.add_protocol_if_missing(referenceUrl)
+                })]
+            }));
+        } else {
+            children.push(new Paragraph({
+                children: [create_body_text(referenceText, 22)]
+            }));
+        }
+    }
+    
+    // Stickprov för detta krav
+    const samples_for_requirement = get_samples_for_requirement(requirement, current_audit);
+    for (const sample of samples_for_requirement) {
+        const sample_children = create_sample_section(sample, requirement, current_audit, t);
+        children.push(...sample_children);
+    }
+    
+    return children;
+}
+
+function create_sample_section(sample, requirement, current_audit, t) {
+    const children = [];
+    
+    // H2: Stickprovets namn
+    children.push(new Paragraph({
+        children: [create_heading_text(sample.description, 2)],
+        heading: HeadingLevel.HEADING_2
+    }));
+    
+    // Förväntad observation
+    const expected_observation = get_expected_observation(requirement, sample);
+    if (expected_observation) {
+        children.push(new Paragraph({
+            children: [create_heading_text(t('expected_observation') + ': ', 3), create_body_text(expected_observation, 22)]
+        }));
+    }
+    
+    // Kommentar till aktören
+    const actor_comment = get_actor_comment(requirement, sample);
+    if (actor_comment) {
+        children.push(new Paragraph({
+            children: [create_heading_text(t('comment_to_actor') + ': ', 3), create_body_text(actor_comment, 22)]
+        }));
+    }
+    
+    // Brister
+    const deficiencies = get_deficiencies_for_sample(requirement, sample, current_audit, t);
+    if (deficiencies.length > 0) {
+        children.push(new Paragraph({
+            children: [create_heading_text(t('deficiencies'), 3)],
+            heading: HeadingLevel.HEADING_3
+        }));
+        
+        deficiencies.forEach((deficiency, index) => {
+            children.push(new Paragraph({
+                children: [create_heading_text(`${index + 1}. `, 3), create_body_text(deficiency, 22)]
+            }));
+        });
+    }
+    
+    return children;
+}
+
+// Hjälpfunktioner
+function get_requirements_with_deficiencies(current_audit) {
+    const requirements = Object.values(current_audit.ruleFileContent.requirements || {});
+    return requirements.filter(req => {
+        const req_key = req.key || req.id;
+        return (current_audit.samples || []).some(sample => {
+            const result = (sample.requirementResults || {})[req_key];
+            if (!result || !result.checkResults) return false;
+            
+            return Object.values(result.checkResults).some(check_res => {
+                if (!check_res || !check_res.passCriteria) return false;
+                return Object.values(check_res.passCriteria).some(pc_obj => 
+                    pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
+                );
+            });
+        });
+    });
+}
+
+function get_total_requirements_count(current_audit) {
+    return Object.keys(current_audit.ruleFileContent.requirements || {}).length;
+}
+
+function get_requirements_percentage(current_audit) {
+    const total = get_total_requirements_count(current_audit);
+    const reviewed = (current_audit.samples || []).reduce((count, sample) => {
+        return count + Object.keys(sample.requirementResults || {}).length;
+    }, 0);
+    return total > 0 ? Math.round((reviewed / total) * 100) : 0;
+}
+
+function get_samples_for_requirement(requirement, current_audit) {
+    const req_key = requirement.key || requirement.id;
+    return (current_audit.samples || []).filter(sample => {
+        const result = (sample.requirementResults || {})[req_key];
+        if (!result || !result.checkResults) return false;
+        
+        return Object.values(result.checkResults).some(check_res => {
+            if (!check_res || !check_res.passCriteria) return false;
+            return Object.values(check_res.passCriteria).some(pc_obj => 
+                pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
+            );
+        });
+    });
+}
+
+function get_expected_observation(requirement, sample) {
+    // Denna funktion skulle behöva implementeras baserat på regelfilens struktur
+    return null;
+}
+
+function get_actor_comment(requirement, sample) {
+    // Denna funktion skulle behöva implementeras baserat på regelfilens struktur
+    return null;
+}
+
+// Hjälpfunktioner för formatering
+function create_heading_text(text, level = 2) {
+    const sizes = { 1: 24, 2: 22, 3: 20 };
+    return new TextRun({ 
+        text, 
+        bold: true, 
+        size: sizes[level] || 22, 
+        font: "Calibri Light" 
+    });
+}
+
+function create_body_text(text, size = 22) {
+    return new TextRun({ 
+        text, 
+        size, 
+        font: "Calibri" 
+    });
+}
+
+function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
+    const deficiencies = [];
+    const req_key = requirement.key || requirement.id;
+    const result = (sample.requirementResults || {})[req_key];
+    
+    if (!result || !result.checkResults) return deficiencies;
+    
+    Object.keys(result.checkResults).forEach(check_id => {
+        const check_res = result.checkResults[check_id];
+        if (!check_res || !check_res.passCriteria) return;
+        
+        Object.keys(check_res.passCriteria).forEach(pc_id => {
+            const pc_obj = check_res.passCriteria[pc_id];
+            if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
+                const pc_def = requirement.checks?.find(c => c.id === check_id)?.passCriteria?.find(p => p.id === pc_id);
+                const templateObservation = pc_def?.failureStatementTemplate || '';
+                const userObservation = pc_obj.observationDetail || '';
+                
+                let finalObservation = userObservation;
+                if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
+                    finalObservation = t('requirement_not_met_default_text');
+                }
+                
+                deficiencies.push(finalObservation);
+            }
+        });
+    });
+    
+    return deficiencies;
+}
+
 const public_api = {
     export_to_csv,
-    export_to_excel
+    export_to_excel,
+    export_to_word
 };
 
 window.ExportLogic = public_api;
