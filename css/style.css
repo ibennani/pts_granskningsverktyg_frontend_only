@@ -75,7 +75,7 @@
     --button-info-hover-bg: #bae8f4;
     
     --gradient-success-color: #84fab0;
-    --gradient-warning-color: #fbd786;
+    --gradient-warning-color: #ffd700;
     --gradient-danger-color: #f7797d;
 
     --surface-emphasis-bg: color-mix(in srgb, var(--plate-background-color) 96%, #000000 4%);

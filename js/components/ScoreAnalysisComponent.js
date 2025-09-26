@@ -55,7 +55,8 @@ export const ScoreAnalysisComponent = (function () {
                 <defs>
                     <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stop-color="var(--gradient-success-color)" />
-                        <stop offset="50%" stop-color="var(--gradient-warning-color)" />
+                        <stop offset="30%" stop-color="var(--gradient-success-color)" />
+                        <stop offset="70%" stop-color="var(--gradient-warning-color)" />
                         <stop offset="100%" stop-color="var(--gradient-danger-color)" />
                     </linearGradient>
                 </defs>
