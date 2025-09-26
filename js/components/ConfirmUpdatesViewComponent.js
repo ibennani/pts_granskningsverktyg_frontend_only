@@ -84,6 +84,18 @@ export const ConfirmUpdatesViewComponent = (function () {
         // --- END OF NEW, ROBUST FOCUS LOGIC ---
     }
 
+    function handle_list_item_keydown(event) {
+        // Handle keyboard navigation for accessibility
+        if (event.key === 'Enter' || event.key === ' ') {
+            const button = event.target.closest('button[data-action="confirm-single"]');
+            if (!button) return;
+            
+            event.preventDefault();
+            // Trigger the same action as click
+            handle_list_item_click(event);
+        }
+    }
+
     function get_updated_reqs_data() {
         const state = local_getState();
         const updated_reqs_by_sample = {};
@@ -176,6 +188,8 @@ export const ConfirmUpdatesViewComponent = (function () {
 
         list_container_for_delegation = Helpers_create_element('div');
         list_container_for_delegation.addEventListener('click', handle_list_item_click);
+        // Add keyboard support for accessibility
+        list_container_for_delegation.addEventListener('keydown', handle_list_item_keydown);
 
         const state = local_getState();
         for (const sampleId in updated_reqs_by_sample) {

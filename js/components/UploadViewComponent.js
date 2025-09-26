@@ -204,15 +204,15 @@ export const UploadViewComponent = (function () {
 
         rule_file_input_for_audit = window.Helpers.create_element('input', {
             id: 'rule-file-input-audit',
-            attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
+            attributes: {type: 'file', accept: '.json', style: 'display: none;'}
         });
         saved_audit_input_element = window.Helpers.create_element('input', {
             id: 'saved-audit-input',
-            attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
+            attributes: {type: 'file', accept: '.json', style: 'display: none;'}
         });
         rule_file_input_for_edit = window.Helpers.create_element('input', {
             id: 'rule-file-input-edit',
-            attributes: {type: 'file', accept: '.json', style: 'display: none;', 'aria-hidden': 'true'}
+            attributes: {type: 'file', accept: '.json', style: 'display: none;'}
         });
 
         app_container_ref.append(

@@ -47,6 +47,8 @@ export const ChecklistHandler = (function () {
 
         container_ref.addEventListener('click', handle_checklist_click);
         container_ref.addEventListener('input', handle_textarea_input);
+        // Add keyboard support for accessibility
+        container_ref.addEventListener('keydown', handle_checklist_keydown);
     }
     
     function handle_checklist_click(event) {
@@ -82,6 +84,18 @@ export const ChecklistHandler = (function () {
         
         if (change_info.type && on_status_change_callback) {
             on_status_change_callback(change_info);
+        }
+    }
+
+    function handle_checklist_keydown(event) {
+        // Handle keyboard navigation for accessibility
+        if (event.key === 'Enter' || event.key === ' ') {
+            const target_button = event.target.closest('button[data-action]');
+            if (!target_button) return;
+            
+            event.preventDefault();
+            // Trigger the same action as click
+            handle_checklist_click(event);
         }
     }
     
