@@ -64,6 +64,18 @@ export const RulefileRequirementsListComponent = (function () {
         }
     }
 
+    function handle_list_keydown(event) {
+        // Handle keyboard navigation for accessibility
+        if (event.key === 'Enter' || event.key === ' ') {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            
+            event.preventDefault();
+            // Trigger the same action as click
+            handle_list_click(event);
+        }
+    }
+
     function handle_toolbar_change(new_toolbar_state) {
         console.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
         const current_state_snapshot = local_getState();
@@ -179,6 +191,8 @@ export const RulefileRequirementsListComponent = (function () {
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
         content_div_for_delegation.addEventListener('click', handle_list_click);
+        // Add keyboard support for accessibility
+        content_div_for_delegation.addEventListener('keydown', handle_list_keydown);
         plate_element_ref.appendChild(content_div_for_delegation);
 
         const bottom_actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });

@@ -65,6 +65,18 @@ export const RequirementListComponent = (function () {
         }
     }
 
+    function handle_requirement_list_keydown(event) {
+        // Handle keyboard navigation for accessibility
+        if (event.key === 'Enter' || event.key === ' ') {
+            const target_button = event.target.closest('button.list-title-button[data-requirement-id]');
+            if (target_button && router_ref && params_ref && params_ref.sampleId) {
+                event.preventDefault();
+                const requirement_id = target_button.dataset.requirementId;
+                router_ref('requirement_audit', { sampleId: params_ref.sampleId, requirementId: requirement_id });
+            }
+        }
+    }
+
     function create_navigation_bar(is_bottom = false) {
         const t = get_t_internally();
         if (!Helpers_create_element || !t || !local_getState) return null;
@@ -158,6 +170,8 @@ export const RequirementListComponent = (function () {
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
         content_div_for_delegation.addEventListener('click', handle_requirement_list_click);
+        // Add keyboard support for accessibility
+        content_div_for_delegation.addEventListener('keydown', handle_requirement_list_keydown);
         plate_element_ref.appendChild(content_div_for_delegation);
 
         const bottom_nav_bar = create_navigation_bar(true);
@@ -316,7 +330,10 @@ export const RequirementListComponent = (function () {
         const title_button = Helpers_create_element('button', {
             class_name: 'list-title-button',
             text_content: req.title,
-            attributes: { 'data-requirement-id': req.key }
+            attributes: { 
+                'data-requirement-id': req.key,
+                'aria-label': `${t('audit_requirement')}: ${req.title}`
+            }
         });
         
         title_row_div.appendChild(title_button);
