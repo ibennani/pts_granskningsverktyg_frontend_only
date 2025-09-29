@@ -76,6 +76,7 @@
     
     --gradient-success-color: #84fab0;
     --gradient-warning-color: #ffd700;
+    --gradient-orange-color: #ff8c42;
     --gradient-danger-color: #f7797d;
 
     --surface-emphasis-bg: color-mix(in srgb, var(--plate-background-color) 96%, #000000 4%);
@@ -151,6 +152,7 @@
     
     --gradient-success-color: var(--success-color);
     --gradient-warning-color: var(--warning-color);
+    --gradient-orange-color: #ff8c42;
     --gradient-danger-color: var(--danger-color);
 
     --surface-emphasis-bg: color-mix(in srgb, var(--background-color) 70%, #000000 30%);
