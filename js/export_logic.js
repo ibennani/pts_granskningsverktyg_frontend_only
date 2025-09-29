@@ -248,10 +248,10 @@ async function export_to_excel(current_audit) {
                                 reference_obj.hyperlink = window.Helpers.add_protocol_if_missing(req_definition.standardReference.url);
                             }
 
-                            const url_obj = { text: sample.url || '' };
-                            if (sample.url) {
-                                url_obj.hyperlink = window.Helpers.add_protocol_if_missing(sample.url);
-                            }
+                            const url_obj = sample.url ? { 
+                                text: sample.url,
+                                hyperlink: window.Helpers.add_protocol_if_missing(sample.url)
+                            } : null;
 
                             deficiencies_data.push({
                                 id: extractDeficiencyNumber(pc_obj.deficiencyId),
@@ -273,13 +273,13 @@ async function export_to_excel(current_audit) {
 
         const headerRow = deficienciesSheet.getRow(1);
         headerRow.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-        headerRow.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FF002060'} };
+        headerRow.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FF6E3282'} };
         headerRow.alignment = { vertical: 'top', wrapText: true };
 
         deficienciesSheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
             if (rowNumber > 1) {
                 const isEvenRow = rowNumber % 2 === 0;
-                row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEvenRow ? 'FFDDEBF7' : 'FFFFFFFF' } };
+                row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEvenRow ? 'FFF4F1EE' : 'FFFFFFFF' } };
                 row.font = { color: { argb: 'FF000000' } };
                 row.alignment = { vertical: 'top', wrapText: true };
 
