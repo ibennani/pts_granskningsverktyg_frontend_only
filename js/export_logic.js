@@ -66,6 +66,18 @@ function get_pass_criterion_text(req_definition, check_id, pc_id) {
     return pc ? pc.requirement : pc_id;
 }
 
+function extractDeficiencyNumber(deficiencyId) {
+    if (!deficiencyId) return '';
+    // Ta bort B-prefix och returnera bara numret
+    return deficiencyId.replace(/^B/, '');
+}
+
+function formatDeficiencyForWord(deficiencyId) {
+    if (!deficiencyId) return '';
+    const number = extractDeficiencyNumber(deficiencyId);
+    return `Brist: ${number}`;
+}
+
 
 function export_to_csv(current_audit) {
     const t = get_t_internal();
@@ -114,7 +126,7 @@ function export_to_csv(current_audit) {
                         }
 
                         const row_values = [
-                            escape_for_csv(pc_obj.deficiencyId),
+                            escape_for_csv(extractDeficiencyNumber(pc_obj.deficiencyId)),
                             escape_for_csv(req_definition.title),
                             escape_for_csv(req_definition.standardReference?.text || ''),
                             escape_for_csv(sample.description),
@@ -242,7 +254,7 @@ async function export_to_excel(current_audit) {
                             }
 
                             deficiencies_data.push({
-                                id: pc_obj.deficiencyId,
+                                id: extractDeficiencyNumber(pc_obj.deficiencyId),
                                 reqTitle: req_definition.title,
                                 reference: reference_obj,
                                 sampleName: sample.description,
@@ -526,7 +538,7 @@ async function export_to_word(current_audit) {
                                 // Sista raden: text + bristindex i kursiv
                                 textRuns = [
                                     new TextRun({ text: '   ' + lines[lineIndex] + ' ' }),
-                                    new TextRun({ text: `(${deficiency.deficiencyId})`, italics: true })
+                                    new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true })
                                 ];
                             } else {
                                 // Mellanrader: bara text
@@ -558,7 +570,7 @@ async function export_to_word(current_audit) {
                             new Paragraph({
                                 children: [
                                     new TextRun({ text: numberPrefix + prefix + observationText + ' ' }),
-                                    new TextRun({ text: `(${deficiency.deficiencyId})`, italics: true })
+                                    new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true })
                                 ],
                                 indent: {
                                     left: 283, // 0.5 cm = 283 twips
@@ -1002,7 +1014,7 @@ function create_sample_section(sample, requirement, current_audit, t) {
                                 font: "Calibri" 
                             }),
                             new TextRun({ 
-                                text: `(${deficiency.deficiencyId})`, 
+                                text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, 
                                 size: 22, 
                                 font: "Calibri", 
                                 italics: true 
