@@ -511,11 +511,13 @@ async function export_to_word(current_audit) {
                     })
                 );
 
-                // Lägg till bristtext för detta stickprov som numrerad lista
+                // Lägg till bristtext för detta stickprov
                 const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+                const useNumberedList = deficiencies.length > 1;
+                
                 for (let i = 0; i < deficiencies.length; i++) {
                     const deficiency = deficiencies[i];
-                    const numberPrefix = `${i + 1}. `;
+                    const numberPrefix = useNumberedList ? `${i + 1}. ` : '';
                     const observationText = deficiency.observationDetail;
                     const isStandardText = deficiency.isStandardText || false;
                     
@@ -556,10 +558,10 @@ async function export_to_word(current_audit) {
                             sampleContent.push(
                                 new Paragraph({
                                     children: textRuns,
-                                    indent: {
+                                    indent: useNumberedList ? {
                                         left: 283, // 0.5 cm = 283 twips
                                         hanging: isFirstLine ? 142 : 0  // Hanging indent bara för första raden
-                                    }
+                                    } : {}
                                 })
                             );
                         }
@@ -572,10 +574,10 @@ async function export_to_word(current_audit) {
                                     new TextRun({ text: numberPrefix + prefix + observationText + ' ' }),
                                     new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true })
                                 ],
-                                indent: {
+                                indent: useNumberedList ? {
                                     left: 283, // 0.5 cm = 283 twips
                                     hanging: 142  // 0.25 cm = 142 twips
-                                }
+                                } : {}
                             })
                         );
                     }
