@@ -50,22 +50,32 @@ export const ScoreAnalysisComponent = (function () {
             };
         };
 
+        // Create gauge segments with different colors and straight boundaries
+        const createGaugeSegment = (startAngle, endAngle, color) => {
+            return `<path d="${describeArc(50, 50, 40, startAngle, endAngle)}" stroke="${color}" stroke-width="10" stroke-linecap="butt" fill="none" />`;
+        };
+
+        // Calculate angles for each percentage range
+        const totalAngle = maxAngle - minAngle; // 270 degrees
+        const greenEndAngle = minAngle + (15 / 100) * totalAngle; // 15% of 270° = 40.5°
+        const yellowEndAngle = minAngle + (30 / 100) * totalAngle; // 30% of 270° = 81°
+        const orangeEndAngle = minAngle + (45 / 100) * totalAngle; // 45% of 270° = 121.5°
+
         const svgContent = `
             <svg viewBox="0 0 100 85" class="score-gauge-svg">
-                <defs>
-                    <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="var(--gradient-success-color)" />
-                        <stop offset="30%" stop-color="var(--gradient-success-color)" />
-                        <stop offset="70%" stop-color="var(--gradient-warning-color)" />
-                        <stop offset="100%" stop-color="var(--gradient-danger-color)" />
-                    </linearGradient>
-                </defs>
-                
+                <!-- Gauge track (background) -->
                 <path class="score-gauge__track" d="${describeArc(50, 50, 40, minAngle, maxAngle)}" />
-                <path class="score-gauge__bar" d="${describeArc(50, 50, 40, minAngle, maxAngle)}" stroke="url(#${gradientId})" />
                 
+                <!-- Gauge segments with straight boundaries -->
+                ${createGaugeSegment(minAngle, greenEndAngle, 'var(--gradient-success-color)')}
+                ${createGaugeSegment(greenEndAngle, yellowEndAngle, 'var(--gradient-warning-color)')}
+                ${createGaugeSegment(yellowEndAngle, orangeEndAngle, 'var(--gradient-orange-color)')}
+                ${createGaugeSegment(orangeEndAngle, maxAngle, 'var(--gradient-danger-color)')}
+                
+                <!-- Value text -->
                 <text x="50" y="55" class="score-gauge__value">${formattedValue}</text>
 
+                <!-- Marker -->
                 <g class="score-gauge__marker-group" transform="rotate(${angle} 50 50)">
                     <circle class="score-gauge__marker" cx="50" cy="10" r="4" />
                 </g>
