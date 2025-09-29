@@ -306,24 +306,120 @@ async function export_to_word(current_audit) {
             })
         );
 
-        // Gå igenom alla krav med underkännanden
+        // Gå igenom alla krav med underkännanden - sortera enligt ref.text
         const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
-        for (let i = 0; i < requirements_with_deficiencies.length; i++) {
-            const req = requirements_with_deficiencies[i];
-            const ref_text = req.standardReference?.text || '';
-            const title_with_ref = ref_text ? `${req.title} (${ref_text})` : req.title;
+        
+        // Sortera krav enligt ref.text med naturlig sortering
+        const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
+            const ref_a = a.standardReference?.text || '';
+            const ref_b = b.standardReference?.text || '';
+            return natural_sort(ref_a, ref_b);
+        });
+        
+        for (let i = 0; i < sorted_requirements.length; i++) {
+            const req = sorted_requirements[i];
             
+            // H2 med bara kravets titel
             children.push(
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: title_with_ref
+                            text: req.title
                         })
                     ],
                     heading: "Heading2",
                     pageBreakBefore: i > 0 // Sidbrytning före varje h2 från och med den andra
                 })
             );
+
+            // Punkslista med referens och principer
+            const bullet_items = [];
+            
+            // Referens
+            if (req.standardReference?.text) {
+                const ref_text = req.standardReference.text;
+                const ref_url = req.standardReference.url;
+                
+                if (ref_url) {
+                    // Länkad referens
+                    bullet_items.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: "• " }),
+                                new TextRun({ text: "Referens: ", bold: true }),
+                                new ExternalHyperlink({
+                                    children: [new TextRun({ text: ref_text, style: "Hyperlink" })],
+                                    link: ref_url
+                                })
+                            ],
+                            indent: {
+                                left: 283, // 0.5 cm = 283 twips
+                                hanging: 142  // 0.25 cm = 142 twips
+                            }
+                        })
+                    );
+                } else {
+                    // Bara text
+                    bullet_items.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: "• " }),
+                                new TextRun({ text: "Referens: ", bold: true }),
+                                new TextRun({ text: ref_text })
+                            ],
+                            indent: {
+                                left: 283, // 0.5 cm = 283 twips
+                                hanging: 142  // 0.25 cm = 142 twips
+                            }
+                        })
+                    );
+                }
+            }
+            
+            // Principer
+            if (req.classifications && req.classifications.length > 0) {
+                const principle_texts = req.classifications
+                    .filter(c => c.taxonomyId === 'wcag22-pour')
+                    .map(c => c.conceptId)
+                    .filter(Boolean);
+                
+                if (principle_texts.length > 0) {
+                    bullet_items.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: "• " }),
+                                new TextRun({ text: "Principer: ", bold: true }),
+                                new TextRun({ text: principle_texts.join(', ') })
+                            ],
+                            indent: {
+                                left: 283, // 0.5 cm = 283 twips
+                                hanging: 142  // 0.25 cm = 142 twips
+                            }
+                        })
+                    );
+                }
+            }
+            
+            // Lägg till punkslistan
+            children.push(...bullet_items);
+
+            // Lägg till h3 "Förväntad observation"
+            children.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Förväntad observation"
+                        })
+                    ],
+                    heading: "Heading3"
+                })
+            );
+
+            // Lägg till kravets text med markdown-konvertering
+            if (req.expectedObservation) {
+                const markdown_paragraphs = convert_markdown_to_word_paragraphs(req.expectedObservation);
+                children.push(...markdown_paragraphs);
+            }
         }
 
         const doc = new Document({
@@ -718,6 +814,158 @@ function create_body_text(text, size = 22) {
         size, 
         font: "Calibri" 
     });
+}
+
+// Konverterar markdown-text till Word-paragraf-format
+function convert_markdown_to_word_paragraphs(markdown_text) {
+    if (!markdown_text || typeof markdown_text !== 'string') {
+        return [new Paragraph({
+            children: [new TextRun({ text: "" })]
+        })];
+    }
+
+    const paragraphs = [];
+    const lines = markdown_text.split('\n');
+    let current_paragraph_text = '';
+    let in_list = false;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed_line = line.trim();
+
+        // Hantera listor
+        if (trimmed_line.match(/^[-*+]\s/) || trimmed_line.match(/^\d+\.\s/)) {
+            if (!in_list) {
+                // Avsluta föregående stycke om det finns
+                if (current_paragraph_text.trim()) {
+                    paragraphs.push(create_paragraph_from_text(current_paragraph_text));
+                    current_paragraph_text = '';
+                }
+                in_list = true;
+            }
+            // Lägg till listpunkt med indrag
+            const list_text = trimmed_line.replace(/^[-*+]\s/, '').replace(/^\d+\.\s/, '');
+            paragraphs.push(new Paragraph({
+                children: [new TextRun({ text: `• ${list_text}` })],
+                indent: {
+                    left: 283, // 0.5 cm = 283 twips
+                    hanging: 142  // 0.25 cm = 142 twips
+                }
+            }));
+        }
+        // Hantera rubriker
+        else if (trimmed_line.startsWith('#')) {
+            if (current_paragraph_text.trim()) {
+                paragraphs.push(create_paragraph_from_text(current_paragraph_text));
+                current_paragraph_text = '';
+            }
+            const heading_level = trimmed_line.match(/^#+/)[0].length;
+            const heading_text = trimmed_line.replace(/^#+\s*/, '');
+            paragraphs.push(new Paragraph({
+                children: [new TextRun({ text: heading_text, bold: true })],
+                heading: `Heading${Math.min(heading_level, 4)}`
+            }));
+        }
+        // Tom rad - avsluta stycke
+        else if (trimmed_line === '') {
+            if (current_paragraph_text.trim()) {
+                paragraphs.push(create_paragraph_from_text(current_paragraph_text));
+                current_paragraph_text = '';
+            }
+            in_list = false;
+        }
+        // Vanlig text
+        else {
+            if (in_list) {
+                in_list = false;
+            }
+            if (current_paragraph_text) {
+                current_paragraph_text += ' ' + trimmed_line;
+            } else {
+                current_paragraph_text = trimmed_line;
+            }
+        }
+    }
+
+    // Lägg till sista stycket
+    if (current_paragraph_text.trim()) {
+        paragraphs.push(create_paragraph_from_text(current_paragraph_text));
+    }
+
+    return paragraphs.length > 0 ? paragraphs : [new Paragraph({
+        children: [new TextRun({ text: "" })]
+    })];
+}
+
+// Skapar en paragraf från text med grundläggande markdown-formatering
+function create_paragraph_from_text(text) {
+    const text_runs = [];
+    let current_text = text;
+    
+    // Hantera fetstil (**text** eller __text__)
+    current_text = current_text.replace(/\*\*(.*?)\*\*/g, (match, content) => {
+        return `__BOLD_START__${content}__BOLD_END__`;
+    });
+    
+    // Hantera kursiv (*text* eller _text_)
+    current_text = current_text.replace(/\*(.*?)\*/g, (match, content) => {
+        return `__ITALIC_START__${content}__ITALIC_END__`;
+    });
+    
+    // Dela upp texten i delar
+    const parts = current_text.split(/(__BOLD_START__.*?__BOLD_END__|__ITALIC_START__.*?__ITALIC_END__)/);
+    
+    for (const part of parts) {
+        if (part.includes('__BOLD_START__')) {
+            const content = part.replace(/__BOLD_START__|__BOLD_END__/g, '');
+            text_runs.push(new TextRun({ text: content, bold: true }));
+        } else if (part.includes('__ITALIC_START__')) {
+            const content = part.replace(/__ITALIC_START__|__ITALIC_END__/g, '');
+            text_runs.push(new TextRun({ text: content, italics: true }));
+        } else if (part.trim()) {
+            text_runs.push(new TextRun({ text: part }));
+        }
+    }
+    
+    return new Paragraph({
+        children: text_runs.length > 0 ? text_runs : [new TextRun({ text: text })]
+    });
+}
+
+// Naturlig sortering för att hantera nummer korrekt (9.9 → 9.10 → 9.11)
+function natural_sort(a, b) {
+    if (!a && !b) return 0;
+    if (!a) return -1;
+    if (!b) return 1;
+    
+    // Dela upp strängarna i delar (nummer och text)
+    const parts_a = a.toString().split(/(\d+)/);
+    const parts_b = b.toString().split(/(\d+)/);
+    
+    const max_length = Math.max(parts_a.length, parts_b.length);
+    
+    for (let i = 0; i < max_length; i++) {
+        const part_a = parts_a[i] || '';
+        const part_b = parts_b[i] || '';
+        
+        // Om båda delarna är nummer, jämför numeriskt
+        if (/^\d+$/.test(part_a) && /^\d+$/.test(part_b)) {
+            const num_a = parseInt(part_a, 10);
+            const num_b = parseInt(part_b, 10);
+            if (num_a !== num_b) {
+                return num_a - num_b;
+            }
+        }
+        // Annars jämför alfabetiskt
+        else {
+            const comparison = part_a.localeCompare(part_b);
+            if (comparison !== 0) {
+                return comparison;
+            }
+        }
+    }
+    
+    return 0;
 }
 
 function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
