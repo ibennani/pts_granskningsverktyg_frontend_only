@@ -66,6 +66,22 @@ function get_pass_criterion_text(req_definition, check_id, pc_id) {
     return pc ? pc.requirement : pc_id;
 }
 
+function formatDeficiencyId(number, totalCount) {
+    const t = get_t_internal();
+    
+    // Bestäm padding baserat på det högsta numret som kommer att användas
+    // Detta säkerställer konsistent numrering oavsett antal brister
+    let padding = 1;
+    if (totalCount >= 100) {
+        padding = 3;  // B001, B002, ..., B100
+    } else if (totalCount >= 10) {
+        padding = 2; // B01, B02, ..., B99
+    }
+    // För totalCount < 10: padding = 1 (B1, B2, ..., B9)
+    
+    return `${t('deficiency_prefix', {defaultValue: "B"})}${String(number).padStart(padding, '0')}`;
+}
+
 function export_to_csv(current_audit) {
     const t = get_t_internal();
     if (!current_audit) {
@@ -86,6 +102,31 @@ function export_to_csv(current_audit) {
     ];
     csv_content_array.push(headers.join(';'));
 
+    // Först: räkna totalt antal brister för korrekt padding
+    let totalDeficiencyCount = 0;
+    (current_audit.samples || []).forEach(sample => {
+        const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
+        all_reqs.forEach(req_definition => {
+            const req_key = req_definition.key || req_definition.id;
+            const result = (sample.requirementResults || {})[req_key];
+            if (!result || !result.checkResults) return;
+
+            Object.keys(result.checkResults).forEach(check_id => {
+                const check_res = result.checkResults[check_id];
+                if (!check_res || !check_res.passCriteria) return;
+
+                Object.keys(check_res.passCriteria).forEach(pc_id => {
+                    const pc_obj = check_res.passCriteria[pc_id];
+                    if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
+                        totalDeficiencyCount++;
+                    }
+                });
+            });
+        });
+    });
+
+    // Sedan: samla alla brister och sortera dem
+    const allDeficiencies = [];
     (current_audit.samples || []).forEach(sample => {
         const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
         all_reqs.forEach(req_definition => {
@@ -112,20 +153,43 @@ function export_to_csv(current_audit) {
                             finalObservation = passCriterionText;
                         }
 
-                        const row_values = [
-                            escape_for_csv(pc_obj.deficiencyId),
-                            escape_for_csv(req_definition.title),
-                            escape_for_csv(req_definition.standardReference?.text || ''),
-                            escape_for_csv(sample.description),
-                            escape_for_csv(sample.url),
-                            escape_for_csv(controlText),
-                            escape_for_csv(finalObservation)
-                        ];
-                        csv_content_array.push(row_values.join(';'));
+                        allDeficiencies.push({
+                            sampleDescription: sample.description,
+                            reqRefText: req_definition.standardReference?.text || req_definition.title,
+                            pcRequirementText: pc_def?.requirement || '',
+                            controlText,
+                            finalObservation,
+                            req_definition,
+                            sample
+                        });
                     }
                 });
             });
         });
+    });
+
+    // Sortera bristerna enligt samma logik som i assignSortedDeficiencyIdsOnLock
+    allDeficiencies.sort((a, b) => {
+        const reqCompare = (a.reqRefText || '').localeCompare(b.reqRefText || '', undefined, { numeric: true });
+        if (reqCompare !== 0) return reqCompare;
+        const sampleCompare = a.sampleDescription.localeCompare(b.sampleDescription);
+        if (sampleCompare !== 0) return sampleCompare;
+        return a.pcRequirementText.localeCompare(b.pcRequirementText);
+    });
+
+    // Skapa CSV-rader med korrekt formaterade ID:n
+    allDeficiencies.forEach((deficiency, index) => {
+        const formattedId = formatDeficiencyId(index + 1, totalDeficiencyCount);
+        const row_values = [
+            escape_for_csv(formattedId),
+            escape_for_csv(deficiency.req_definition.title),
+            escape_for_csv(deficiency.req_definition.standardReference?.text || ''),
+            escape_for_csv(deficiency.sample.description),
+            escape_for_csv(deficiency.sample.url),
+            escape_for_csv(deficiency.controlText),
+            escape_for_csv(deficiency.finalObservation)
+        ];
+        csv_content_array.push(row_values.join(';'));
     });
 
     const csv_string = csv_content_array.join('\n');
@@ -207,7 +271,29 @@ async function export_to_excel(current_audit) {
             { header: t('excel_col_observation'), key: 'observation', width: 70 }
         ];
         
-        const deficiencies_data = [];
+        // Först: räkna totalt antal brister för korrekt padding
+        let totalDeficiencyCount = 0;
+        (current_audit.samples || []).forEach(sample => {
+            const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
+            all_reqs.forEach(req_definition => {
+                const req_key = req_definition.key || req_definition.id;
+                const result = (sample.requirementResults || {})[req_key];
+                if (!result || !result.checkResults) return;
+                Object.keys(result.checkResults).forEach(check_id => {
+                    const check_res = result.checkResults[check_id];
+                    if (!check_res || !check_res.passCriteria) return;
+                    Object.keys(check_res.passCriteria).forEach(pc_id => {
+                        const pc_obj = check_res.passCriteria[pc_id];
+                        if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
+                            totalDeficiencyCount++;
+                        }
+                    });
+                });
+            });
+        });
+
+        // Sedan: samla alla brister och sortera dem
+        const allDeficiencies = [];
         (current_audit.samples || []).forEach(sample => {
             const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
             all_reqs.forEach(req_definition => {
@@ -240,18 +326,45 @@ async function export_to_excel(current_audit) {
                                 url_obj.hyperlink = window.Helpers.add_protocol_if_missing(sample.url);
                             }
 
-                            deficiencies_data.push({
-                                id: pc_obj.deficiencyId,
-                                reqTitle: req_definition.title,
-                                reference: reference_obj,
-                                sampleName: sample.description,
-                                sampleUrl: url_obj,
-                                control: get_pass_criterion_text(req_definition, check_id, pc_id),
-                                observation: finalObservation
+                            allDeficiencies.push({
+                                sampleDescription: sample.description,
+                                reqRefText: req_definition.standardReference?.text || req_definition.title,
+                                pcRequirementText: pc_def?.requirement || '',
+                                req_definition,
+                                sample,
+                                reference_obj,
+                                url_obj,
+                                finalObservation,
+                                check_id,
+                                pc_id
                             });
                         }
                     });
                 });
+            });
+        });
+
+        // Sortera bristerna enligt samma logik som i assignSortedDeficiencyIdsOnLock
+        allDeficiencies.sort((a, b) => {
+            const reqCompare = (a.reqRefText || '').localeCompare(b.reqRefText || '', undefined, { numeric: true });
+            if (reqCompare !== 0) return reqCompare;
+            const sampleCompare = a.sampleDescription.localeCompare(b.sampleDescription);
+            if (sampleCompare !== 0) return sampleCompare;
+            return a.pcRequirementText.localeCompare(b.pcRequirementText);
+        });
+
+        // Skapa Excel-data med korrekt formaterade ID:n
+        const deficiencies_data = [];
+        allDeficiencies.forEach((deficiency, index) => {
+            const formattedId = formatDeficiencyId(index + 1, totalDeficiencyCount);
+            deficiencies_data.push({
+                id: formattedId,
+                reqTitle: deficiency.req_definition.title,
+                reference: deficiency.reference_obj,
+                sampleName: deficiency.sample.description,
+                sampleUrl: deficiency.url_obj,
+                control: get_pass_criterion_text(deficiency.req_definition, deficiency.check_id, deficiency.pc_id),
+                observation: deficiency.finalObservation
             });
         });
 
@@ -525,7 +638,7 @@ async function export_to_word(current_audit) {
                                 // Sista raden: text + bristindex i kursiv
                                 textRuns = [
                                     new TextRun({ text: '   ' + lines[lineIndex] + ' ' }),
-                                    new TextRun({ text: `(${deficiency.deficiencyId})`, italics: true })
+                                    new TextRun({ text: `(${deficiency.formattedId || deficiency.deficiencyId})`, italics: true })
                                 ];
                             } else {
                                 // Mellanrader: bara text
@@ -557,7 +670,7 @@ async function export_to_word(current_audit) {
                             new Paragraph({
                                 children: [
                                     new TextRun({ text: numberPrefix + prefix + observationText + ' ' }),
-                                    new TextRun({ text: `(${deficiency.deficiencyId})`, italics: true })
+                                    new TextRun({ text: `(${deficiency.formattedId || deficiency.deficiencyId})`, italics: true })
                                 ],
                                 indent: {
                                     left: 283, // 0.5 cm = 283 twips
@@ -1001,7 +1114,7 @@ function create_sample_section(sample, requirement, current_audit, t) {
                                 font: "Calibri" 
                             }),
                             new TextRun({ 
-                                text: `(${deficiency.deficiencyId})`, 
+                                text: `(${deficiency.formattedId || deficiency.deficiencyId})`, 
                                 size: 22, 
                                 font: "Calibri", 
                                 italics: true 
@@ -1346,6 +1459,89 @@ function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
     });
     
     return deficiencies;
+}
+
+// Ny funktion som samlar alla brister globalt och formaterar dem korrekt
+function get_all_deficiencies_with_formatted_ids(current_audit, t) {
+    // Först: räkna totalt antal brister för korrekt padding
+    let totalDeficiencyCount = 0;
+    (current_audit.samples || []).forEach(sample => {
+        const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
+        all_reqs.forEach(req_definition => {
+            const req_key = req_definition.key || req_definition.id;
+            const result = (sample.requirementResults || {})[req_key];
+            if (!result || !result.checkResults) return;
+            Object.keys(result.checkResults).forEach(check_id => {
+                const check_res = result.checkResults[check_id];
+                if (!check_res || !check_res.passCriteria) return;
+                Object.keys(check_res.passCriteria).forEach(pc_id => {
+                    const pc_obj = check_res.passCriteria[pc_id];
+                    if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
+                        totalDeficiencyCount++;
+                    }
+                });
+            });
+        });
+    });
+
+    // Sedan: samla alla brister och sortera dem
+    const allDeficiencies = [];
+    (current_audit.samples || []).forEach(sample => {
+        const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
+        all_reqs.forEach(req_definition => {
+            const req_key = req_definition.key || req_definition.id;
+            const result = (sample.requirementResults || {})[req_key];
+            if (!result || !result.checkResults) return;
+            Object.keys(result.checkResults).forEach(check_id => {
+                const check_res = result.checkResults[check_id];
+                if (!check_res || !check_res.passCriteria) return;
+                Object.keys(check_res.passCriteria).forEach(pc_id => {
+                    const pc_obj = check_res.passCriteria[pc_id];
+                    if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
+                        const pc_def = req_definition.checks?.find(c => c.id === check_id)?.passCriteria?.find(p => p.id === pc_id);
+                        const templateObservation = pc_def?.failureStatementTemplate || '';
+                        const userObservation = pc_obj.observationDetail || '';
+                        const passCriterionText = pc_def?.requirement || '';
+                        
+                        let finalObservation = userObservation;
+                        let isStandardText = false;
+                        if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
+                            finalObservation = passCriterionText;
+                            isStandardText = true;
+                        }
+                        
+                        allDeficiencies.push({
+                            sampleDescription: sample.description,
+                            reqRefText: req_definition.standardReference?.text || req_definition.title,
+                            pcRequirementText: pc_def?.requirement || '',
+                            observationDetail: finalObservation,
+                            isStandardText: isStandardText,
+                            sample,
+                            req_definition,
+                            check_id,
+                            pc_id
+                        });
+                    }
+                });
+            });
+        });
+    });
+
+    // Sortera bristerna enligt samma logik som i assignSortedDeficiencyIdsOnLock
+    allDeficiencies.sort((a, b) => {
+        const reqCompare = (a.reqRefText || '').localeCompare(b.reqRefText || '', undefined, { numeric: true });
+        if (reqCompare !== 0) return reqCompare;
+        const sampleCompare = a.sampleDescription.localeCompare(b.sampleDescription);
+        if (sampleCompare !== 0) return sampleCompare;
+        return a.pcRequirementText.localeCompare(b.pcRequirementText);
+    });
+
+    // Formatera ID:n korrekt
+    allDeficiencies.forEach((deficiency, index) => {
+        deficiency.formattedId = formatDeficiencyId(index + 1, totalDeficiencyCount);
+    });
+
+    return allDeficiencies;
 }
 
 const public_api = {
