@@ -19,7 +19,7 @@ export const AuditOverviewComponent = (function () {
     let Translation_t;
     let Helpers_create_element, Helpers_get_icon_svg, Helpers_format_iso_to_local_datetime, Helpers_escape_html, Helpers_load_css, Helpers_add_protocol_if_missing, Helpers_format_number_locally;
     let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
-    let ExportLogic_export_to_csv, ExportLogic_export_to_excel;
+    let ExportLogic_export_to_csv, ExportLogic_export_to_excel, ExportLogic_export_to_word;
     let AuditLogic_calculate_overall_audit_progress;
     
     let global_message_element_ref;
@@ -50,6 +50,7 @@ export const AuditOverviewComponent = (function () {
         NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
         ExportLogic_export_to_csv = window.ExportLogic?.export_to_csv;
         ExportLogic_export_to_excel = window.ExportLogic?.export_to_excel;
+        ExportLogic_export_to_word = window.ExportLogic?.export_to_word;
         AuditLogic_calculate_overall_audit_progress = window.AuditLogic?.calculate_overall_audit_progress;
     }
 
@@ -115,6 +116,16 @@ export const AuditOverviewComponent = (function () {
             return;
         }
         ExportLogic_export_to_excel(current_global_state);
+    }
+
+    function handle_export_word() {
+        const t = Translation_t;
+        const current_global_state = local_getState();
+        if (current_global_state.auditStatus !== 'locked') {
+            NotificationComponent_show_global_message(t('audit_not_locked_for_export', { status: current_global_state.auditStatus }), 'warning');
+            return;
+        }
+        ExportLogic_export_to_word(current_global_state);
     }
 
     async function init_sub_components() {
@@ -226,6 +237,13 @@ export const AuditOverviewComponent = (function () {
                     class_name: ['button', 'button-default'],
                     html_content: `<span>${t('export_to_excel')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18),
                     event_listeners: { click: handle_export_excel }
+                }));
+            }
+            if (ExportLogic_export_to_word) {
+                left_group.appendChild(Helpers_create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_word')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18),
+                    event_listeners: { click: handle_export_word }
                 }));
             }
         }
