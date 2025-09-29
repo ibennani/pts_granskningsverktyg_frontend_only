@@ -11,13 +11,15 @@
     function formatDeficiencyId(number, totalCount) {
         const t = get_t_func();
         
-        // Bestäm padding baserat på totalt antal brister
+        // Bestäm padding baserat på det högsta numret som kommer att användas
+        // Detta säkerställer konsistent numrering oavsett antal brister
         let padding = 1;
         if (totalCount >= 100) {
-            padding = 3;
+            padding = 3;  // B001, B002, ..., B100
         } else if (totalCount >= 10) {
-            padding = 2;
+            padding = 2; // B01, B02, ..., B99
         }
+        // För totalCount < 10: padding = 1 (B1, B2, ..., B9)
         
         return `${t('deficiency_prefix', {defaultValue: "B"})}${String(number).padStart(padding, '0')}`;
     }
