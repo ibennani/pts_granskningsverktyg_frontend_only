@@ -24,11 +24,30 @@
         return `${t('deficiency_prefix', {defaultValue: "B"})}${String(number).padStart(padding, '0')}`;
     }
 
+    function removeAllDeficiencyIds(auditState) {
+        console.log("[AuditLogic] Removing all deficiency IDs...");
+        const newState = JSON.parse(JSON.stringify(auditState));
+        
+        (newState.samples || []).forEach(sample => {
+            Object.values(sample.requirementResults || {}).forEach(reqResult => {
+                Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                    Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
+                        delete pcResult.deficiencyId;
+                    });
+                });
+            });
+        });
+        
+        newState.deficiencyCounter = 1;
+        return newState;
+    }
+
     function assignSortedDeficiencyIdsOnLock(auditState) {
         console.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
         const newState = JSON.parse(JSON.stringify(auditState));
         newState.deficiencyCounter = 1;
 
+        // Ta bort alla befintliga ID:n först
         (newState.samples || []).forEach(sample => {
             Object.values(sample.requirementResults || {}).forEach(reqResult => {
                 Object.values(reqResult.checkResults || {}).forEach(checkResult => {
@@ -114,43 +133,20 @@
     function updateIncrementalDeficiencyIds(auditState) {
         if (!auditState) return auditState;
         const newState = JSON.parse(JSON.stringify(auditState));
-        let nextId = newState.deficiencyCounter || 1;
-
-        // Första passet: räkna totalt antal brister
-        let totalFailedCount = 0;
+        
+        // Under pågående granskning: bara ta bort ID:n från brister som inte längre är failed
         (newState.samples || []).forEach(sample => {
             Object.values(sample.requirementResults || {}).forEach(reqResult => {
                 Object.values(reqResult.checkResults || {}).forEach(checkResult => {
                     Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
-                        if (pcResult.status === 'failed') {
-                            totalFailedCount++;
-                        }
-                    });
-                });
-            });
-        });
-
-        // Andra passet: uppdatera ID:n med korrekt padding
-        (newState.samples || []).forEach(sample => {
-            Object.values(sample.requirementResults || {}).forEach(reqResult => {
-                Object.values(reqResult.checkResults || {}).forEach(checkResult => {
-                    Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
-                        if (pcResult.status === 'failed' && !pcResult.deficiencyId) {
-                            pcResult.deficiencyId = formatDeficiencyId(nextId, totalFailedCount);
-                            nextId++;
-                        } else if (pcResult.status !== 'failed' && pcResult.deficiencyId) {
+                        if (pcResult.status !== 'failed' && pcResult.deficiencyId) {
                             delete pcResult.deficiencyId;
-                        } else if (pcResult.status === 'failed' && pcResult.deficiencyId) {
-                            // Uppdatera befintliga ID:n med korrekt formatering
-                            pcResult.deficiencyId = formatDeficiencyId(nextId, totalFailedCount);
-                            nextId++;
                         }
                     });
                 });
             });
         });
         
-        newState.deficiencyCounter = nextId;
         return newState;
     }
 
@@ -337,7 +333,8 @@
         calculate_overall_audit_progress,
         find_first_incomplete_requirement_key_for_sample,
         assignSortedDeficiencyIdsOnLock,
-        updateIncrementalDeficiencyIds
+        updateIncrementalDeficiencyIds,
+        removeAllDeficiencyIds
     };
 
     window.AuditLogic = public_api;

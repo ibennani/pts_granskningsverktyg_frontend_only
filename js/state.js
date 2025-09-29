@@ -314,9 +314,13 @@ function root_reducer(current_state, action) {
             } 
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
                 timeUpdate.endTime = null;
+                // Ta bort alla ID:n när granskningen låses upp
+                state_before_status_change = window.AuditLogic.removeAllDeficiencyIds(current_state);
             } 
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
                 timeUpdate.startTime = get_current_iso_datetime_utc_internal();
+                // Ta bort alla ID:n när granskningen startas
+                state_before_status_change = window.AuditLogic.removeAllDeficiencyIds(current_state);
             }
 
             return { ...state_before_status_change, auditStatus: newStatus, ...timeUpdate };
