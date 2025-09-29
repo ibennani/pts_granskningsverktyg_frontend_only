@@ -420,6 +420,58 @@ async function export_to_word(current_audit) {
                 const markdown_paragraphs = convert_markdown_to_word_paragraphs(req.expectedObservation);
                 children.push(...markdown_paragraphs);
             }
+
+            // Lägg till h2 "Faktisk observation"
+            children.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Faktisk observation"
+                        })
+                    ],
+                    heading: "Heading2"
+                })
+            );
+
+            // Lägg till introduktionstext
+            children.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: "Vi har sett brister kopplade till det här kravet i följande stickprov. Här redovisar vi endast de brister vi har observerat. Gå därför igenom alla stickprov och kontrollera om samma typ av brister finns på fler ställen."
+                        })
+                    ]
+                })
+            );
+
+            // Lägg till h3 för varje stickprov med underkännanden
+            const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
+            for (const sample of samples_with_deficiencies) {
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: sample.description || sample.url || "Stickprov"
+                            })
+                        ],
+                        heading: "Heading3"
+                    })
+                );
+
+                // Lägg till bristtext för detta stickprov
+                const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+                for (const deficiency of deficiencies) {
+                    children.push(
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: deficiency || "Bristtext här"
+                                })
+                            ]
+                        })
+                    );
+                }
+            }
         }
 
         const doc = new Document({
@@ -966,6 +1018,31 @@ function natural_sort(a, b) {
     }
     
     return 0;
+}
+
+// Hämtar stickprov som har underkännanden för ett specifikt krav
+function get_samples_with_deficiencies_for_requirement(requirement, current_audit) {
+    const req_key = requirement.key || requirement.id;
+    const samples_with_deficiencies = [];
+    
+    (current_audit.samples || []).forEach(sample => {
+        const result = (sample.requirementResults || {})[req_key];
+        if (!result || !result.checkResults) return;
+        
+        // Kontrollera om det finns underkännanden
+        const has_deficiencies = Object.values(result.checkResults).some(check_res => {
+            if (!check_res || !check_res.passCriteria) return false;
+            return Object.values(check_res.passCriteria).some(pc_obj => 
+                pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
+            );
+        });
+        
+        if (has_deficiencies) {
+            samples_with_deficiencies.push(sample);
+        }
+    });
+    
+    return samples_with_deficiencies;
 }
 
 function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
