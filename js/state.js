@@ -82,6 +82,13 @@ function root_reducer(current_state, action) {
     switch (action.type) {
         case ActionTypes.DELETE_CHECK_FROM_REQUIREMENT:
             const { requirementId: reqIdForCheck, checkId } = action.payload;
+            
+            // Säkerställ att ruleFileContent finns och har requirements
+            if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
+                console.warn('[State.js] Cannot delete check: ruleFileContent or requirements is null/undefined');
+                return current_state;
+            }
+            
             const reqToUpdateCheck = current_state.ruleFileContent.requirements[reqIdForCheck];
             if (reqToUpdateCheck) {
                 const updatedChecks = reqToUpdateCheck.checks.filter(c => c.id !== checkId);
@@ -93,6 +100,13 @@ function root_reducer(current_state, action) {
 
         case ActionTypes.DELETE_CRITERION_FROM_CHECK:
             const { requirementId: reqIdForPc, checkId: checkIdForPc, passCriterionId } = action.payload;
+            
+            // Säkerställ att ruleFileContent finns och har requirements
+            if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
+                console.warn('[State.js] Cannot delete criterion: ruleFileContent or requirements is null/undefined');
+                return current_state;
+            }
+            
             const reqToUpdatePc = current_state.ruleFileContent.requirements[reqIdForPc];
             if (reqToUpdatePc) {
                 const updatedChecksForPc = reqToUpdatePc.checks.map(c => {
@@ -114,7 +128,7 @@ function root_reducer(current_state, action) {
             console.log(`%c[DEBUG] Reducer: Received UPDATE_REQUIREMENT_DEFINITION for ID '${updateReqId}'.`, 'color: #FF69B4;');
             console.log(`%c[DEBUG] Reducer: INCOMING classifications data:`, 'color: #FF69B4;', JSON.parse(JSON.stringify(updatedRequirementData.classifications)));
             // --- DEBUG END ---
-            if (current_state.ruleFileContent?.requirements[updateReqId]) {
+            if (current_state.ruleFileContent?.requirements?.[updateReqId]) {
                 const newRequirements = {
                     ...current_state.ruleFileContent.requirements,
                     [updateReqId]: updatedRequirementData
@@ -135,6 +149,13 @@ function root_reducer(current_state, action) {
 
         case ActionTypes.DELETE_REQUIREMENT_DEFINITION:
             const { requirementId: deleteReqId } = action.payload;
+            
+            // Säkerställ att ruleFileContent finns och har requirements
+            if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
+                console.warn('[State.js] Cannot delete requirement: ruleFileContent or requirements is null/undefined');
+                return current_state;
+            }
+            
             const newRequirementsAfterDelete = { ...current_state.ruleFileContent.requirements };
             delete newRequirementsAfterDelete[deleteReqId];
             

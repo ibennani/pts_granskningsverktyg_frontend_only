@@ -158,7 +158,10 @@ export const EditRulefileRequirementComponent = (function () {
         const t = Translation_t;
         if (!local_requirement_data.title.trim()) {
             NotificationComponent_show_global_message(t('field_is_required', { fieldName: t('requirement_title') }), 'error');
-            form_element_ref.querySelector('#title')?.focus();
+            // Only focus if not in focus protection mode
+            if (!window.focusProtectionActive && !window.customFocusApplied) {
+                form_element_ref.querySelector('#title')?.focus();
+            }
             return;
         }
         
@@ -198,20 +201,18 @@ export const EditRulefileRequirementComponent = (function () {
                     logic: 'AND',
                     passCriteria: []
                 });
-                _rerender_all_sections({
-                    focusTarget: {
-                        type: 'check',
-                        checkId: new_check_id,
-                        actionOrder: ['move-check-up', 'move-check-down', 'delete-check']
-                    },
-                    animateInfo: {
-                        type: 'check',
-                        checkId: new_check_id,
-                        animationClass: 'new-item-animation',
-                        animationDuration: 500
-                    },
-                    previousLayout: previous_layout
+
+                // Spara ändringarna till global state direkt
+                if (typeof window !== 'undefined') {
+                    window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+                }
+                local_dispatch({
+                    type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                    payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
                 });
+
+                // Lägg bara till det nya elementet istället för att rendera om allt
+                _add_new_check_element(new_check_id);
                 break;
 
             case 'delete-check':
@@ -281,22 +282,18 @@ export const EditRulefileRequirementComponent = (function () {
                         requirement: '',
                         failureStatementTemplate: ''
                     });
-                    _rerender_all_sections({
-                        focusTarget: {
-                            type: 'passCriterion',
-                            checkId: check_id,
-                            passCriterionId: new_pc_id,
-                            actionOrder: ['move-pass-criterion-up', 'move-pass-criterion-down', 'delete-pass-criterion']
-                        },
-                        animateInfo: {
-                            type: 'passCriterion',
-                            checkId: check_id,
-                            passCriterionId: new_pc_id,
-                            animationClass: 'new-item-animation',
-                            animationDuration: 500
-                        },
-                        previousLayout: previous_layout
+
+                    // Spara ändringarna till global state direkt
+                    if (typeof window !== 'undefined') {
+                        window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+                    }
+                    local_dispatch({
+                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
                     });
+
+                    // Lägg bara till det nya elementet istället för att rendera om allt
+                    _add_new_pass_criterion_element(check_id, new_pc_id);
                 }
                 break;
 
@@ -632,7 +629,12 @@ export const EditRulefileRequirementComponent = (function () {
         if (!checks_section) return;
 
         checks_section.innerHTML = '';
-        checks_section.appendChild(Helpers_create_element('h2', { id: 'checks-section-heading', attributes: {tabindex: '-1'}, text_content: t('checks_title') }));
+        const checks_heading = Helpers_create_element('h2', { 
+            id: 'checks-section-heading',
+            text_content: t('checks_title'),
+            attributes: { tabindex: '-1' }
+        });
+        checks_section.appendChild(checks_heading);
 
         const checks = local_requirement_data.checks || [];
         checks.forEach((check, index) => {
@@ -646,39 +648,105 @@ export const EditRulefileRequirementComponent = (function () {
         _apply_animation_info(options.animateInfo);
     }
 
+    function _focus_element_simple(element, animation_duration, shouldForceScroll) {
+        setTimeout(() => {
+            try {
+                if (shouldForceScroll && typeof element.scrollIntoView === 'function') {
+                    element.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                }
+                element.focus();
+            } catch (_) {
+                element.focus();
+            }
+        }, 200);
+    }
+
+
+    function _focus_element_with_delay(element, animation_duration, shouldForceScroll) {
+        const focusDelay = Math.max(120, Math.min(animation_duration || 300, 500));
+
+        if (shouldForceScroll && typeof element.scrollIntoView === 'function') {
+            requestAnimationFrame(() => {
+                try {
+                    element.scrollIntoView({ block: 'center', behavior: 'smooth' });
+                } catch (_) {
+                    element.scrollIntoView();
+                }
+            });
+        }
+
+        window.customFocusApplied = true;
+        const protectFocus = (event) => {
+            if (window.customFocusApplied && event.target !== element) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        };
+
+        document.addEventListener('focusin', protectFocus, true);
+
+        const releaseProtection = () => {
+            document.removeEventListener('focusin', protectFocus, true);
+            window.customFocusApplied = false;
+        };
+
+        setTimeout(() => {
+            try {
+                if (shouldForceScroll) {
+                    element.focus();
+                } else {
+                    element.focus({ preventScroll: true });
+                }
+            } catch (_) {
+                element.focus();
+            } finally {
+                setTimeout(releaseProtection, 600);
+            }
+        }, focusDelay);
+    }
+
     function _apply_focus_target(focus_target, animation_duration = 0) {
         if (!focus_target || !form_element_ref) return;
         const shouldForceScroll = focus_target.forceScroll === true;
 
-        if (focus_target.type === 'control' && typeof focus_target.selector === 'string') {
-            const control_element = form_element_ref.querySelector(focus_target.selector);
-            if (!control_element) return;
-
-            if (shouldForceScroll && typeof control_element.scrollIntoView === 'function') {
-                requestAnimationFrame(() => {
-                    try {
-                        control_element.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                    } catch (error) {
-                        control_element.scrollIntoView();
-                    }
-                });
+        // Handle new checkpoint focus
+        if (focus_target.type === 'new_check') {
+            const check_element = form_element_ref.querySelector(`.check-item-edit[data-check-id="${focus_target.checkId}"]`);
+            if (!check_element) return;
+            
+            // Focus on the first input field in the new checkpoint
+            const first_input = check_element.querySelector('textarea, input[type="text"]');
+            if (first_input) {
+                // Use a simple, direct approach
+                _focus_element_simple(first_input, animation_duration, shouldForceScroll);
             }
-
-            const focusDelayControl = Math.max(120, Math.min(animation_duration || 300, 500));
-            setTimeout(() => {
-                try {
-                    if (shouldForceScroll) {
-                        control_element.focus();
-                    } else {
-                        control_element.focus({ preventScroll: true });
-                    }
-                } catch (error) {
-                    control_element.focus();
-                }
-            }, focusDelayControl);
             return;
         }
 
+        // Handle new pass criterion focus
+        if (focus_target.type === 'new_pass_criterion') {
+            const pc_element = form_element_ref.querySelector(`.pc-item-edit[data-pc-id="${focus_target.passCriterionId}"]`);
+            if (!pc_element) return;
+            
+            // Focus on the first input field in the new pass criterion
+            const first_input = pc_element.querySelector('textarea, input[type="text"]');
+            if (first_input) {
+                // Use a simple, direct approach
+                _focus_element_simple(first_input, animation_duration, shouldForceScroll);
+            }
+            return;
+        }
+
+        // Handle legacy control focus (for backwards compatibility)
+        if (focus_target.type === 'control' && typeof focus_target.selector === 'string') {
+            const control_element = form_element_ref.querySelector(focus_target.selector);
+            if (control_element) {
+                _focus_element_with_delay(control_element, animation_duration, shouldForceScroll);
+            }
+            return;
+        }
+
+        // Handle other focus types (check, passCriterion for existing items)
         let container = null;
         if (focus_target.type === 'check') {
             container = form_element_ref.querySelector(`.check-item-edit[data-check-id="${focus_target.checkId}"]`);
@@ -703,37 +771,7 @@ export const EditRulefileRequirementComponent = (function () {
         }
         if (!button_to_focus) return;
 
-        const rect = container.getBoundingClientRect();
-        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-        const topBuffer = Math.min(160, viewportHeight / 4);
-        const bottomBuffer = topBuffer;
-        const outOfView = rect.top < topBuffer || rect.bottom > viewportHeight - bottomBuffer;
-
-        if (shouldForceScroll && typeof container.scrollIntoView === 'function') {
-            requestAnimationFrame(() => {
-                try {
-                    container.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                } catch (error) {
-                    container.scrollIntoView();
-                }
-            });
-        } else if (outOfView) {
-            const targetTop = Math.max(0, window.scrollY + rect.top - (viewportHeight / 2) + (rect.height / 2));
-            window.scrollTo({ top: targetTop, behavior: 'smooth' });
-        }
-
-        const focusDelay = Math.max(120, Math.min(animation_duration || 300, 500));
-        setTimeout(() => {
-            try {
-                if (shouldForceScroll) {
-                    button_to_focus.focus();
-                } else {
-                    button_to_focus.focus({ preventScroll: true });
-                }
-            } catch (error) {
-                button_to_focus.focus();
-            }
-        }, focusDelay);
+        _focus_element_with_delay(button_to_focus, animation_duration, shouldForceScroll);
     }
 
     function _apply_animation_info(animate_info) {
@@ -791,6 +829,108 @@ export const EditRulefileRequirementComponent = (function () {
         return layout;
     }
 
+    function _add_new_check_element(check_id) {
+        const t = Translation_t;
+        const checks_section = form_element_ref.querySelector('.checks-container-edit');
+        if (!checks_section) return;
+        
+        const checks = local_requirement_data.checks || [];
+        const check = checks.find(c => c.id === check_id);
+        if (!check) return;
+        
+        const index = checks.findIndex(c => c.id === check_id);
+        const check_el = _create_check_fieldset(check, index, checks.length);
+        
+        // Lägg till elementet före "Lägg till kontrollpunkt"-knappen
+        const add_button = checks_section.querySelector('button[data-action="add-check"]');
+        if (add_button) {
+            checks_section.insertBefore(check_el, add_button);
+        } else {
+            checks_section.appendChild(check_el);
+        }
+        
+        const heading = check_el.querySelector('[data-focus-target="check-heading"]');
+        const target_for_focus = heading || check_el.querySelector('textarea, input[type="text"]');
+        if (target_for_focus) {
+            if (typeof window !== 'undefined') {
+                window.customFocusApplied = true;
+            }
+            requestAnimationFrame(() => {
+                check_el.classList.add('new-item-animation');
+                setTimeout(() => {
+                    check_el.classList.remove('new-item-animation');
+                }, 500);
+            });
+            setTimeout(() => {
+                try {
+                    target_for_focus.focus({ preventScroll: false });
+                } catch (_) {
+                    target_for_focus.focus();
+                }
+
+                setTimeout(() => {
+                    if (typeof window !== 'undefined') {
+                        window.customFocusApplied = false;
+                    }
+                }, 2000);
+            }, 150);
+        }
+    }
+    
+    function _add_new_pass_criterion_element(check_id, pc_id) {
+        const t = Translation_t;
+        const check_element = form_element_ref.querySelector(`.check-item-edit[data-check-id="${check_id}"]`);
+        if (!check_element) return;
+        
+        const pc_container = check_element.querySelector('.pc-container-edit');
+        if (!pc_container) return;
+        
+        const check = local_requirement_data.checks.find(c => c.id === check_id);
+        if (!check) return;
+        
+        const pc = check.passCriteria.find(pc => pc.id === pc_id);
+        if (!pc) return;
+        
+        const pc_index = check.passCriteria.findIndex(pc => pc.id === pc_id);
+        const check_index = local_requirement_data.checks.findIndex(c => c.id === check_id);
+        const pc_el = _create_pc_item(check, pc, Helpers_sanitize_id_for_css_selector(check_id), pc_index, check.passCriteria.length, check_index);
+        
+        // Lägg till elementet före "Lägg till kriterium"-knappen
+        const add_button = pc_container.querySelector('button[data-action="add-pass-criterion"]');
+        if (add_button) {
+            pc_container.insertBefore(pc_el, add_button);
+        } else {
+            pc_container.appendChild(pc_el);
+        }
+        
+        const criterionHeading = pc_el.querySelector('[data-focus-target="criterion-heading"]');
+        const pc_focus_target = criterionHeading || pc_el.querySelector('textarea, input[type="text"]');
+        if (pc_focus_target) {
+            if (typeof window !== 'undefined') {
+                window.customFocusApplied = true;
+            }
+            requestAnimationFrame(() => {
+                pc_el.classList.add('new-item-animation');
+                setTimeout(() => {
+                    pc_el.classList.remove('new-item-animation');
+                }, 500);
+            });
+            setTimeout(() => {
+                try {
+                    pc_focus_target.focus({ preventScroll: false });
+                } catch (_) {
+                    pc_focus_target.focus();
+                }
+
+                setTimeout(() => {
+                    if (typeof window !== 'undefined') {
+                        window.customFocusApplied = false;
+                    }
+                }, 2000);
+            }, 150);
+        }
+    }
+
     function _apply_flip_animation(previous_layout, animate_info) {
         if (!previous_layout || !form_element_ref) return;
         const flip_duration = animate_info?.animationDuration || 250;
@@ -842,7 +982,11 @@ export const EditRulefileRequirementComponent = (function () {
         const header_wrapper = Helpers_create_element('div', { class_name: 'form-group-header' });
         const check_label_text = `${t('check_item_title')} ${index + 1}`;
         header_wrapper.appendChild(Helpers_create_element('label', {
-            attributes: { for: `check_${sane_check_id}_condition` },
+            attributes: {
+                for: `check_${sane_check_id}_condition`,
+                tabindex: '-1',
+                'data-focus-target': 'check-heading'
+            },
             text_content: check_label_text
         }));
 
@@ -882,6 +1026,13 @@ export const EditRulefileRequirementComponent = (function () {
         check_el.appendChild(logic_fieldset);
         
         const pc_container = Helpers_create_element('div', { class_name: 'pc-container-edit' });
+        const pc_heading = Helpers_create_element('h3', { 
+            id: `pass-criteria-heading-${sane_check_id}`,
+            text_content: t('pass_criteria_title'),
+            attributes: { tabindex: '-1' }
+        });
+        pc_container.appendChild(pc_heading);
+        
         const pass_criteria = check.passCriteria || [];
         pass_criteria.forEach((pc, pc_index) => {
             pc_container.appendChild(_create_pc_item(check, pc, sane_check_id, pc_index, pass_criteria.length, index));
@@ -905,7 +1056,13 @@ export const EditRulefileRequirementComponent = (function () {
         const header_wrapper = Helpers_create_element('div', { class_name: 'form-group-header' });
         header_wrapper.appendChild(Helpers_create_element('span', {
             class_name: 'form-group-header-title',
-            text_content: numbered_label_text
+            text_content: numbered_label_text,
+            attributes: {
+                tabindex: '-1',
+                'data-focus-target': 'criterion-heading',
+                role: 'heading',
+                'aria-level': '4'
+            }
         }));
 
         const header_actions = Helpers_create_element('div', { class_name: 'form-group-header-actions' });
@@ -975,9 +1132,11 @@ export const EditRulefileRequirementComponent = (function () {
                     try {
                         elementToFocus.focus();
                         window.customFocusApplied = true;
-                    } catch (e) {
-                        console.warn(`Could not focus on element with selector: ${focusSelector}`, e);
+                    } catch (_) {
+                        elementToFocus.focus();
+                        window.customFocusApplied = true;
                     }
+                    setTimeout(() => { window.customFocusApplied = false; }, 400);
                 }
             }
         }, 100);

@@ -292,7 +292,10 @@ export const ChecklistHandler = (function () {
                 observation_wrapper.hidden = (current_pc_status !== 'failed');
                 
                 if (was_hidden && !observation_wrapper.hidden && !is_audit_locked) {
-                    observation_textarea.focus();
+                    // Only focus if not in focus protection mode
+                    if (!window.focusProtectionActive && !window.customFocusApplied) {
+                        observation_textarea.focus();
+                    }
                 }
                 
                 observation_textarea.readOnly = is_audit_locked;

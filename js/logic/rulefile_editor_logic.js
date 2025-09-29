@@ -62,6 +62,12 @@
     // --- REQUIREMENTS EDITOR LOGIC ---
     function buildRequirementsEditor(requirements, allContentTypes, onSaveCallback, onDeleteCallback) {
         const t = Translation.t;
+        console.log('%c[DEBUG] buildRequirementsEditor called', 'color: #0000FF; font-weight: bold;', { 
+            requirements, 
+            allContentTypes, 
+            onSaveCallback: typeof onSaveCallback, 
+            onDeleteCallback: typeof onDeleteCallback 
+        });
         const container = Helpers.create_element('div', { class_name: 'rulefile-editor-section' });
         const listContainer = Helpers.create_element('div', { id: 'req-list-container' });
         const formContainer = Helpers.create_element('div', { id: 'req-form-container', style: { display: 'none' } });
@@ -82,7 +88,9 @@
             );
         };
         const list = Helpers.create_element('ul', { class_name: 'item-list' });
-        Object.values(requirements).sort((a,b) => Helpers.natural_sort(a.title, b.title)).forEach(req => {
+        const requirementsList = Object.values(requirements || {});
+        console.log('%c[DEBUG] Rendering requirements list:', 'color: #0000FF; font-weight: bold;', requirementsList);
+        requirementsList.sort((a,b) => Helpers.natural_sort(a.title, b.title)).forEach(req => {
             const li = Helpers.create_element('li', { class_name: 'item-list-item' });
             const infoDiv = Helpers.create_element('div', { class_name: 'sample-info' });
             infoDiv.appendChild(Helpers.create_element('h3', { text_content: req.title }));
@@ -92,8 +100,12 @@
             const mainActions = Helpers.create_element('div', { class_name: 'sample-actions-main' });
             const editBtn = _createDynamicListButton('edit_button_label', () => showForm(req), { classNames: ['button', 'button-default', 'button-small'], icon: 'edit' });
             const deleteBtn = _createDynamicListButton('delete_sample', () => {
+                console.log('%c[DEBUG] Delete button clicked for requirement:', 'color: #FF0000; font-weight: bold;', { reqKey: req.key, reqTitle: req.title });
                 if (confirm(t('confirm_delete_requirement', { reqTitle: req.title }))) {
+                    console.log('%c[DEBUG] Delete confirmed, calling onDeleteCallback:', 'color: #FF0000; font-weight: bold;', req.key);
                     onDeleteCallback(req.key);
+                } else {
+                    console.log('%c[DEBUG] Delete cancelled by user', 'color: #FF0000; font-weight: bold;');
                 }
             }, { classNames: ['button', 'button-danger', 'button-small'], icon: 'delete' });
             mainActions.append(editBtn, deleteBtn);
@@ -176,7 +188,18 @@
     function _createCheckFieldset(checkData, index) {
         const fieldset = Helpers.create_element('fieldset', { class_name: 'check-fieldset' });
         const legend = Helpers.create_element('h4', { text_content: `${Translation.t('check_item_title')} ${index + 1}` });
-        const deleteBtn = _createDynamicListButton('delete', () => fieldset.remove(), { classNames: ['button', 'button-danger', 'button-small', 'delete-check-btn'], icon: 'delete' });
+        const deleteBtn = _createDynamicListButton('delete', () => {
+            // Add a visual indicator that the fieldset is being removed
+            fieldset.style.opacity = '0.5';
+            fieldset.style.pointerEvents = 'none';
+            
+            // Remove the fieldset after a short delay to allow for visual feedback
+            setTimeout(() => {
+                if (fieldset.parentNode) {
+                    fieldset.remove();
+                }
+            }, 100);
+        }, { classNames: ['button', 'button-danger', 'button-small', 'delete-check-btn'], icon: 'delete' });
         const header = Helpers.create_element('div', { class_name: 'check-fieldset-header' });
         header.append(legend, deleteBtn);
         fieldset.appendChild(header);
@@ -199,7 +222,18 @@
         const li = Helpers.create_element('li', { class_name: 'dynamic-list-item pass-criterion-item' });
         const itemHeader = Helpers.create_element('div', { class_name: 'criterion-item-header' });
         const title = Helpers.create_element('h5', { text_content: `${t('criterion_header')} ${index + 1}`});
-        const deleteBtn = _createDynamicListButton('delete', () => li.remove(), { classNames: ['button', 'button-danger', 'button-small'], icon: 'delete' });
+        const deleteBtn = _createDynamicListButton('delete', () => {
+            // Add a visual indicator that the item is being removed
+            li.style.opacity = '0.5';
+            li.style.pointerEvents = 'none';
+            
+            // Remove the item after a short delay to allow for visual feedback
+            setTimeout(() => {
+                if (li.parentNode) {
+                    li.remove();
+                }
+            }, 100);
+        }, { classNames: ['button', 'button-danger', 'button-small'], icon: 'delete' });
         itemHeader.append(title, deleteBtn);
         const contentWrapper = Helpers.create_element('div', { class_name: 'criterion-content-wrapper' });
         const leftWrapper = Helpers.create_element('div', { class_name: 'criterion-textarea-wrapper' });
@@ -284,19 +318,53 @@
             }
         }
         newReq.checks = Array.from(form.querySelectorAll('.check-fieldset')).map((checkFS, i) => {
-            const passCriteria = Array.from(checkFS.querySelectorAll('.dynamic-list-item')).map((pcLi, j) => ({
-                id: `${i + 1}.${j + 1}`,
-                requirement: pcLi.querySelector('[name="passCriterionRequirement"]').value.trim(),
-                failureStatementTemplate: pcLi.querySelector('[name="passCriterionTemplate"]').value.trim(),
-            })).filter(pc => pc.requirement);
-            return {
-                id: `${i + 1}`,
-                condition: checkFS.querySelector('[name="condition"]').value.trim(),
-                logic: 'AND',
-                passCriteria: passCriteria,
-                ifNo: []
-            };
-        }).filter(c => c.condition);
+            try {
+                const conditionElement = checkFS.querySelector('[name="condition"]');
+                if (!conditionElement) {
+                    console.warn('Check fieldset missing condition element, skipping');
+                    return null;
+                }
+                
+                const condition = conditionElement.value.trim();
+                if (!condition) {
+                    console.warn('Check fieldset has empty condition, skipping');
+                    return null;
+                }
+                
+                const passCriteria = Array.from(checkFS.querySelectorAll('.dynamic-list-item')).map((pcLi, j) => {
+                    const requirementElement = pcLi.querySelector('[name="passCriterionRequirement"]');
+                    const templateElement = pcLi.querySelector('[name="passCriterionTemplate"]');
+                    
+                    if (!requirementElement) {
+                        console.warn('Pass criterion missing requirement element, skipping');
+                        return null;
+                    }
+                    
+                    const requirement = requirementElement.value.trim();
+                    if (!requirement) {
+                        console.warn('Pass criterion has empty requirement, skipping');
+                        return null;
+                    }
+                    
+                    return {
+                        id: `${i + 1}.${j + 1}`,
+                        requirement: requirement,
+                        failureStatementTemplate: templateElement ? templateElement.value.trim() : '',
+                    };
+                }).filter(pc => pc && pc.requirement);
+                
+                return {
+                    id: `${i + 1}`,
+                    condition: condition,
+                    logic: 'AND',
+                    passCriteria: passCriteria,
+                    ifNo: []
+                };
+            } catch (error) {
+                console.warn('Error parsing check fieldset:', error);
+                return null;
+            }
+        }).filter(c => c && c.condition && c.condition.trim() !== '');
         newReq.metadata = {
             mainCategory: { text: form.elements['metadata.mainCategory.text'].value.trim() },
             subCategory: { text: form.elements['metadata.subCategory.text'].value.trim() },
@@ -311,5 +379,6 @@
         buildRequirementsEditor
     };
     window.RulefileEditorLogic = public_api;
+    
 
 })(); // IIFE end

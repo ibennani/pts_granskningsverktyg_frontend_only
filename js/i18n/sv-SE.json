@@ -55,6 +55,7 @@
   "check_status": "Status för kontrollpunkt",
   "checks_short": "Kontroller",
   "checks_title": "Kontrollpunkter",
+  "pass_criteria_title": "Godkännandekriterier",
   "close": "Stäng",
   "comment_to_actor": "Kommentar till aktör",
   "comment_to_auditor": "Intern notering (syns ej i slutrapporten)",

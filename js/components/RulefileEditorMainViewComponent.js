@@ -56,43 +56,78 @@ export const RulefileEditorMainViewComponent = (function () {
     
     function handle_save_requirement(requirementData, isNew) {
         const t = Translation_t;
-        const current_rulefile = local_getState().ruleFileContent;
-        const new_requirements = { ...current_rulefile.requirements };
-        new_requirements[requirementData.key] = requirementData;
-        
-        const new_rulefile_content = {
-            ...current_rulefile,
-            requirements: new_requirements
-        };
+        console.log('%c[DEBUG] handle_save_requirement called', 'color: #00FF00; font-weight: bold;', { requirementData, isNew });
+        try {
+            // Validate that the requirement has valid data
+            if (!requirementData || !requirementData.title || !requirementData.key) {
+                throw new Error('Invalid requirement data');
+            }
+            
+            // Validate checks if they exist
+            if (requirementData.checks && Array.isArray(requirementData.checks)) {
+                const validChecks = requirementData.checks.filter(check => 
+                    check && check.id && check.condition && check.condition.trim() !== ''
+                );
+                requirementData.checks = validChecks;
+            }
+            
+            const current_rulefile = local_getState().ruleFileContent;
+            console.log('%c[DEBUG] Current rulefile state:', 'color: #00FF00;', current_rulefile);
+            if (!current_rulefile) {
+                throw new Error('Rule file content is not available');
+            }
+            const new_requirements = { ...(current_rulefile.requirements || {}) };
+            console.log('%c[DEBUG] New requirements object:', 'color: #00FF00;', new_requirements);
+            new_requirements[requirementData.key] = requirementData;
+            
+            const new_rulefile_content = {
+                ...current_rulefile,
+                requirements: new_requirements
+            };
 
-        local_dispatch({
-            type: local_StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: new_rulefile_content }
-        });
+            console.log('%c[DEBUG] Dispatching UPDATE_RULEFILE_CONTENT:', 'color: #00FF00;', { ruleFileContent: new_rulefile_content });
+            local_dispatch({
+                type: local_StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+                payload: { ruleFileContent: new_rulefile_content }
+            });
 
-        if (window.NotificationComponent) {
-            // Adding specific keys for add/update success messages
-            const messageKey = isNew ? 'requirement_added_successfully' : 'requirement_updated_successfully';
-            window.NotificationComponent.show_global_message(t(messageKey, { reqTitle: requirementData.title }), 'success');
+            if (window.NotificationComponent) {
+                // Adding specific keys for add/update success messages
+                const messageKey = isNew ? 'requirement_added_successfully' : 'requirement_updated_successfully';
+                window.NotificationComponent.show_global_message(t(messageKey, { reqTitle: requirementData.title }), 'success');
+            }
+        } catch (error) {
+            console.error('Error saving requirement:', error);
+            if (window.NotificationComponent) {
+                window.NotificationComponent.show_global_message(t('error_loading_sample_or_requirement_data'), 'error');
+            }
         }
     }
 
     function handle_delete_requirement(reqKey) {
         const t = Translation_t;
-        const current_rulefile = local_getState().ruleFileContent;
-        const new_requirements = { ...current_rulefile.requirements };
-        delete new_requirements[reqKey];
-
-        const new_rulefile_content = { ...current_rulefile, requirements: new_requirements };
-        local_dispatch({ type: local_StoreActionTypes.UPDATE_RULEFILE_CONTENT, payload: { ruleFileContent: new_rulefile_content } });
-        if (window.NotificationComponent) {
-            window.NotificationComponent.show_global_message(t('sample_deleted_successfully', { sampleName: reqKey }), 'success');
+        console.log('%c[DEBUG] handle_delete_requirement called', 'color: #FF0000; font-weight: bold;', { reqKey });
+        try {
+            console.log('%c[DEBUG] Dispatching DELETE_REQUIREMENT_DEFINITION:', 'color: #FF0000;', { requirementId: reqKey });
+            local_dispatch({ 
+                type: local_StoreActionTypes.DELETE_REQUIREMENT_DEFINITION, 
+                payload: { requirementId: reqKey } 
+            });
+            if (window.NotificationComponent) {
+                window.NotificationComponent.show_global_message(t('requirement_deleted_successfully', { reqTitle: reqKey }), 'success');
+            }
+        } catch (error) {
+            console.error('Error deleting requirement:', error);
+            if (window.NotificationComponent) {
+                window.NotificationComponent.show_global_message(t('error_loading_sample_or_requirement_data'), 'error');
+            }
         }
     }
 
     function render() {
         const t = Translation_t;
         const state = local_getState();
+        
 
         if (!state.ruleFileContent) {
             router_ref('upload');
@@ -137,8 +172,8 @@ export const RulefileEditorMainViewComponent = (function () {
             editor_content_container.appendChild(RulefileEditorLogic.buildMetadataEditor(state.ruleFileContent.metadata, handle_save_metadata));
         } else {
             editor_content_container.appendChild(RulefileEditorLogic.buildRequirementsEditor(
-                state.ruleFileContent.requirements,
-                state.ruleFileContent.metadata.contentTypes, // Pass content types
+                state.ruleFileContent?.requirements || {},
+                state.ruleFileContent?.metadata?.contentTypes || [], // Pass content types
                 handle_save_requirement,
                 handle_delete_requirement
             ));
@@ -154,6 +189,7 @@ export const RulefileEditorMainViewComponent = (function () {
         editor_content_container = null;
     }
 
+    
     return {
         init,
         render,

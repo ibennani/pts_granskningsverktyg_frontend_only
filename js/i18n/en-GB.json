@@ -55,6 +55,7 @@
   "check_status": "Checkpoint status",
   "checks_short": "Checks",
   "checks_title": "Checkpoints",
+  "pass_criteria_title": "Pass Criteria",
   "close": "Close",
   "comment_to_actor": "Comment to subject",
   "comment_to_auditor": "Internal note (not visible in the final report)",

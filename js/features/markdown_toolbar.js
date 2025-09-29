@@ -57,6 +57,13 @@ import { marked } from '../utils/markdown.js';
             return;
         }
         
+        // Check if focus protection is active - if so, delay processing
+        if (window.focusProtectionActive || window.customFocusApplied) {
+            console.log('%c[FOCUS DEBUG] Markdown toolbar delaying processing due to focus protection', 'color: #FF6600; font-weight: bold;');
+            setTimeout(() => processTextarea(textarea), 500);
+            return;
+        }
+        
         if (!textarea.id) {
             textarea.id = `md-editor-${window.Helpers.generate_uuid_v4()}`;
         }
@@ -276,7 +283,10 @@ import { marked } from '../utils/markdown.js';
             }
         }
         
-        textarea.focus();
+        // Only focus if not in focus protection mode
+        if (!window.focusProtectionActive && !window.customFocusApplied) {
+            textarea.focus();
+        }
         textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
     }
 

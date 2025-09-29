@@ -113,9 +113,6 @@ export const ConfirmDeleteViewComponent = (function () {
         }
 
         const handle_confirm = () => {
-            // --- DEBUG START ---
-            console.log(`%c[DEBUG] ConfirmDeleteView: handle_confirm. Saving focus selector: '${config.focusOnSuccess}'`, 'color: orange;');
-            // --- DEBUG END ---
             local_dispatch(config.dispatchAction);
             if (config.focusOnSuccess === 'h1') {
                 sessionStorage.setItem('focusOnH1AfterLoad', 'true');
@@ -126,9 +123,6 @@ export const ConfirmDeleteViewComponent = (function () {
         };
 
         const handle_cancel = () => {
-            // --- DEBUG START ---
-            console.log(`%c[DEBUG] ConfirmDeleteView: handle_cancel. Saving focus selector: '${config.focusOnCancelSelector}'`, 'color: orange;');
-            // --- DEBUG END ---
             sessionStorage.setItem('focusAfterLoad', config.focusOnCancelSelector);
             router_ref(config.returnRoute, config.returnParams || {});
         };
