@@ -75,7 +75,8 @@ function extractDeficiencyNumber(deficiencyId) {
 function formatDeficiencyForWord(deficiencyId) {
     if (!deficiencyId) return '';
     const number = extractDeficiencyNumber(deficiencyId);
-    return `Brist: ${number}`;
+    // Använd non-breaking space (\u00A0) för att förhindra radbrytning mellan "Brist" och numret
+    return `Brist\u00A0${number}`;
 }
 
 
@@ -552,7 +553,7 @@ async function export_to_word(current_audit) {
                             // Om det bara finns en rad, lägg till bristindex på samma rad
                             if (lines.length === 1) {
                                 textRuns.push(new TextRun({ text: ' ' }));
-                                textRuns.push(new TextRun({ text: `(${deficiency.deficiencyId})`, italics: true }));
+                                textRuns.push(new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true }));
                             }
                             
                             sampleContent.push(
