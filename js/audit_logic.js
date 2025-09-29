@@ -8,9 +8,18 @@
             : (key, replacements) => `**${key}**`;
     }
 
-    function formatDeficiencyId(number) {
+    function formatDeficiencyId(number, totalCount) {
         const t = get_t_func();
-        return `${t('deficiency_prefix', {defaultValue: "brist"})} ${String(number).padStart(4, '0')}`;
+        
+        // Bestäm padding baserat på totalt antal brister
+        let padding = 1;
+        if (totalCount >= 100) {
+            padding = 3;
+        } else if (totalCount >= 10) {
+            padding = 2;
+        }
+        
+        return `${t('deficiency_prefix', {defaultValue: "B"})}${String(number).padStart(padding, '0')}`;
     }
 
     function assignSortedDeficiencyIdsOnLock(auditState) {
@@ -70,8 +79,9 @@
         });
 
         let counter = 1;
+        const totalCount = failedCriteria.length;
         failedCriteria.forEach(item => {
-            item.resultObjectToUpdate.deficiencyId = formatDeficiencyId(counter);
+            item.resultObjectToUpdate.deficiencyId = formatDeficiencyId(counter, totalCount);
             counter++;
         });
         newState.deficiencyCounter = counter;
@@ -84,12 +94,27 @@
         const newState = JSON.parse(JSON.stringify(auditState));
         let nextId = newState.deficiencyCounter || 1;
 
+        // Första passet: räkna totalt antal brister
+        let totalFailedCount = 0;
+        (newState.samples || []).forEach(sample => {
+            Object.values(sample.requirementResults || {}).forEach(reqResult => {
+                Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                    Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
+                        if (pcResult.status === 'failed') {
+                            totalFailedCount++;
+                        }
+                    });
+                });
+            });
+        });
+
+        // Andra passet: uppdatera ID:n med korrekt padding
         (newState.samples || []).forEach(sample => {
             Object.values(sample.requirementResults || {}).forEach(reqResult => {
                 Object.values(reqResult.checkResults || {}).forEach(checkResult => {
                     Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
                         if (pcResult.status === 'failed' && !pcResult.deficiencyId) {
-                            pcResult.deficiencyId = formatDeficiencyId(nextId);
+                            pcResult.deficiencyId = formatDeficiencyId(nextId, totalFailedCount);
                             nextId++;
                         } else if (pcResult.status !== 'failed' && pcResult.deficiencyId) {
                             delete pcResult.deficiencyId;
