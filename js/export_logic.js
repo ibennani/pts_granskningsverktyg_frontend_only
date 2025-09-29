@@ -287,14 +287,43 @@ async function export_to_word(current_audit) {
     try {
         const children = [];
         
-        // Förstasida - Granskningsöversikt
-        children.push(create_overview_page(current_audit, t));
-        
-        // Kravsidor - endast krav med underkännanden
+        // Enkel sida med h1 och brödtext
+        children.push(
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: "Underkända krav"
+                    })
+                ],
+                heading: "Heading1"
+            }),
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: "Det här avsnittet visar en sammanställning av de krav som har underkänts vid granskningen."
+                    })
+                ]
+            })
+        );
+
+        // Gå igenom alla krav med underkännanden
         const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
-        for (const req of requirements_with_deficiencies) {
-            const req_children = create_requirement_page(req, current_audit, t);
-            children.push(...req_children);
+        for (let i = 0; i < requirements_with_deficiencies.length; i++) {
+            const req = requirements_with_deficiencies[i];
+            const ref_text = req.standardReference?.text || '';
+            const title_with_ref = ref_text ? `${req.title} (${ref_text})` : req.title;
+            
+            children.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: title_with_ref
+                        })
+                    ],
+                    heading: "Heading2",
+                    pageBreakBefore: i > 0 // Sidbrytning före varje h2 från och med den andra
+                })
+            );
         }
 
         const doc = new Document({
@@ -307,35 +336,74 @@ async function export_to_word(current_audit) {
                     document: {
                         run: {
                             font: "Calibri",
-                            size: 22
+                            size: 22 // 11pt = 22 half-points
                         },
                         paragraph: {
                             spacing: {
-                                after: 200,
-                                line: 360,
+                                after: 60, // 3pt = 60 half-points
+                                line: 240, // enkelt radavstånd = 1.0 line height
                                 lineRule: "auto"
                             }
                         }
                     },
                     heading1: {
                         run: {
-                            font: "Calibri Light",
-                            size: 24,
+                            font: "Calibri",
+                            size: 36, // 18pt = 36 half-points
                             bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt = 200 half-points
+                                after: 60,   // 3pt = 60 half-points
+                                line: 240,
+                                lineRule: "auto"
+                            }
                         }
                     },
                     heading2: {
                         run: {
-                            font: "Calibri Light", 
-                            size: 22,
+                            font: "Calibri",
+                            size: 32, // 16pt = 32 half-points
                             bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt = 200 half-points
+                                after: 60,   // 3pt = 60 half-points
+                                line: 240,
+                                lineRule: "auto"
+                            }
                         }
                     },
                     heading3: {
                         run: {
-                            font: "Calibri Light",
-                            size: 20,
+                            font: "Calibri",
+                            size: 28, // 14pt = 28 half-points
                             bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt = 200 half-points
+                                after: 60,   // 3pt = 60 half-points
+                                line: 240,
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading4: {
+                        run: {
+                            font: "Calibri",
+                            size: 24, // 12pt = 24 half-points
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt = 200 half-points
+                                after: 60,   // 3pt = 60 half-points
+                                line: 240,
+                                lineRule: "auto"
+                            }
                         }
                     }
                 }
