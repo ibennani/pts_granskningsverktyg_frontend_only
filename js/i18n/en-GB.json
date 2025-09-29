@@ -82,7 +82,7 @@
   "date_formatting_error": "Date formatting error",
   "deficiency_index_for_principle": "Deficiency index for {principle}: {score} out of 100",
   "deficiency_index_title": "Deficiency Index",
-  "deficiency_prefix": "deficiency",
+  "deficiency_prefix": "B",
   "delete_sample": "Delete sample",
   "description": "Description (sample name)",
   "edit_audit_information": "Edit audit information",
