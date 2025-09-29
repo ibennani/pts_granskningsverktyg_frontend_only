@@ -41,17 +41,45 @@
 
         const failedCriteria = [];
         (newState.samples || []).forEach(sample => {
-            Object.keys(sample.requirementResults || {}).forEach(reqKey => {
+            // Sortera requirements enligt JSON-objektets ordning
+            const sortedReqKeys = Object.keys(sample.requirementResults || {})
+                .sort((a, b) => {
+                    // Hitta index i ruleFileContent.requirements för att behålla ordningen
+                    const reqOrder = Object.keys(newState.ruleFileContent.requirements || {});
+                    const indexA = reqOrder.indexOf(a);
+                    const indexB = reqOrder.indexOf(b);
+                    return indexA - indexB;
+                });
+
+            sortedReqKeys.forEach(reqKey => {
                 const reqResult = sample.requirementResults[reqKey];
                 const reqDef = newState.ruleFileContent.requirements[reqKey];
                 if (!reqDef || !reqResult) return;
 
-                Object.keys(reqResult.checkResults || {}).forEach(checkKey => {
+                // Sortera checks enligt JSON-objektets ordning
+                const sortedCheckKeys = Object.keys(reqResult.checkResults || {})
+                    .sort((a, b) => {
+                        const checkOrder = (reqDef.checks || []).map(c => c.id);
+                        const indexA = checkOrder.indexOf(a);
+                        const indexB = checkOrder.indexOf(b);
+                        return indexA - indexB;
+                    });
+
+                sortedCheckKeys.forEach(checkKey => {
                     const checkResult = reqResult.checkResults[checkKey];
                     const checkDef = reqDef.checks.find(c => c.id === checkKey);
                     if (!checkDef || !checkResult) return;
 
-                    Object.keys(checkResult.passCriteria || {}).forEach(pcKey => {
+                    // Sortera passCriteria enligt JSON-objektets ordning
+                    const sortedPcKeys = Object.keys(checkResult.passCriteria || {})
+                        .sort((a, b) => {
+                            const pcOrder = (checkDef.passCriteria || []).map(pc => pc.id);
+                            const indexA = pcOrder.indexOf(a);
+                            const indexB = pcOrder.indexOf(b);
+                            return indexA - indexB;
+                        });
+
+                    sortedPcKeys.forEach(pcKey => {
                         const pcResult = checkResult.passCriteria[pcKey];
                         const pcDef = checkDef.passCriteria.find(pc => pc.id === pcKey);
                         const originalPcResultRef = newState.samples.find(s => s.id === sample.id)
@@ -70,14 +98,6 @@
                     });
                 });
             });
-        });
-
-        failedCriteria.sort((a, b) => {
-            const reqCompare = (a.reqRefText || '').localeCompare(b.reqRefText || '', undefined, { numeric: true });
-            if (reqCompare !== 0) return reqCompare;
-            const sampleCompare = a.sampleDescription.localeCompare(b.sampleDescription);
-            if (sampleCompare !== 0) return sampleCompare;
-            return a.pcRequirementText.localeCompare(b.pcRequirementText);
         });
 
         let counter = 1;
@@ -120,6 +140,10 @@
                             nextId++;
                         } else if (pcResult.status !== 'failed' && pcResult.deficiencyId) {
                             delete pcResult.deficiencyId;
+                        } else if (pcResult.status === 'failed' && pcResult.deficiencyId) {
+                            // Uppdatera befintliga ID:n med korrekt formatering
+                            pcResult.deficiencyId = formatDeficiencyId(nextId, totalFailedCount);
+                            nextId++;
                         }
                     });
                 });
