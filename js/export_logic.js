@@ -1,7 +1,7 @@
 // js/export_logic.js
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType } from 'docx';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -475,17 +475,26 @@ async function export_to_word(current_audit) {
                 })
             );
 
-            // Lägg till h4 för varje stickprov med underkännanden
+            // Lägg till h4 för varje stickprov med underkännanden - wrappade i tabell med ram och bakgrund
             const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
             for (const sample of samples_with_deficiencies) {
-                children.push(
+                // Skapa innehåll för stickprovet
+                const sampleContent = [];
+                
+                // Lägg till h4-rubrik för stickprovet
+                sampleContent.push(
                     new Paragraph({
                         children: [
                             new TextRun({
-                                text: sample.description || sample.url || "Stickprov"
+                                text: sample.description || sample.url || "Stickprov",
+                                color: "6E3282"  // Samma lila färg som ramen
                             })
                         ],
-                        heading: "Heading4"
+                        heading: "Heading4",
+                        spacing: {
+                            before: 0,  // 0px padding ovanför h4-rubriken för stickprov
+                            after: 120  // 6pt mellanrum efter rubriken
+                        }
                     })
                 );
 
@@ -531,7 +540,7 @@ async function export_to_word(current_audit) {
                                 textRuns.push(new TextRun({ text: `(${deficiency.deficiencyId})`, italics: true }));
                             }
                             
-                            children.push(
+                            sampleContent.push(
                                 new Paragraph({
                                     children: textRuns,
                                     indent: {
@@ -544,7 +553,7 @@ async function export_to_word(current_audit) {
                     } else {
                         // Enkel text utan radbrytningar
                         const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                        children.push(
+                        sampleContent.push(
                             new Paragraph({
                                 children: [
                                     new TextRun({ text: numberPrefix + prefix + observationText + ' ' }),
@@ -558,6 +567,88 @@ async function export_to_word(current_audit) {
                         );
                     }
                 }
+                
+                // Lägg till kommentar för detta krav och stickprov (om det finns någon)
+                const comments = [];
+                const req_key = req.key || req.id;
+                const sample_result = (sample.requirementResults || {})[req_key];
+                if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
+                    comments.push(sample_result.commentToActor.trim());
+                }
+                
+                if (comments.length > 0) {
+                    // Lägg till mellanrum före kommentarerna
+                    sampleContent.push(
+                        new Paragraph({
+                            children: [new TextRun({ text: "" })],
+                            spacing: { before: 120 } // 6pt mellanrum
+                        })
+                    );
+                    
+                    // Lägg till varje kommentar
+                    comments.forEach(comment => {
+                        sampleContent.push(
+                            new Paragraph({
+                                children: [
+                                    new TextRun({
+                                        text: "Kommentar: ",
+                                        bold: true,
+                                        color: "6E3282"  // Samma lila färg som ramen
+                                    }),
+                                    new TextRun({
+                                        text: comment
+                                    })
+                                ]
+                            })
+                        );
+                    });
+                }
+                
+                // Wrappa stickprovet i en tabell med ram och bakgrund
+                const sampleTable = new Table({
+                    rows: [
+                        new TableRow({
+                            children: [
+                                new TableCell({
+                                    children: sampleContent,
+                                    width: { size: 100, type: WidthType.PERCENTAGE },
+                                    shading: {
+                                        type: ShadingType.SOLID,
+                                        color: "F4F1EE", // Varm beige bakgrund
+                                        fill: "F4F1EE"
+                                    },
+                                    margins: {
+                                        top: 240,    // 12pt
+                                        bottom: 240, // 12pt  
+                                        left: 240,   // 12pt
+                                        right: 240   // 12pt
+                                    }
+                                })
+                            ],
+                            // Förhindra att raden bryts över sidor
+                            cantSplit: true
+                        })
+                    ],
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                    borders: {
+                        top: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" },    // Lila ram
+                        bottom: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" }, // Lila ram
+                        left: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" },   // Lila ram
+                        right: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" },  // Lila ram
+                        insideHorizontal: { style: BorderStyle.NONE },
+                        insideVertical: { style: BorderStyle.NONE }
+                    },
+                    // Förhindra att tabellen bryts över sidor
+                    cantSplit: true
+                });
+                
+                children.push(sampleTable);
+                
+                // Lägg till lite utrymme efter tabellen
+                children.push(new Paragraph({
+                    children: [new TextRun({ text: "" })],
+                    spacing: { after: 240 } // 12pt avstånd efter
+                }));
             }
         }
 
