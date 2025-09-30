@@ -138,11 +138,19 @@ export const ChecklistHandler = (function () {
             });
 
             // --- ÄNDRING: Använd Markdown-parser ---
+            const check_title_label = `${t('check_item_title')} ${check_index + 1}`;
+            // Rad 1: "Kontrollpunkt N" som rubrik (fetstil via h3)
             const condition_h3 = Helpers_create_element('h3', { 
                 class_name: 'check-condition-title', 
-                html_content: _safe_parse_markdown_inline(check_definition.condition)
+                html_content: window.Helpers.escape_html(check_title_label) 
             });
             check_wrapper.appendChild(condition_h3);
+            // Rad 2: Själva villkorstexten (markdown-renderad) på ny rad, inte fet
+            const condition_text_div = Helpers_create_element('div', { 
+                class_name: ['check-condition-text','markdown-content'], 
+                html_content: _safe_parse_markdown_inline(check_definition.condition) 
+            });
+            check_wrapper.appendChild(condition_text_div);
             
             const actions_div = Helpers_create_element('div', { class_name: 'condition-actions' });
             actions_div.append(
@@ -170,10 +178,16 @@ export const ChecklistHandler = (function () {
 
                 // --- ÄNDRING: Använd Markdown-parser ---
                 const numbering = `${check_index + 1}.${pc_index + 1}`;
-                const numbering_prefix = `<strong>${t('pass_criterion_label')} ${numbering}:</strong> `;
+                // Rad 1: "Godkännandekriterium X.Y"
+                const pc_title_div = Helpers_create_element('div', {
+                    class_name: 'pass-criterion-title',
+                    html_content: `<strong>${window.Helpers.escape_html(t('pass_criterion_label'))} ${window.Helpers.escape_html(numbering)}</strong>`
+                });
+                pc_item_li.appendChild(pc_title_div);
+                // Rad 2: Själva kriterietexten (markdown-renderad) på ny rad
                 const requirement_content_div = Helpers_create_element('div', { 
                     class_name: ['pass-criterion-requirement', 'markdown-content'],
-                    html_content: `${numbering_prefix}${_safe_parse_markdown_inline(pc_def.requirement)}`
+                    html_content: _safe_parse_markdown_inline(pc_def.requirement)
                 });
                 pc_item_li.appendChild(requirement_content_div);
                 
