@@ -19,7 +19,7 @@
     "e2e:live": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "axe-core": "^4.11.0",
