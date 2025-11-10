@@ -35,7 +35,7 @@
     "jest-axe": "^9.0.0",
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.6.2",
-    "vite": "^7.1.7"
+    "vite": "^7.2.2"
   },
   "engines": {
     "node": ">=18.0.0"
