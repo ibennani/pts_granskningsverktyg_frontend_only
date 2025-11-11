@@ -1,7 +1,7 @@
 // js/export_logic.js
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, Footer, Header, PageNumber, TableOfContents, SectionType } from 'docx';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -77,6 +77,162 @@ function formatDeficiencyForWord(deficiencyId) {
     const number = extractDeficiencyNumber(deficiencyId);
     // Använd non-breaking space (\u00A0) för att förhindra radbrytning mellan "Brist" och numret
     return `Brist\u00A0${number}`;
+}
+
+// Skapar omslagssida för Word-dokumentet
+function create_cover_page(current_audit, t) {
+    const lang_code = window.Translation?.get_current_language_code() || 'sv-SE';
+    const md = current_audit.auditMetadata || {};
+    const rf_meta = current_audit.ruleFileContent?.metadata || {};
+    const report_date = new Date().toLocaleDateString(lang_code, { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    const cover_children = [];
+    
+    // Titel - stor och centrerad
+    cover_children.push(
+        new Paragraph({
+            children: [
+                new TextRun({
+                    text: "Granskningsrapport",
+                    bold: true,
+                    size: 48 // 24pt
+                })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: {
+                before: 3600, // 180pt = 6.35 cm från toppen
+                after: 400 // 20pt
+            }
+        })
+    );
+    
+    // Tom rad
+    cover_children.push(
+        new Paragraph({
+            children: [new TextRun({ text: "" })],
+            spacing: { after: 400 }
+        })
+    );
+    
+    // Metadata - centrerad
+    const metadata_items = [];
+    
+    if (md.caseNumber) {
+        metadata_items.push(
+            new Paragraph({
+                children: [
+                    new TextRun({ text: t('case_number') + ": ", bold: true, size: 24 }),
+                    new TextRun({ text: md.caseNumber, size: 24 })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            })
+        );
+    }
+    
+    if (md.actorName) {
+        metadata_items.push(
+            new Paragraph({
+                children: [
+                    new TextRun({ text: t('actor_name') + ": ", bold: true, size: 24 }),
+                    new TextRun({ text: md.actorName, size: 24 })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            })
+        );
+    }
+    
+    if (md.auditorName) {
+        metadata_items.push(
+            new Paragraph({
+                children: [
+                    new TextRun({ text: t('auditor_name') + ": ", bold: true, size: 24 }),
+                    new TextRun({ text: md.auditorName, size: 24 })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            })
+        );
+    }
+    
+    if (md.caseHandler) {
+        metadata_items.push(
+            new Paragraph({
+                children: [
+                    new TextRun({ text: t('case_handler') + ": ", bold: true, size: 24 }),
+                    new TextRun({ text: md.caseHandler, size: 24 })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            })
+        );
+    }
+    
+    if (rf_meta.title) {
+        metadata_items.push(
+            new Paragraph({
+                children: [
+                    new TextRun({ text: t('rule_file_title') + ": ", bold: true, size: 24 }),
+                    new TextRun({ text: rf_meta.title, size: 24 })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            })
+        );
+    }
+    
+    if (rf_meta.version) {
+        metadata_items.push(
+            new Paragraph({
+                children: [
+                    new TextRun({ text: t('version_rulefile') + ": ", bold: true, size: 24 }),
+                    new TextRun({ text: rf_meta.version, size: 24 })
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 }
+            })
+        );
+    }
+    
+    // Datum
+    metadata_items.push(
+        new Paragraph({
+            children: [
+                new TextRun({ text: "Datum: ", bold: true, size: 24 }),
+                new TextRun({ text: report_date, size: 24 })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 }
+        })
+    );
+    
+    cover_children.push(...metadata_items);
+    
+    return cover_children;
+}
+
+// Skapar innehållsförteckning med Words inbyggda TOC-funktion
+// OBS: Detta ger en varning när dokumentet öppnas i Word, men användaren kan klicka "Ja" för att uppdatera fälten
+// Detta är det enda sättet att få fungerande länkar med docx-biblioteket
+function create_table_of_contents(t) {
+    const toc_children = [];
+    
+    // Använd Words inbyggda TableOfContents som automatiskt skapar länkar till alla rubriker
+    toc_children.push(
+        new TableOfContents({
+            title: "Innehållsförteckning",
+            headingStyleRange: "1-4", // Inkludera alla rubriknivåer H1-H4
+            hyperlink: true, // Gör rubrikerna klickbara
+            alias: "Innehållsförteckning"
+        })
+    );
+    
+    return toc_children;
 }
 
 
@@ -332,14 +488,33 @@ async function export_to_word(current_audit) {
 
     console.log('[Word Export] current_audit found, proceeding...');
     try {
-        const children = [];
+        // 1. Omslagssida
+        const cover_page_content = create_cover_page(current_audit, t);
         
-        // Enkel sida med h1 och brödtext
-        children.push(
+        // 2. Gå igenom alla krav med underkännanden - sortera enligt ref.text
+        const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
+        console.log('[Word Export] Found requirements with deficiencies:', requirements_with_deficiencies.length);
+        
+        // Sortera krav enligt ref.text med naturlig sortering
+        const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
+            const ref_a = a.standardReference?.text || '';
+            const ref_b = b.standardReference?.text || '';
+            return natural_sort(ref_a, ref_b);
+        });
+        
+        // 3. Innehållsförteckning (använder Words inbyggda TOC-funktion)
+        const toc_content = create_table_of_contents(t);
+        
+        // 4. Huvudinnehåll
+        const main_content = [];
+        
+        // H1-rubrik
+        const h1_text = "Underkända krav";
+        main_content.push(
             new Paragraph({
                 children: [
                     new TextRun({
-                        text: "Underkända krav"
+                        text: h1_text
                     })
                 ],
                 heading: "Heading1"
@@ -352,23 +527,12 @@ async function export_to_word(current_audit) {
                 ]
             })
         );
-
-        // Gå igenom alla krav med underkännanden - sortera enligt ref.text
-        const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
-        console.log('[Word Export] Found requirements with deficiencies:', requirements_with_deficiencies.length);
-        
-        // Sortera krav enligt ref.text med naturlig sortering
-        const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
-            const ref_a = a.standardReference?.text || '';
-            const ref_b = b.standardReference?.text || '';
-            return natural_sort(ref_a, ref_b);
-        });
         
         for (let i = 0; i < sorted_requirements.length; i++) {
             const req = sorted_requirements[i];
             
             // H2 med bara kravets titel
-            children.push(
+            main_content.push(
                 new Paragraph({
                     children: [
                         new TextRun({
@@ -463,10 +627,10 @@ async function export_to_word(current_audit) {
 
             
             // Lägg till punkslistan
-            children.push(...bullet_items);
+            main_content.push(...bullet_items);
 
             // Lägg till h3 "Förväntad observation"
-            children.push(
+            main_content.push(
                 new Paragraph({
                     children: [
                         new TextRun({
@@ -480,11 +644,11 @@ async function export_to_word(current_audit) {
             // Lägg till kravets text med markdown-konvertering
             if (req.expectedObservation) {
                 const markdown_paragraphs = convert_markdown_to_word_paragraphs(req.expectedObservation);
-                children.push(...markdown_paragraphs);
+                main_content.push(...markdown_paragraphs);
             }
 
             // Lägg till h3 "Faktisk observation"
-            children.push(
+            main_content.push(
                 new Paragraph({
                     children: [
                         new TextRun({
@@ -496,7 +660,7 @@ async function export_to_word(current_audit) {
             );
 
             // Lägg till introduktionstext
-            children.push(
+            main_content.push(
                 new Paragraph({
                     children: [
                         new TextRun({
@@ -508,7 +672,8 @@ async function export_to_word(current_audit) {
 
             // Lägg till h4 för varje stickprov med underkännanden - wrappade i tabell med ram och bakgrund
             const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
-            for (const sample of samples_with_deficiencies) {
+            for (let sampleIndex = 0; sampleIndex < samples_with_deficiencies.length; sampleIndex++) {
+                const sample = samples_with_deficiencies[sampleIndex];
                 // Skapa innehåll för stickprovet
                 const sampleContent = [];
                 
@@ -675,21 +840,74 @@ async function export_to_word(current_audit) {
                     cantSplit: true
                 });
                 
-                children.push(sampleTable);
+                main_content.push(sampleTable);
                 
                 // Lägg till lite utrymme efter tabellen
-                children.push(new Paragraph({
+                main_content.push(new Paragraph({
                     children: [new TextRun({ text: "" })],
                     spacing: { after: 240 } // 12pt avstånd efter
                 }));
             }
         }
 
+        // Skapa footer med sidnummer (bara för huvudinnehållet, inte omslagssidan)
+        const footer = new Footer({
+            children: [
+                new Paragraph({
+                    children: [
+                        PageNumber.CURRENT
+                    ],
+                    alignment: AlignmentType.CENTER
+                })
+            ]
+        });
+        
+        // Skapa dokument med flera sektioner:
+        // 1. Omslagssida (utan sidnummer)
+        // 2. Innehållsförteckning och huvudinnehåll (med sidnummer)
         const doc = new Document({
-            sections: [{
-                properties: {},
-                children: children
-            }],
+            sections: [
+                // Sektion 1: Omslagssida (utan footer)
+                {
+                    properties: {
+                        page: {
+                            pageNumbers: {
+                                start: 1,
+                                formatType: "decimal"
+                            }
+                        }
+                    },
+                    children: cover_page_content
+                },
+                // Sektion 2: Innehållsförteckning och huvudinnehåll (med footer)
+                {
+                    properties: {
+                        page: {
+                            pageNumbers: {
+                                start: 2, // Fortsätt numrering från omslagssidan
+                                formatType: "decimal"
+                            }
+                        }
+                    },
+                    headers: {
+                        default: new Header({
+                            children: [new Paragraph({
+                                children: [new TextRun({ text: "" })]
+                            })]
+                        })
+                    },
+                    footers: {
+                        default: footer
+                    },
+                    children: [...toc_content, 
+                        new Paragraph({
+                            children: [new TextRun({ text: "" })],
+                            pageBreakBefore: true
+                        }),
+                        ...main_content
+                    ]
+                }
+            ],
             styles: {
                 default: {
                     document: {
