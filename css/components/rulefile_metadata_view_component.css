@@ -1,128 +1,155 @@
-.rulefile-metadata-plate .metadata-section + .metadata-section {
-    margin-top: 2.5rem;
+.rulefile-metadata-plate {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
 }
 
-.metadata-section > h2 {
-    margin-bottom: 1rem;
+.rulefile-metadata-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
 }
 
-.metadata-header {
+.rulefile-metadata-hero .view-intro-text {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-color-muted);
+}
+
+.rulefile-metadata-header {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 0.75rem;
-    flex-wrap: nowrap;
-    margin-bottom: 1.5rem;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.metadata-header h1 {
+.rulefile-metadata-header h1 {
     margin: 0;
+    font-size: 1.8rem;
+    color: var(--link-color);
 }
 
-.metadata-edit-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+.rulefile-metadata-section {
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
+.rulefile-metadata-section-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    background: var(--surface-emphasis-bg);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.metadata-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--plate-background-color);
+}
+
+.rulefile-metadata-section__title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--heading-color);
 }
 
 .metadata-definition-list {
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .metadata-definition-list dt {
     font-weight: 600;
-    margin: 1.25rem 0 0.25rem;
-}
-
-.metadata-definition-list dt:first-child {
-    margin-top: 0;
 }
 
 .metadata-definition-list dd {
-    margin: 0 0 1rem 0;
+    margin: 0;
+    color: var(--text-color);
 }
 
 .metadata-inline-list,
 .metadata-list,
-.metadata-sub-list {
-    list-style: disc;
+.metadata-sub-list,
+.metadata-nested-list,
+.metadata-nested-list-child {
     margin: 0.25rem 0 0.25rem 1.25rem;
     padding: 0;
+    list-style: disc;
+    color: var(--text-color);
 }
 
 .metadata-card-grid {
     display: grid;
-    grid-template-columns: 1fr;
     gap: 1rem;
-    margin-top: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .metadata-card {
-    border: 1px solid var(--surface-emphasis-border);
-    border-radius: 10px;
-    padding: 1.5rem;
-    background: var(--surface-emphasis-bg);
-    text-align: left;
+    border-radius: var(--radius-md);
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--border-color);
+    background: var(--plate-background-color);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .metadata-card h3 {
-    margin-top: 0;
-    margin-bottom: 0.75rem;
-}
-
-.metadata-sub-list li + li {
-    margin-top: 0.75rem;
-}
-
-.metadata-description {
-    margin: 0.5rem 0 0;
+    margin: 0;
+    font-size: 1rem;
+    color: var(--link-color);
 }
 
 .metadata-subject {
     font-weight: 600;
-    display: block;
 }
 
-.metadata-nested-list,
-.metadata-nested-list-child {
-    list-style: disc;
-    margin: 0.5rem 0 0.5rem 1.5rem;
-    padding: 0;
+.metadata-description {
+    margin: 0;
+    color: var(--text-color-muted);
 }
 
 .metadata-nested-list-child {
     list-style: circle;
-    margin-top: 0.5rem;
-}
-
-.metadata-nested-list > li {
-    margin-bottom: 1rem;
-}
-
-.metadata-nested-list-child > li {
-    margin-bottom: 0.75rem;
-}
-
-.metadata-nested-list-child > li:last-child {
-    margin-bottom: 0;
 }
 
 .metadata-empty {
     font-style: italic;
-    color: var(--color-text-muted, #555555);
+    color: var(--text-color-muted);
 }
 
 .metadata-tag {
-    display: inline-block;
-    margin-bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
     background: var(--surface-tag-bg);
     color: var(--text-color);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
 }
 
-.metadata-inline-block h3 {
-    margin-bottom: 0.5rem;
+.metadata-edit-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.rulefile-metadata-actions-section {
+    margin-top: 0;
 }

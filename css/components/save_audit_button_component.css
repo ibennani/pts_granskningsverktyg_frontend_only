@@ -1,9 +1,27 @@
 /* css/components/save_audit_button_component.css */
 
-/* Om du behöver specifik styling för just denna knapp.
-   Annars kan den ärva globala .button stilar.
-   Exempel:
-.save-audit-button-component-wrapper .button {
-    margin-left: auto; // Om den ska vara högerjusterad i sin container
+/* Save audit button wrapper adaptation */
+.save-audit-button-component-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
 }
-*/
+
+.save-audit-button-component-wrapper .button {
+    margin-left: 0;
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.5rem;
+    border: 1px solid var(--border-color);
+    background: var(--button-primary-bg);
+    color: var(--button-primary-text);
+    transition: background 0.2s ease;
+}
+
+.save-audit-button-component-wrapper .button:hover,
+.save-audit-button-component-wrapper .button:focus-visible {
+    background: var(--button-primary-hover-bg);
+}
+
+.save-audit-button-section {
+    margin-bottom: 0.5rem;
+}

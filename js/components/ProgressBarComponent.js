@@ -41,7 +41,7 @@
             ? window.Translation.t
             : (key, rep) => (rep && rep.defaultValue ? rep.defaultValue : key);
 
-        const progress_wrapper = create_element('div', { class_name: 'progress-bar-wrapper' });
+        const progress_wrapper = create_element('div', { class_name: ['progress-bar-wrapper', 'row'] });
         
         // Add cleanup method to the wrapper element
         progress_wrapper._cleanup = function() {

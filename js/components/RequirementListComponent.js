@@ -175,11 +175,16 @@ export const RequirementListComponent = (function () {
 
         const top_nav_bar = create_navigation_bar();
         if (top_nav_bar) plate_element_ref.appendChild(top_nav_bar);
-        
-        plate_element_ref.appendChild(Helpers_create_element('div', { class_name: 'requirement-list-header' }));
 
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'requirement-list-hero'] });
+        const header_container = Helpers_create_element('div', { class_name: 'requirement-list-header' });
+        hero_section.appendChild(header_container);
+        plate_element_ref.appendChild(hero_section);
+
+        const toolbar_section = Helpers_create_element('section', { class_name: ['section', 'requirement-list-toolbar-section'] });
         const toolbar_container_element = Helpers_create_element('div', { id: 'requirement-list-toolbar-container' });
-        plate_element_ref.appendChild(toolbar_container_element);
+        toolbar_section.appendChild(toolbar_container_element);
+        plate_element_ref.appendChild(toolbar_section);
         
         toolbar_component_instance = RequirementListToolbarComponent;
         
@@ -205,17 +210,21 @@ export const RequirementListComponent = (function () {
             { sortOptions: SORT_OPTIONS }
         );
 
+        const requirements_section = Helpers_create_element('section', { class_name: ['section', 'requirements-list-section'] });
+
         results_summary_element_ref = Helpers_create_element('p', {
             class_name: 'results-summary',
             id: 'requirement-list-results-summary'
         });
-        plate_element_ref.appendChild(results_summary_element_ref);
+        requirements_section.appendChild(results_summary_element_ref);
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
         content_div_for_delegation.addEventListener('click', handle_requirement_list_click);
         // Add keyboard support for accessibility
         content_div_for_delegation.addEventListener('keydown', handle_requirement_list_keydown);
-        plate_element_ref.appendChild(content_div_for_delegation);
+        requirements_section.appendChild(content_div_for_delegation);
+
+        plate_element_ref.appendChild(requirements_section);
 
         const bottom_nav_bar = create_navigation_bar(true);
         if (bottom_nav_bar) plate_element_ref.appendChild(bottom_nav_bar);
@@ -224,20 +233,19 @@ export const RequirementListComponent = (function () {
         is_dom_initialized = true;
     }
 
-    function get_status_icon(status) {
+    function get_status_tag_info(status) {
         switch (status) {
-            case 'not_audited':
-                return '○'; // Enkel tom cirkel
-            case 'partially_audited':
-                return '◐'; // Halv cirkel
             case 'passed':
-                return '✓'; // Enkel bock
+                return { modifier: 'status-tag--approved', textKey: 'audit_status_passed' };
             case 'failed':
-                return '✗'; // Enkel kryss
+                return { modifier: 'status-tag--rejected', textKey: 'audit_status_failed' };
             case 'updated':
-                return '↻'; // Cirkulär pil
+                return { modifier: 'status-tag--pending', textKey: 'status_updated_needs_review' };
+            case 'partially_audited':
+                return { modifier: 'status-tag--pending', textKey: 'audit_status_partially_audited' };
+            case 'not_audited':
             default:
-                return '○'; // Standard: enkel tom cirkel
+                return { modifier: 'status-tag--pending', textKey: 'audit_status_not_audited' };
         }
     }
 
@@ -413,60 +421,57 @@ export const RequirementListComponent = (function () {
         const req_result = (sample.requirementResults || {})[req.key];
         const display_status = req_result?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(req, req_result);
 
-        // Debug: Logga status och klass
         if (window.ConsoleManager) {
             window.ConsoleManager.log(`[RequirementListComponent] Creating item for requirement ${req.key}:`, {
                 display_status,
-                status_icon_class: `status-icon-${display_status.replace('_', '-')}`,
                 req_result
             });
         }
 
-        const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
-        
-        const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-container' });
+        const li = Helpers_create_element('li', { class_name: ['requirement-item', 'krav-rad', 'row'] });
+
+        const title_row_div = Helpers_create_element('div', { class_name: 'krav__titel' });
         const title_link = Helpers_create_element('a', {
             class_name: 'list-title-link',
             text_content: req.title,
-            attributes: { 
+            attributes: {
                 'data-requirement-id': req.key,
                 'href': '#'
             }
         });
-        
+
         title_row_div.appendChild(title_link);
         li.appendChild(title_row_div);
 
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
-        const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
-        
-        // Lägg till status ikon och text
-        const status_span = Helpers_create_element('span', { 
-            class_name: display_status === 'updated' ? 'status-text-updated' : '',
-            text_content: status_text
+        const status_tag_info = get_status_tag_info(display_status);
+        const status_tag = Helpers_create_element('span', {
+            class_name: ['status-tag', status_tag_info.modifier],
+            text_content: t(status_tag_info.textKey)
         });
-        
-        // Lägg till status ikon före texten
-        const status_icon = Helpers_create_element('span', {
-            class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
-            text_content: get_status_icon(display_status),
-            attributes: { 'aria-hidden': 'true' }
-        });
-        
-        details_row_div.appendChild(status_icon);
-        details_row_div.appendChild(status_span);
+        details_row_div.appendChild(status_tag);
 
         const total_checks = req.checks?.length || 0;
         const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length : 0;
-        details_row_div.appendChild(Helpers_create_element('span', { class_name: 'requirement-checks-info', text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})` }));
-        
+        details_row_div.appendChild(Helpers_create_element('span', {
+            class_name: 'requirement-checks-info',
+            text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})`
+        }));
+
         if (req.standardReference?.text) {
-            details_row_div.appendChild(req.standardReference.url 
-                ? Helpers_create_element('a', { class_name: 'list-reference-link', text_content: req.standardReference.text, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
-                : Helpers_create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
+            details_row_div.appendChild(req.standardReference.url
+                ? Helpers_create_element('a', {
+                    class_name: 'list-reference-link',
+                    text_content: req.standardReference.text,
+                    attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' }
+                })
+                : Helpers_create_element('span', {
+                    class_name: 'list-reference-text',
+                    text_content: req.standardReference.text
+                })
             );
         }
-        
+
         li.appendChild(details_row_div);
         return li;
     }

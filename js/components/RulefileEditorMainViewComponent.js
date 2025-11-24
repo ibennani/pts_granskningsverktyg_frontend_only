@@ -127,7 +127,6 @@ export const RulefileEditorMainViewComponent = (function () {
     function render() {
         const t = Translation_t;
         const state = local_getState();
-        
 
         if (!state.ruleFileContent) {
             router_ref('upload');
@@ -136,18 +135,22 @@ export const RulefileEditorMainViewComponent = (function () {
 
         app_container_ref.innerHTML = '';
         plate_element_ref = Helpers.create_element('div', { class_name: 'content-plate' });
-        
+
         const global_message_element = NotificationComponent_get_global_message_element_reference();
         if (global_message_element) plate_element_ref.appendChild(global_message_element);
-        
-        plate_element_ref.appendChild(Helpers.create_element('h1', { text_content: t('edit_rulefile_title') }));
-        plate_element_ref.appendChild(Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('edit_rulefile_intro') }));
-        
-        const nav_buttons = Helpers.create_element('div', { class_name: 'editor-nav-buttons' });
-        
+
+        const hero_section = Helpers.create_element('section', { class_name: ['section', 'rulefile-editor-hero'] });
+        hero_section.appendChild(Helpers.create_element('h1', { text_content: t('edit_rulefile_title') }));
+        hero_section.appendChild(Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('edit_rulefile_intro') }));
+        plate_element_ref.appendChild(hero_section);
+
+        const nav_section = Helpers.create_element('section', { class_name: ['section', 'rulefile-editor-nav'] });
+        const nav_buttons = Helpers.create_element('div', { class_name: 'rulefile-editor-nav-row' });
+
         const reqs_btn = Helpers.create_element('button', {
-            class_name: ['button', current_sub_view === 'requirements' ? 'button-primary' : 'button-default'],
-            text_content: t('edit_rulefile_requirements_button')
+            class_name: ['button', current_sub_view === 'requirements' ? 'button--primary' : 'button--secondary'],
+            text_content: t('edit_rulefile_requirements_button'),
+            attributes: { type: 'button' }
         });
         reqs_btn.addEventListener('click', () => {
             current_sub_view = 'requirements';
@@ -155,8 +158,9 @@ export const RulefileEditorMainViewComponent = (function () {
         });
 
         const metadata_btn = Helpers.create_element('button', {
-            class_name: ['button', current_sub_view === 'metadata' ? 'button-primary' : 'button-default'],
-            text_content: t('edit_rulefile_metadata_button')
+            class_name: ['button', current_sub_view === 'metadata' ? 'button--primary' : 'button--secondary'],
+            text_content: t('edit_rulefile_metadata_button'),
+            attributes: { type: 'button' }
         });
         metadata_btn.addEventListener('click', () => {
             current_sub_view = 'metadata';
@@ -164,10 +168,15 @@ export const RulefileEditorMainViewComponent = (function () {
         });
 
         nav_buttons.append(reqs_btn, metadata_btn);
-        plate_element_ref.appendChild(nav_buttons);
+        nav_section.appendChild(nav_buttons);
+        plate_element_ref.appendChild(nav_section);
 
-        editor_content_container = Helpers.create_element('div', { id: 'editor-sub-view-container' });
-        
+        const content_section = Helpers.create_element('section', { class_name: ['section', 'rulefile-editor-content-section'] });
+        editor_content_container = Helpers.create_element('div', {
+            id: 'editor-sub-view-container',
+            class_name: ['rulefile-editor-subview', 'rulefile-editor-section']
+        });
+
         if (current_sub_view === 'metadata') {
             editor_content_container.appendChild(RulefileEditorLogic.buildMetadataEditor(state.ruleFileContent.metadata, handle_save_metadata));
         } else {
@@ -178,8 +187,9 @@ export const RulefileEditorMainViewComponent = (function () {
                 handle_delete_requirement
             ));
         }
-        
-        plate_element_ref.appendChild(editor_content_container);
+
+        content_section.appendChild(editor_content_container);
+        plate_element_ref.appendChild(content_section);
         app_container_ref.appendChild(plate_element_ref);
     }
 

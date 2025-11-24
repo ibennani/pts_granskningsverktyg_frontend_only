@@ -183,7 +183,7 @@ export const RequirementListToolbarComponent = (function () {
             const filter_group = Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
             const filter_label = Helpers_create_element('label', { text_content: t('filter_by_status_label') });
             filter_group.appendChild(filter_label);
-            filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
+            filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: ['button', 'button--ghost'] });
             if (window.MemoryManager) {
                 window.MemoryManager.addEventListener(filter_button_ref, 'click', toggle_filter_panel);
                 filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });

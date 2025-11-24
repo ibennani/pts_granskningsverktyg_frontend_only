@@ -84,30 +84,33 @@ export const SampleFormViewComponent = (function () {
         }
 
         const title_text = sample_id_to_edit ? t('edit_sample') : t('add_new_sample');
-        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: title_text }));
-        
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'sample-form-hero'] });
+        hero_section.appendChild(Helpers_create_element('h1', { text_content: title_text }));
         const intro_text_key = (audit_status === 'not_started') ? 'add_samples_intro_message' : 'add_sample_form_new_intro';
-        plate_element_ref.appendChild(Helpers_create_element('p', { 
-            class_name: 'view-intro-text', 
-            text_content: t(intro_text_key) 
+        hero_section.appendChild(Helpers_create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t(intro_text_key)
         }));
+        plate_element_ref.appendChild(hero_section);
 
-        // Rendera formulärkomponenten inuti vår nya vy
+        // Render the form component inside the view wrapper
         add_sample_form_component_instance.render(sample_id_to_edit);
-        plate_element_ref.appendChild(add_sample_form_container_element);
+        const form_section = Helpers_create_element('section', { class_name: ['section', 'sample-form-form-section'] });
+        form_section.appendChild(add_sample_form_container_element);
+        plate_element_ref.appendChild(form_section);
 
-        // Lägg till en nedre navigationsrad med "Tillbaka"-knapp
-        const bottom_actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
-        
+        // Bottom navigation area
+        const bottom_actions_section = Helpers_create_element('section', { class_name: ['section', 'sample-form-actions-section'] });
+        const bottom_actions_div = Helpers_create_element('div', { class_name: 'form-actions sample-form-actions' });
         const return_button_text_key = (audit_status === 'not_started') ? 'back_to_sample_management' : 'back_to_audit_overview';
-        
         const return_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
+            class_name: ['button', 'button--secondary'],
             html_content: `<span>${t(return_button_text_key)}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back') : '')
         });
         return_button.addEventListener('click', discard_and_return);
         bottom_actions_div.appendChild(return_button);
-        plate_element_ref.appendChild(bottom_actions_div);
+        bottom_actions_section.appendChild(bottom_actions_div);
+        plate_element_ref.appendChild(bottom_actions_section);
     }
 
     function destroy() {

@@ -78,7 +78,7 @@ export const ViewRulefileRequirementComponent = (function () {
             return null;
         }
         
-        const section_div = Helpers_create_element('div', { class_name: 'audit-section' });
+        const section_div = Helpers_create_element('section', { class_name: ['section', 'audit-section', 'requirement-view-section'] });
         section_div.appendChild(Helpers_create_element('h2', { text_content: t(title_key) }));
         
         const content_element = Helpers_create_element('div', { 
@@ -106,50 +106,56 @@ export const ViewRulefileRequirementComponent = (function () {
             return;
         }
 
-        // Header
-        const header_div = Helpers_create_element('div', { class_name: 'requirement-audit-header' });
-        const title_wrapper = Helpers_create_element('div', { class_name: 'requirement-audit-header-title-wrapper' });
-        const h1_element = Helpers_create_element('h1', { text_content: requirement.title, id: 'view-requirement-h1', attributes: { tabindex: '-1' } });
-        title_wrapper.appendChild(h1_element);
-        
         const edit_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-secondary', 'button-small', 'edit-button'],
-            attributes: { 'aria-label': t('edit_this_requirement_aria', { requirementTitle: requirement.title }) },
+            class_name: ['button', 'button--primary', 'button-small', 'edit-button'],
+            attributes: {
+                'aria-label': t('edit_this_requirement_aria', { requirementTitle: requirement.title })
+            },
             html_content: `<span>${t('edit_prefix')}</span>` + Helpers_get_icon_svg('edit', [], 16)
         });
-        edit_button.addEventListener('click', () => {
-            router_ref('rulefile_edit_requirement', { id: requirement_id });
-        });
-        title_wrapper.appendChild(edit_button);
+        edit_button.addEventListener('click', () => router_ref('rulefile_edit_requirement', { id: requirement_id }));
 
-        header_div.appendChild(title_wrapper);
-        plate_element_ref.appendChild(header_div);
-
-        // Top Navigation
-        const top_nav_bar = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
-        const back_button_top = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
+        const back_button = Helpers_create_element('button', {
+            class_name: ['button', 'button--secondary', 'button-small'],
             html_content: `<span>${t('back_to_requirement_list')}</span>` + Helpers_get_icon_svg('arrow_back')
         });
-        back_button_top.addEventListener('click', () => router_ref('rulefile_requirements'));
-        top_nav_bar.appendChild(back_button_top);
-        plate_element_ref.appendChild(top_nav_bar);
+        back_button.addEventListener('click', () => router_ref('rulefile_requirements'));
+
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'requirement-view-hero'] });
+        const hero_title_row = Helpers_create_element('div', { class_name: 'requirement-view-hero__row' });
+        const title_wrapper = Helpers_create_element('div', { class_name: 'requirement-audit-header-title-wrapper' });
+        const h1_element = Helpers_create_element('h1', {
+            text_content: requirement.title,
+            id: 'view-requirement-h1',
+            attributes: { tabindex: '-1' }
+        });
+        title_wrapper.appendChild(h1_element);
+        hero_title_row.appendChild(title_wrapper);
+        hero_section.appendChild(hero_title_row);
+
+        const hero_actions = Helpers_create_element('div', { class_name: ['form-actions', 'requirement-view-actions'] });
+        hero_actions.append(back_button, edit_button);
+        hero_section.appendChild(hero_actions);
+        plate_element_ref.appendChild(hero_section);
 
         // General Info (Reference)
         if (requirement.standardReference && requirement.standardReference.text) {
-             const general_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
-             const p = Helpers_create_element('p', { class_name: 'standard-reference' });
-             p.appendChild(Helpers_create_element('strong', { text_content: `${t('requirement_standard_reference_label')} ` }));
-             if (requirement.standardReference.url) {
-                 p.appendChild(Helpers_create_element('a', {
-                     text_content: requirement.standardReference.text,
-                     attributes: { href: Helpers_add_protocol_if_missing(requirement.standardReference.url), target: '_blank' }
-                 }));
-             } else {
-                 p.appendChild(document.createTextNode(requirement.standardReference.text));
-             }
-             general_info_section.appendChild(p);
-             plate_element_ref.appendChild(general_info_section);
+            const general_info_section = Helpers_create_element('section', { class_name: ['section', 'requirement-view-section'] });
+            const p = Helpers_create_element('p', { class_name: 'standard-reference' });
+            p.appendChild(Helpers_create_element('strong', { text_content: `${t('requirement_standard_reference_label')} ` }));
+            if (requirement.standardReference.url) {
+                p.appendChild(Helpers_create_element('a', {
+                    text_content: requirement.standardReference.text,
+                    attributes: {
+                        href: Helpers_add_protocol_if_missing(requirement.standardReference.url),
+                        target: '_blank'
+                    }
+                }));
+            } else {
+                p.appendChild(document.createTextNode(requirement.standardReference.text));
+            }
+            general_info_section.appendChild(p);
+            plate_element_ref.appendChild(general_info_section);
         }
 
         // Help Texts
@@ -164,11 +170,16 @@ export const ViewRulefileRequirementComponent = (function () {
         help_text_sections.filter(Boolean).forEach(sec => plate_element_ref.appendChild(sec));
         
         // Checkpoints
-        const checks_container = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
+        const checks_container = Helpers_create_element('section', {
+            class_name: ['section', 'requirement-view-section', 'checks-container']
+        });
         checks_container.appendChild(Helpers_create_element('h2', { text_content: t('checks_title') }));
         (requirement.checks || []).forEach((check, check_index) => {
             const check_wrapper = Helpers_create_element('div', { class_name: 'check-item status-not_audited', style: 'border-left-width: 3px;' });
-            const condition_h3 = Helpers_create_element('h3', { class_name: 'check-condition-title', html_content: _safe_parse_markdown(check.condition) });
+            const condition_h3 = Helpers_create_element('h3', {
+                class_name: 'check-condition-title',
+                html_content: _safe_parse_markdown(check.condition)
+            });
             check_wrapper.appendChild(condition_h3);
             const check_number_label = Helpers_create_element('p', {
                 class_name: 'check-number-label',
@@ -177,7 +188,10 @@ export const ViewRulefileRequirementComponent = (function () {
             check_wrapper.appendChild(check_number_label);
             const logic_key = check.logic?.toUpperCase() === 'OR' ? 'check_logic_or' : 'check_logic_and';
             const logic_label = t(logic_key);
-            check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'text-muted', html_content: `<strong>${t('check_logic_display')}</strong> ${logic_label}`}));
+            check_wrapper.appendChild(Helpers_create_element('p', {
+                class_name: 'text-muted',
+                html_content: `<strong>${t('check_logic_display')}</strong> ${logic_label}`
+            }));
             if (check.passCriteria && check.passCriteria.length > 0) {
                 const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                 check.passCriteria.forEach((pc, pc_index) => {
@@ -193,7 +207,7 @@ export const ViewRulefileRequirementComponent = (function () {
                     });
                     pc_item.appendChild(numbering_label);
                     pc_item.appendChild(criterion_heading);
-                    if(pc.failureStatementTemplate) {
+                    if (pc.failureStatementTemplate) {
                         const template_div = Helpers_create_element('div', { class_name: 'failure-template-display' });
                         const template_strong = Helpers_create_element('strong', { text_content: t('failure_statement_template_display') });
                         template_div.appendChild(template_strong);
@@ -209,7 +223,7 @@ export const ViewRulefileRequirementComponent = (function () {
         plate_element_ref.appendChild(checks_container);
         
         // Classification
-        const classification_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        const classification_section = Helpers_create_element('section', { class_name: ['section', 'requirement-view-section'] });
         classification_section.appendChild(Helpers_create_element('h2', { text_content: t('classification_title') }));
         const classification_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
         if (requirement.metadata?.mainCategory?.text) {
@@ -232,7 +246,7 @@ export const ViewRulefileRequirementComponent = (function () {
                 .filter(Boolean);
 
             if (concepts.length > 0) {
-                const pour_section = Helpers_create_element('div', { class_name: 'audit-section' });
+                const pour_section = Helpers_create_element('section', { class_name: ['section', 'requirement-view-section'] });
                 pour_section.appendChild(Helpers_create_element('h2', { text_content: t('wcag_principles_title') }));
                 const pour_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
                 concepts.forEach(conceptName => {
@@ -245,7 +259,7 @@ export const ViewRulefileRequirementComponent = (function () {
         // --- END OF CHANGE ---
         
         // Impact
-        const impact_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        const impact_section = Helpers_create_element('section', { class_name: ['section', 'requirement-view-section'] });
         impact_section.appendChild(Helpers_create_element('h2', { text_content: t('impact_title') }));
         const impact_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
         if (requirement.metadata?.impact) {
@@ -261,7 +275,7 @@ export const ViewRulefileRequirementComponent = (function () {
 
         // Associated Content Types
         if (requirement.contentType?.length > 0) {
-            const content_types_section = Helpers_create_element('div', { class_name: 'audit-section' });
+            const content_types_section = Helpers_create_element('section', { class_name: ['section', 'requirement-view-section'] });
             content_types_section.appendChild(Helpers_create_element('h2', { text_content: t('content_types_associated') }));
             const content_types_ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
             const content_types_map = new Map();
@@ -274,16 +288,6 @@ export const ViewRulefileRequirementComponent = (function () {
             content_types_section.appendChild(content_types_ul);
             plate_element_ref.appendChild(content_types_section);
         }
-
-        // Bottom Navigation
-        const bottom_nav_bar = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
-        const back_button_bottom = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_requirement_list')}</span>` + Helpers_get_icon_svg('arrow_back')
-        });
-        back_button_bottom.addEventListener('click', () => router_ref('rulefile_requirements'));
-        bottom_nav_bar.appendChild(back_button_bottom);
-        plate_element_ref.appendChild(bottom_nav_bar);
 
         app_container_ref.appendChild(plate_element_ref);
         setTimeout(() => h1_element.focus(), 0);

@@ -128,19 +128,30 @@ export const ConfirmUpdatesViewComponent = (function () {
         return { updated_reqs_by_sample, total_count };
     }
 
+    function get_status_presentation(status) {
+        const mapping = {
+            passed: { textKey: 'audit_status_passed', className: 'status-tag--approved' },
+            failed: { textKey: 'audit_status_failed', className: 'status-tag--rejected' },
+            needs_review: { textKey: 'status_updated_needs_review', className: 'status-tag--pending' }
+        };
+        return mapping[status] || { textKey: 'status_updated', className: 'status-tag--pending' };
+    }
+
     function render_action_buttons(position) {
         const t = Translation_t;
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { marginTop: '1.5rem', justifyContent: 'space-between' } });
-        
+        const actions_div = Helpers_create_element('div', {
+            class_name: ['form-actions', 'confirm-updates-actions']
+        });
+
         const confirm_all_btn = Helpers_create_element('button', {
             id: `${position}-confirm-all-btn`,
-            class_name: ['button', 'button-success'],
+            class_name: ['button', 'button--success'],
             text_content: t('confirm_all_assessments_button')
         });
         confirm_all_btn.addEventListener('click', () => router_ref('final_confirm_updates'));
 
         const return_btn = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
+            class_name: ['button', 'button--secondary'],
             text_content: t('return_to_audit_overview')
         });
         return_btn.addEventListener('click', () => router_ref('audit_overview'));
@@ -163,62 +174,86 @@ export const ConfirmUpdatesViewComponent = (function () {
 
         const { updated_reqs_by_sample, total_count } = get_updated_reqs_data();
         
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'confirm-updates-hero'] });
         h1_ref = Helpers_create_element('h1', { attributes: { tabindex: '-1' } });
-        plate_element_ref.appendChild(h1_ref);
+        hero_section.appendChild(h1_ref);
+        plate_element_ref.appendChild(hero_section);
 
         if (total_count === 0) {
             h1_ref.textContent = t('all_updates_handled_title');
-            plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('all_updates_handled_text') }));
+            hero_section.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('all_updates_handled_text') }));
             
             const return_btn = Helpers_create_element('button', {
-                class_name: ['button', 'button-primary'],
+                class_name: ['button', 'button--primary'],
                 text_content: t('return_to_audit_overview')
             });
             return_btn.addEventListener('click', () => router_ref('audit_overview'));
-            plate_element_ref.appendChild(return_btn);
+            const empty_actions = Helpers_create_element('div', { class_name: ['form-actions', 'confirm-updates-actions'] });
+            empty_actions.appendChild(return_btn);
+            hero_section.appendChild(empty_actions);
 
             h1_ref.focus();
             return;
         }
 
         h1_ref.textContent = t('handle_updated_assessments_title', { count: total_count });
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('handle_updated_assessments_intro') }));
+        hero_section.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('handle_updated_assessments_intro') }));
         
-        plate_element_ref.appendChild(render_action_buttons('top'));
+        const body_section = Helpers_create_element('section', { class_name: ['section', 'confirm-updates-body'] });
+        body_section.appendChild(render_action_buttons('top'));
 
-        list_container_for_delegation = Helpers_create_element('div');
+        list_container_for_delegation = Helpers_create_element('div', { class_name: 'confirm-updates-collection' });
         list_container_for_delegation.addEventListener('click', handle_list_item_click);
-        // Add keyboard support for accessibility
         list_container_for_delegation.addEventListener('keydown', handle_list_item_keydown);
 
-        const state = local_getState();
         for (const sampleId in updated_reqs_by_sample) {
             const data = updated_reqs_by_sample[sampleId];
-            const sample_section = Helpers_create_element('section', { style: { marginTop: '2rem' } });
+            const sample_section = Helpers_create_element('section', {
+                class_name: 'confirm-updates-sample',
+                attributes: { 'aria-label': `${t('sample_label')}: ${data.sampleName}` }
+            });
             
+            const header_wrapper = Helpers_create_element('div', { class_name: 'confirm-updates-sample__header' });
             const h2 = Helpers_create_element('h2', { 
                 text_content: `${t('sample_label')}: ${data.sampleName}`,
                 attributes: { tabindex: '-1' }
             });
-            sample_section.appendChild(h2);
+            header_wrapper.appendChild(h2);
+            sample_section.appendChild(header_wrapper);
 
-            const ul = Helpers_create_element('ul', { class_name: 'item-list', style: { listStyle: 'none', padding: 0 } });
+            const ul = Helpers_create_element('ul', { class_name: 'confirm-updates-list', attributes: { role: 'list' } });
             data.requirements.forEach(req => {
-                const li = Helpers_create_element('li', { class_name: 'item-list-item compact-review-item', style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' } });
+                const li = Helpers_create_element('li', { class_name: ['row', 'confirm-update-row'], attributes: { role: 'listitem' } });
                 
                 const link_text = req.reference
                     ? t('requirement_with_reference', { title: req.title, reference: req.reference })
                     : req.title;
                 const link = Helpers_create_element('a', {
+                    class_name: 'confirm-update-row__title',
                     text_content: link_text,
                     attributes: { href: '#' },
                     event_listeners: { click: (e) => { e.preventDefault(); router_ref('requirement_audit', { sampleId, requirementId: req.id }); }}
                 });
 
+                const details = Helpers_create_element('div', { class_name: 'confirm-update-row__details' });
+                details.appendChild(link);
+
+                const status_presentation = get_status_presentation(req.status);
+                const status_tag = Helpers_create_element('span', {
+                    class_name: ['status-tag', status_presentation.className],
+                    text_content: t(status_presentation.textKey)
+                });
+                details.appendChild(status_tag);
+
                 let btn_text_key = 'confirm_status_and_return';
-                let btn_class = 'button-secondary';
-                if (req.status === 'passed') { btn_text_key = 'keep_passed_button'; btn_class = 'button-success'; }
-                else if (req.status === 'failed') { btn_text_key = 'keep_failed_button'; btn_class = 'button-danger'; }
+                let btn_class = 'button--secondary';
+                if (req.status === 'passed') {
+                    btn_text_key = 'keep_passed_button';
+                    btn_class = 'button--success';
+                } else if (req.status === 'failed') {
+                    btn_text_key = 'keep_failed_button';
+                    btn_class = 'button--danger';
+                }
 
                 const confirm_button = Helpers_create_element('button', {
                     class_name: ['button', btn_class, 'button-small'],
@@ -231,20 +266,25 @@ export const ConfirmUpdatesViewComponent = (function () {
                     }
                 });
 
-                li.append(link, confirm_button);
+                const actions_wrapper = Helpers_create_element('div', { class_name: 'confirm-update-row__actions' });
+                actions_wrapper.appendChild(confirm_button);
+
+                li.append(details, actions_wrapper);
                 ul.appendChild(li);
             });
             sample_section.appendChild(ul);
             list_container_for_delegation.appendChild(sample_section);
         }
         
-        plate_element_ref.appendChild(list_container_for_delegation);
-        plate_element_ref.appendChild(render_action_buttons('bottom'));
+        body_section.appendChild(list_container_for_delegation);
+        body_section.appendChild(render_action_buttons('bottom'));
+        plate_element_ref.appendChild(body_section);
     }
 
     function destroy() {
         if (list_container_for_delegation) {
             list_container_for_delegation.removeEventListener('click', handle_list_item_click);
+            list_container_for_delegation.removeEventListener('keydown', handle_list_item_keydown);
         }
         app_container_ref.innerHTML = '';
         plate_element_ref = null;

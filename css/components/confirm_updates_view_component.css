@@ -1,22 +1,124 @@
 /* css/components/confirm_updates_view_component.css */
 
-/*
-   Denna klass ärver mycket från den globala .item-list-item,
-   men gör specifika justeringar för att minska den vertikala höjden.
-*/
-.compact-review-item {
-    /* Minska den vertikala paddingen avsevärt */
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
-
-    /* Minska marginalen mellan listelementen */
+.confirm-updates-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     margin-bottom: 0.5rem;
 }
 
-/* Anpassa länken inuti listelementet för bättre läsbarhet */
-.compact-review-item a {
-    /* Om länken blir för lång, låt den brytas till nästa rad */
-    white-space: normal;
-    /* Ge lite andrum till knappen, speciellt om texten bryts */
-    margin-right: 1rem;
+.confirm-updates-hero .view-intro-text {
+    margin: 0;
+    color: var(--text-color-muted);
+}
+
+.confirm-updates-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.confirm-updates-body .confirm-updates-collection {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.confirm-updates-actions {
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.confirm-updates-sample {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.confirm-updates-sample__header h2 {
+    font-size: 1.2rem;
+    margin: 0;
+    color: var(--color-text);
+}
+
+.confirm-updates-sample__header p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+}
+
+.confirm-updates-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.confirm-update-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.confirm-update-row__details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+}
+
+.confirm-update-row__title {
+    font-weight: 600;
+    color: var(--color-link);
+    font-size: 1rem;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.confirm-update-row__title:hover,
+.confirm-update-row__title:focus {
+    color: var(--color-primary-bg);
+    text-decoration: underline;
+}
+
+.confirm-update-row__status {
+    align-self: flex-start;
+}
+
+.confirm-update-row__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.confirm-update-row__actions .button {
+    white-space: nowrap;
+}
+
+.confirm-updates-list .row {
+    padding-inline: 0;
+}
+
+.confirm-updates-list .row:last-child {
+    border-bottom: none;
+}
+
+.confirm-updates-sample__header .status-tag {
+    margin-left: 0;
+}
+
+@media (max-width: 640px) {
+    .confirm-update-row {
+        flex-direction: column;
+    }
+
+    .confirm-update-row__actions {
+        justify-content: flex-start;
+    }
 }

@@ -1,22 +1,89 @@
 /* Styles for SampleManagementViewComponent */
-.sample-management-view-plate { /* "Plattan" för denna vy */
-    background-color: var(--plate-background-color); /* Ändrad från var(--background-color) */
-    padding: 1.5rem;
-    border: 1px solid var(--border-color); /* Ändrad från 2px solid var(--primary-color) */
-    border-radius: var(--border-radius);
-    /* Skugga hanteras av global CSS för .content-plate */
-    margin-top: 1rem;
+.sample-management-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
 }
 
-.sample-management-view-plate h1 {
-    margin-bottom: 0.5rem;
+.sample-management-hero h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    color: var(--link-color);
 }
-.sample-management-view-plate .view-intro-text {
-     margin-bottom: 1.5rem;
-    font-size: 1rem;
+
+.sample-management-actions-section {
+    margin-bottom: 1rem;
+}
+
+.sample-management-list-section {
+    margin-bottom: 1rem;
+}
+
+.sample-management-bottom-actions {
+    margin-top: 0.5rem;
+}
+
+.sample-management-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.sample-management-actions .button {
+    min-width: 180px;
+}
+
+.sample-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sample-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--plate-background-color);
+    gap: 1rem;
+}
+
+.sample-row__info {
+    flex: 1;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.sample-row__status {
+    font-size: 0.85rem;
     color: var(--text-color-muted);
 }
 
-.sample-management-actions { /* För knappar som "Lägg till nytt stickprov" */
-    margin-bottom: 1.5rem;
+.sample-row__actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+@media (max-width: 650px) {
+    .sample-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .sample-row__actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .sample-management-actions .button {
+        width: 100%;
+    }
 }

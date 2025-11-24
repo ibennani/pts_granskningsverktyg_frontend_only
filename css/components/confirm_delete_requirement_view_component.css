@@ -1,22 +1,60 @@
 /* css/components/confirm_delete_requirement_view_component.css */
 
-.warning-box {
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    border: 2px solid var(--danger-color);
-    border-radius: var(--border-radius);
-    background-color: var(--danger-color-light);
+.confirm-delete-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1rem;
 }
 
-.warning-box p {
-    color: var(--button-danger-text);
-    line-height: 1.7;
+.confirm-delete-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-[data-theme="dark"] .warning-box p {
-    color: var(--text-color);
+.confirm-delete-header h1 {
+    margin: 0;
+    font-size: 1.9rem;
+    color: var(--link-color);
 }
 
-.warning-box strong {
-    font-weight: 700;
+.confirm-delete-warning {
+    background: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+
+.confirm-delete-warning p {
+    color: var(--color-text);
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+}
+
+.confirm-delete-warning blockquote {
+    margin: 0;
+    padding-left: 1rem;
+    border-left: 3px solid var(--danger-color);
+    font-style: italic;
+    color: var(--color-text-muted);
+}
+
+.confirm-delete-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: flex-start;
+}
+
+@media (max-width: 600px) {
+    .confirm-delete-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .confirm-delete-actions .button {
+        width: 100%;
+    }
 }

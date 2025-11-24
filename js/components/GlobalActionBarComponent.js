@@ -202,19 +202,22 @@ export const GlobalActionBarComponentFactory = function () {
     );
   }
 
-  function render() {
-    if (!container_ref) return;
-    container_ref.innerHTML = '';
+    function render() {
+        if (!container_ref) return;
+        container_ref.innerHTML = '';
 
-    const { getState, Translation, Helpers } = dependencies;
-    const t = Translation.t;
-    const current_state = getState();
-    const audit_status = current_state?.auditStatus;
-    const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
+        const { getState, Translation, Helpers } = dependencies;
+        const t = Translation.t;
+        const current_state = getState();
+        const audit_status = current_state?.auditStatus;
+        const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
 
-    const bar_element = Helpers.create_element('div', {
-      class_name: 'global-action-bar',
-    });
+        const bar_section = Helpers.create_element('section', {
+            class_name: ['section', 'global-action-bar-section']
+        });
+        const bar_element = Helpers.create_element('div', {
+            class_name: 'global-action-bar',
+        });
     const left_group = Helpers.create_element('div', {
       class_name: ['action-bar-group', 'left'],
     });
@@ -225,7 +228,7 @@ export const GlobalActionBarComponentFactory = function () {
       left_group.appendChild(save_audit_button_container_element);
     } else if (audit_status === 'rulefile_editing' && has_rulefile_loaded) {
       const save_rulefile_button = Helpers.create_element('button', {
-        class_name: ['button', 'button-primary'],
+        class_name: ['button', 'button--primary'],
         html_content:
           `<span class="button-text">${t('save_and_download_rulefile')}</span>` +
           (Helpers.get_icon_svg
@@ -236,7 +239,7 @@ export const GlobalActionBarComponentFactory = function () {
       left_group.appendChild(save_rulefile_button);
     }
 
-    bar_element.appendChild(left_group);
+        bar_element.appendChild(left_group);
 
     // --- FIX: The right group is now ALWAYS rendered ---
     const right_group = Helpers.create_element('div', {
@@ -273,7 +276,7 @@ export const GlobalActionBarComponentFactory = function () {
     right_group.appendChild(language_selector_container);
 
     const theme_toggle_button = Helpers.create_element('button', {
-      class_name: ['button', 'button-default'],
+      class_name: ['button', 'button--ghost'],
       attributes: { 'aria-live': 'polite' },
     });
 
@@ -332,8 +335,9 @@ export const GlobalActionBarComponentFactory = function () {
     update_theme_button_content(current_theme);
     right_group.appendChild(theme_toggle_button);
 
-    bar_element.appendChild(right_group);
-    container_ref.appendChild(bar_element);
+        bar_element.appendChild(right_group);
+        bar_section.appendChild(bar_element);
+        container_ref.appendChild(bar_section);
   }
 
   function destroy() {

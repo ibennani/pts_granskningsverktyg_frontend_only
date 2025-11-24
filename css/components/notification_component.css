@@ -1,109 +1,77 @@
-/* Styles for the global message area (formerly NotificationComponent) */
+/* Styles for the global message area */
 #global-message-area {
-    padding: 1rem;
-    margin-bottom: 1.5rem; /* Utrymme till H1 eller annat innehåll */
-    border: 1px solid transparent;
-    border-radius: var(--border-radius);
-    /* text-align: center; Valfritt */
-    position: relative; /* För att positionera stängningsknappen absolut */
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: var(--surface-emphasis-bg);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: relative;
 }
 
 #global-message-area[hidden] {
     display: none;
 }
 
-.global-message-content { 
-    /* Används för att sätta typklasser */
+.global-message-content {
+    margin: 0;
+    font-weight: 500;
+    color: var(--color-text);
+    flex: 1;
 }
 
 .global-message-close-btn {
-    background: none;
+    position: static; /* rely on flex alignment instead of absolute positioning */
+    padding: 0;
     border: none;
-    font-size: 1.5rem; 
-    line-height: 1;
+    background: transparent;
     cursor: pointer;
-    padding: 0 0.5rem;
-    opacity: 0.7;
-    position: absolute;
-    top: 50%;
-    right: 1rem;
-    transform: translateY(-50%);
-}
-.global-message-close-btn:hover,
-.global-message-close-btn:focus {
-    opacity: 1;
+    font-size: 1.25rem;
+    color: var(--color-text);
 }
 
-/* Message types - Kontrastjusterade färger */
+.global-message-close-btn svg,
+.global-message-close-btn span {
+    line-height: 1;
+}
 
-/* Info */
+.global-message-close-btn:focus-visible {
+    outline: 2px solid var(--color-primary-bg);
+    outline-offset: 2px;
+}
+
+/* Message tones */
 #global-message-area.message-info {
-    background-color: var(--info-color-light);
-    border-color: var(--info-color);
-    color: #004085; 
-}
-#global-message-area.message-info .global-message-close-btn {
-    color: #004085;
-}
-[data-theme="dark"] #global-message-area.message-info {
-    background-color: #0c5460; 
-    border-color: var(--info-color); 
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
-}
-[data-theme="dark"] #global-message-area.message-info .global-message-close-btn {
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+    border-color: var(--button-info-border);
+    background-color: var(--button-info-bg);
+    color: var(--button-info-text);
 }
 
-/* Success */
 #global-message-area.message-success {
-    background-color: var(--success-color-light);
-    border-color: var(--success-color); 
-    color: #155724; 
-}
-#global-message-area.message-success .global-message-close-btn {
-    color: #155724;
-}
-[data-theme="dark"] #global-message-area.message-success {
-    background-color: #126128; 
-    border-color: var(--success-color); 
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
-}
-[data-theme="dark"] #global-message-area.message-success .global-message-close-btn {
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+    border-color: var(--button-success-border);
+    background-color: var(--button-success-bg);
+    color: var(--button-success-text);
 }
 
-/* Warning */
 #global-message-area.message-warning {
-    background-color: var(--warning-color-light); 
-    border-color: var(--warning-color); 
-    color: #856404; 
-}
-#global-message-area.message-warning .global-message-close-btn {
-    color: #856404;
-}
-[data-theme="dark"] #global-message-area.message-warning {
-    background-color: #806600; 
-    border-color: var(--warning-color); 
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
-}
-[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn {
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+    border-color: var(--button-warning-border);
+    background-color: var(--button-warning-bg);
+    color: var(--button-warning-text);
 }
 
-/* Error */
 #global-message-area.message-error {
-    background-color: var(--danger-color-light); 
-    border-color: var(--danger-color); 
-    color: #721c24; 
+    border-color: var(--button-danger-border);
+    background-color: var(--button-danger-bg);
+    color: var(--button-danger-text);
 }
-#global-message-area.message-error .global-message-close-btn {
-    color: #721c24;
-}
-[data-theme="dark"] #global-message-area.message-error {
-    background-color: #5a1219; /* Gjorde den lite mörkare än #721c24 för bättre kontrast med vit text */
-    border-color: var(--danger-color); 
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
-}
-[data-theme="dark"] #global-message-area.message-error .global-message-close-btn {
-    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+
+#global-message-area.global-message-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
 }

@@ -178,6 +178,40 @@ export const UploadViewComponent = (function () {
     reader.readAsText(file);
   }
 
+  function create_upload_action_row(options) {
+    const {
+      buttonId,
+      buttonClasses = ['button'],
+      buttonText,
+      descriptionId,
+      descriptionText,
+      iconName
+    } = options;
+
+    const iconHtml = window.Helpers?.get_icon_svg
+      ? window.Helpers.get_icon_svg(iconName)
+      : '';
+
+    const button = window.Helpers.create_element('button', {
+      id: buttonId,
+      class_name: buttonClasses,
+      attributes: { 'aria-describedby': descriptionId, type: 'button' },
+      html_content: `<span>${buttonText}</span>` + iconHtml
+    });
+
+    const description = window.Helpers.create_element('p', {
+      class_name: ['upload-action-description'],
+      attributes: { id: descriptionId },
+      text_content: descriptionText
+    });
+
+    const row = window.Helpers.create_element('div', {
+      class_name: ['row', 'upload-action-row']
+    });
+    row.append(button, description);
+    return { row, button };
+  }
+
   async function init(
     _app_container,
     _router,
@@ -221,8 +255,9 @@ export const UploadViewComponent = (function () {
     app_container_ref.innerHTML = '';
     const t = get_t_func();
 
-    // Skapa bakgrundsplatta
-    const plate_element = window.Helpers.create_element('div', {
+    const Helpers_create_element = window.Helpers.create_element;
+
+    const plate_element = Helpers_create_element('div', {
       class_name: 'content-plate',
     });
 
@@ -237,124 +272,97 @@ export const UploadViewComponent = (function () {
       }
     }
 
-    const title = window.Helpers.create_element('h1', {
-      text_content: t('app_title'),
-    });
-    const intro_text = window.Helpers.create_element('p', {
-      text_content: t('upload_view_intro'),
-    });
+    const hero_section = Helpers_create_element('section', { class_name: ['section', 'upload-hero'] });
+    hero_section.appendChild(Helpers_create_element('h1', { text_content: t('app_title') }));
+    hero_section.appendChild(Helpers_create_element('p', {
+      class_name: 'view-intro-text',
+      text_content: t('upload_view_intro')
+    }));
 
-    const actions_title = window.Helpers.create_element('h2', {
+    const actions_section = Helpers_create_element('section', {
+      class_name: ['section', 'upload-section', 'upload-action-section'],
+    });
+    const actions_title = Helpers_create_element('h2', {
+      class_name: 'upload-section-title',
       text_content: t('upload_view_actions_title'),
-      style: 'font-size: 1.2rem; margin-top: 2rem;',
     });
-    const load_ongoing_description_id = 'upload-help-resume';
-    const load_ongoing_audit_btn = window.Helpers.create_element('button', {
-      id: 'load-ongoing-audit-btn',
-      class_name: ['button', 'button-secondary'],
-      attributes: { 'aria-describedby': load_ongoing_description_id },
-      html_content:
-        `<span>${t('upload_ongoing_audit')}</span>` +
-        (window.Helpers.get_icon_svg
-          ? window.Helpers.get_icon_svg('upload_file')
-          : ''),
+    const loadOngoingAction = create_upload_action_row({
+      buttonId: 'load-ongoing-audit-btn',
+      buttonClasses: ['button', 'button--secondary'],
+      buttonText: t('upload_ongoing_audit'),
+      descriptionId: 'upload-help-resume',
+      descriptionText: t('upload_view_description_resume_audit'),
+      iconName: 'upload_file',
     });
-    const load_ongoing_description = window.Helpers.create_element('p', {
-      class_name: ['upload-action-description'],
-      attributes: { id: load_ongoing_description_id },
-      text_content: t('upload_view_description_resume_audit'),
-    });
-    const load_ongoing_block = window.Helpers.create_element('div', {
-      class_name: ['upload-action-block'],
-    });
-    load_ongoing_block.append(load_ongoing_audit_btn, load_ongoing_description);
-
-    const start_new_description_id = 'upload-help-start-new';
-    const start_new_audit_btn = window.Helpers.create_element('button', {
-      id: 'start-new-audit-btn',
-      class_name: ['button', 'button-primary'],
-      attributes: { 'aria-describedby': start_new_description_id },
-      html_content:
-        `<span>${t('start_new_audit')}</span>` +
-        (window.Helpers.get_icon_svg
-          ? window.Helpers.get_icon_svg('start_new')
-          : ''),
-    });
-    const start_new_description = window.Helpers.create_element('p', {
-      class_name: ['upload-action-description'],
-      attributes: { id: start_new_description_id },
-      text_content: t('upload_view_description_start_new'),
-    });
-    const start_new_block = window.Helpers.create_element('div', {
-      class_name: ['upload-action-block'],
-    });
-    start_new_block.append(start_new_audit_btn, start_new_description);
-
-    const actions_container = window.Helpers.create_element('div', {
-      class_name: ['upload-action-stack'],
-    });
-    actions_container.append(load_ongoing_block, start_new_block);
-
-    const section_separator = window.Helpers.create_element('hr', {
-      style: 'margin: 2rem 0;',
+    const startNewAction = create_upload_action_row({
+      buttonId: 'start-new-audit-btn',
+      buttonClasses: ['button', 'button--primary'],
+      buttonText: t('start_new_audit'),
+      descriptionId: 'upload-help-start-new',
+      descriptionText: t('upload_view_description_start_new'),
+      iconName: 'start_new',
     });
 
-    const edit_section_title = window.Helpers.create_element('h2', {
+    const upload_action_group = Helpers_create_element('div', {
+      class_name: ['upload-action-group'],
+    });
+    upload_action_group.append(loadOngoingAction.row, startNewAction.row);
+    actions_section.append(actions_title, upload_action_group);
+
+    const edit_section = Helpers_create_element('section', {
+      class_name: ['section', 'upload-section'],
+    });
+    const edit_section_title = Helpers_create_element('h2', {
+      class_name: 'upload-section-title',
       text_content: t('upload_view_title_edit'),
-      style: 'font-size: 1.2rem; margin-top: 2.5rem;',
+    });
+    const edit_action_row = Helpers_create_element('div', {
+      class_name: ['upload-edit-row'],
     });
     const edit_description_id = 'upload-help-edit';
-    const edit_rulefile_btn = window.Helpers.create_element('button', {
+    const edit_rulefile_btn = Helpers_create_element('button', {
       id: 'edit-rulefile-btn',
-      class_name: ['button', 'button-default'],
-      attributes: { 'aria-describedby': edit_description_id },
+      class_name: ['button', 'button--ghost'],
+      attributes: { 'aria-describedby': edit_description_id, type: 'button' },
       html_content:
         `<span>${t('upload_view_button_edit')}</span>` +
         (window.Helpers.get_icon_svg
           ? window.Helpers.get_icon_svg('edit')
           : ''),
     });
-    const edit_description = window.Helpers.create_element('p', {
+    const edit_description = Helpers_create_element('p', {
       class_name: ['upload-action-description'],
       attributes: { id: edit_description_id },
       text_content: t('upload_view_description_edit_rulefile'),
     });
-    const edit_block = window.Helpers.create_element('div', {
-      class_name: ['upload-action-block'],
-    });
-    edit_block.append(edit_rulefile_btn, edit_description);
+    edit_action_row.append(edit_rulefile_btn, edit_description);
+    edit_section.append(edit_section_title, edit_action_row);
 
-    rule_file_input_for_audit = window.Helpers.create_element('input', {
+    rule_file_input_for_audit = Helpers_create_element('input', {
       id: 'rule-file-input-audit',
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
-    saved_audit_input_element = window.Helpers.create_element('input', {
+    saved_audit_input_element = Helpers_create_element('input', {
       id: 'saved-audit-input',
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
-    rule_file_input_for_edit = window.Helpers.create_element('input', {
+    rule_file_input_for_edit = Helpers_create_element('input', {
       id: 'rule-file-input-edit',
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
 
-    // Lägg till allt innehåll i bakgrundsplattan
     plate_element.append(
-      title,
-      intro_text,
-      actions_title,
-      actions_container,
-      section_separator,
-      edit_section_title,
-      edit_block,
+      hero_section,
+      actions_section,
+      edit_section,
       rule_file_input_for_audit,
       saved_audit_input_element,
       rule_file_input_for_edit
     );
 
-    // Lägg till bakgrundsplattan i app-container
     app_container_ref.appendChild(plate_element);
 
-    start_new_audit_btn.addEventListener('click', () =>
+    startNewAction.button.addEventListener('click', () =>
       rule_file_input_for_audit.click()
     );
     rule_file_input_for_audit.addEventListener(
@@ -362,7 +370,7 @@ export const UploadViewComponent = (function () {
       handle_audit_rule_file_select
     );
 
-    load_ongoing_audit_btn.addEventListener('click', () =>
+    loadOngoingAction.button.addEventListener('click', () =>
       saved_audit_input_element.click()
     );
     saved_audit_input_element.addEventListener(

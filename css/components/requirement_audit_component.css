@@ -60,12 +60,13 @@
 .requirement-audit-header .overall-requirement-status-display {
     font-size: 1rem;
     font-weight: 500;
-    margin-top: 0.75rem; /* Lite utrymme från standardreferensen */
+    margin-top: 0.75rem;
     margin-bottom: 1.5rem;
-    padding: 0.75rem 1rem; /* Mer padding */
-    border: 2px solid var(--border-color); /* Samma ram-tjocklek som kravkort */
-    border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--plate-background-color);
+    box-shadow: inset 0 0 0 1px var(--border-color);
 }
 
 [data-theme="dark"] .requirement-audit-header .overall-requirement-status-display {
@@ -88,12 +89,11 @@
 
 .audit-section h2 {
     font-size: 1.3rem;
-    color: var(--primary-color);
+    color: var(--link-color);
     font-weight: 500;
-    margin-bottom: 0.51rem;
-    padding-bottom: 0.0rem;
-    border-bottom: 1px dashed var(--secondary-color);
-    text-transform: none;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0;
+    border-bottom: 1px solid var(--border-color);
     letter-spacing: normal;
 }
 
@@ -185,28 +185,25 @@
 
 .check-item {
     padding: 1.25rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     border: 1px solid var(--border-color);
-    border-left-width: 5px;
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
-    transition: border-color 0.3s ease;
+    border-radius: var(--radius-md);
     background-color: var(--plate-background-color);
-}
-
-.check-item.status-not_audited {
-    border-left-color: var(--border-color);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .check-item.status-passed {
-    border-left-color: var(--success-color);
+    border-color: var(--success-color);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
 }
 
 .check-item.status-failed {
-    border-left-color: var(--danger-color);
+    border-color: var(--danger-color);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
 }
 
 .check-item.status-partially_audited {
-    border-left-color: var(--warning-color);
+    border-color: var(--warning-color);
 }
 
 [data-theme="dark"] .check-item {
@@ -321,9 +318,9 @@
 .pass-criterion-item {
     padding: 1rem;
     margin-bottom: 1rem;
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--plate-background-color);
 }
 
 [data-theme="dark"] .pass-criterion-item {
@@ -398,6 +395,81 @@
 .pass-criterion-actions .button-danger:not(.active) {
     border-color: var(--button-danger-border);
     color: var(--button-danger-text);
+}
+
+.requirement-view-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.requirement-view-hero__row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.requirement-view-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.requirement-view-section {
+    margin-bottom: 1.5rem;
+}
+
+.requirement-view-section .audit-section h2 {
+    font-size: 1.2rem;
+}
+
+.requirement-view-nav {
+    margin-bottom: 1.25rem;
+}
+
+.requirement-view-nav .button {
+    min-width: 200px;
+}
+
+.requirement-edit-hero {
+    margin-bottom: 1rem;
+}
+
+.requirement-edit-hero h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: var(--link-color);
+}
+
+.requirement-edit-form-section {
+    margin-top: 1.5rem;
+}
+
+.requirement-edit-actions-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border-color);
+}
+
+.requirement-edit-actions-section .form-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.checks-container,
+.checks-container-edit {
+    margin-top: 1.5rem;
+}
+
+.requirement-view-hero .button,
+.requirement-view-actions .button {
+    min-width: 140px;
 }
 
 /* Hover-effekt för inaktiva knappar (blir solida) */

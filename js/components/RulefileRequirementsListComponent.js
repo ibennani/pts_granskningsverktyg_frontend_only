@@ -143,33 +143,44 @@ export const RulefileRequirementsListComponent = (function () {
     async function _initialRender() {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
-        plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate' });
+        plate_element_ref = Helpers_create_element('div', { class_name: ['content-plate', 'requirement-list-plate'] });
         
         if (global_message_element_ref) {
             plate_element_ref.appendChild(global_message_element_ref);
         }
 
-        // Skapa header-container med H1 och knapp på samma rad
-        const header_container = Helpers_create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;' });
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'rulefile-requirements-hero'] });
+        const header_container = Helpers_create_element('div', {
+            class_name: 'page-header-container',
+            style: 'display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;'
+        });
         
-        const h1_element = Helpers_create_element('h1', { id: 'rulefile-list-h1', attributes: { tabindex: '-1' }, text_content: t('rulefile_edit_requirements_title') });
+        const h1_element = Helpers_create_element('h1', {
+            id: 'rulefile-list-h1',
+            attributes: { tabindex: '-1' },
+            text_content: t('rulefile_edit_requirements_title')
+        });
         const add_requirement_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-primary'],
+            class_name: ['button', 'button--primary'],
             html_content: `<span>${t('add_new_requirement_button')}</span>` + Helpers_get_icon_svg('add'),
             attributes: { 'data-action': 'add-req', 'aria-label': t('add_new_requirement_button') }
         });
         
         header_container.appendChild(h1_element);
         header_container.appendChild(add_requirement_button);
-        plate_element_ref.appendChild(header_container);
-        
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_edit_requirements_intro') }));
+        hero_section.appendChild(header_container);
+        hero_section.appendChild(Helpers_create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('rulefile_edit_requirements_intro')
+        }));
+        plate_element_ref.appendChild(hero_section);
 
+        const toolbar_section = Helpers_create_element('section', { class_name: ['section', 'rulefile-requirements-toolbar-section'] });
         const toolbar_container_element = Helpers_create_element('div', { id: 'rulefile-list-toolbar-container' });
-        plate_element_ref.appendChild(toolbar_container_element);
+        toolbar_section.appendChild(toolbar_container_element);
+        plate_element_ref.appendChild(toolbar_section);
 
         results_summary_element = Helpers_create_element('p', { id: 'rulefile-list-results-summary', class_name: 'results-summary' });
-        plate_element_ref.appendChild(results_summary_element);
         
         toolbar_component_instance = RequirementListToolbarComponent;
         
@@ -210,21 +221,32 @@ export const RulefileRequirementsListComponent = (function () {
         );
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
-        plate_element_ref.appendChild(content_div_for_delegation);
+
+        const requirements_section = Helpers_create_element('section', { class_name: ['section', 'requirements-list-section'] });
+        requirements_section.appendChild(results_summary_element);
+        requirements_section.appendChild(content_div_for_delegation);
+        plate_element_ref.appendChild(requirements_section);
         
         // Flytta event delegation till plate_element_ref så den fångar alla klick inklusive header-knappen
         plate_element_ref.addEventListener('click', handle_list_click);
         // Add keyboard support for accessibility
         plate_element_ref.addEventListener('keydown', handle_list_keydown);
 
-        const bottom_actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
+        const bottom_actions_section = Helpers_create_element('section', {
+            class_name: ['section', 'rulefile-requirements-actions-section']
+        });
+        const bottom_actions_div = Helpers_create_element('div', {
+            class_name: ['form-actions'],
+            style: { marginTop: '1.5rem', justifyContent: 'flex-start' }
+        });
         const return_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
+            class_name: ['button', 'button--secondary'],
             html_content: `<span>${t('back_to_edit_options')}</span>` + Helpers_get_icon_svg('arrow_back')
         });
         return_button.addEventListener('click', () => router_ref('edit_rulefile_main'));
         bottom_actions_div.appendChild(return_button);
-        plate_element_ref.appendChild(bottom_actions_div);
+        bottom_actions_section.appendChild(bottom_actions_div);
+        plate_element_ref.appendChild(bottom_actions_section);
 
         app_container_ref.appendChild(plate_element_ref);
         is_dom_initialized = true;
@@ -395,13 +417,13 @@ export const RulefileRequirementsListComponent = (function () {
     
     function _create_requirement_list_item(req) {
         const t = Translation_t;
-        const li = Helpers_create_element('li', { class_name: 'item-list-item', style: 'flex-direction: row; justify-content: space-between; align-items: center;' });
+        const li = Helpers_create_element('li', { class_name: ['item-list-item', 'row'] });
 
-        const text_div = Helpers_create_element('div', { style: 'margin-right: 1rem; flex-grow: 1; min-width: 0;' });
+        const text_div = Helpers_create_element('div', { class_name: 'requirement-list-item__text' });
         
         // Skapa H3-container för titel-knappen
-        const title_container = Helpers_create_element('h3', { 
-            style: 'font-size: 1.1rem; margin-bottom: 0.25rem; margin: 0; padding: 0;'
+        const title_container = Helpers_create_element('h3', {
+            class_name: 'requirement-list-item__title'
         });
         
         // Skapa klickbar titel-knapp
@@ -420,22 +442,22 @@ export const RulefileRequirementsListComponent = (function () {
         text_div.appendChild(title_container);
         text_div.appendChild(Helpers_create_element('p', { style: 'font-size: 0.9rem; color: var(--text-color-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', text_content: req.standardReference?.text || '' }));
 
-        const button_group = Helpers_create_element('div', { class_name: 'sample-actions-main', style: 'flex-shrink: 0;' });
+        const button_group = Helpers_create_element('div', { class_name: ['requirement-list-item-actions'] });
 
         const view_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-default', 'button-small'],
+            class_name: ['button', 'button--ghost', 'button-small'],
             attributes: { 'data-action': 'view-req', 'data-requirement-id': req.key, 'aria-label': `${t('view_prefix')} ${req.title}` },
             html_content: `<span>${t('view_prefix')}</span>` + Helpers_get_icon_svg('visibility', [], 16)
         });
 
         const edit_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-secondary', 'button-small'],
+            class_name: ['button', 'button--secondary', 'button-small'],
             attributes: { 'data-action': 'edit-req', 'data-requirement-id': req.key, 'aria-label': `${t('edit_prefix')} ${req.title}` },
             html_content: `<span>${t('edit_prefix')}</span>` + Helpers_get_icon_svg('edit', [], 16)
         });
         
         const delete_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-danger', 'button-small'],
+            class_name: ['button', 'button--danger', 'button-small'],
             attributes: { 'data-action': 'delete-req', 'data-requirement-id': req.key, 'aria-label': `${t('delete_prefix')} ${req.title}` },
             html_content: `<span>${t('delete_prefix')}</span>` + Helpers_get_icon_svg('delete', [], 16)
         });

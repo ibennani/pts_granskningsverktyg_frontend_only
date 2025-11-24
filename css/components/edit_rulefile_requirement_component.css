@@ -19,10 +19,10 @@
 
 .edit-rulefile-requirement-view .audit-section h2 {
     font-size: 1.3rem;
-    color: var(--primary-color);
+    color: var(--link-color);
     margin-bottom: 1.25rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px dashed var(--secondary-color);
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
 [data-theme="dark"] .edit-rulefile-requirement-view .audit-section h2 {
@@ -31,12 +31,13 @@
 
 /* Styling för redigerbara kontrollpunkter */
 .check-item-edit {
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--background-color);
+    border-radius: var(--radius-md);
+    background-color: var(--plate-background-color);
     position: relative;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
 }
 
 [data-theme="dark"] .check-item-edit {

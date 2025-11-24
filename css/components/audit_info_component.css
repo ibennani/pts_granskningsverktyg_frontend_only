@@ -1,46 +1,52 @@
 /* css/components/audit_info_component.css */
 
-.audit-info-panel .info-item {
-    margin-bottom: 0.8rem;
-    word-break: break-word;
+.audit-info-panel {
+    background: var(--surface-emphasis-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-/* ÄNDRING HÄR: Använder '>' för att bara styla <strong> som är ett direkt barn */
-.audit-info-panel .info-item > strong {
-    display: block;
-    color: var(--text-color);
-    font-weight: 500;
-    margin-bottom: 0.1rem;
-    font-size: 0.9em;
-}
-
-.audit-info-panel .info-item p.value,
-.audit-info-panel .info-item div.value { /* Inkluderar div.value för markdown */
-    margin: 0;
-    color: var(--text-color-muted);
-}
-
-.audit-info-panel .info-item .value.text-muted {
-    font-style: italic;
-}
-
-/* -- REGLER FÖR RUBRIK OCH REDIGERA-KNAPP -- */
 .audit-info-panel .panel-header-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.75rem;
+}
+
+.audit-info-hero {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.audit-info-grid {
+    margin-top: 0.5rem;
+}
+
+.audit-info-panel .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px dashed var(--secondary-color);
 }
 
-.audit-info-panel .panel-header-wrapper .dashboard-panel__title {
-    margin-bottom: 0;
-    padding-bottom: 0;
-    border-bottom: none;
+.audit-info-panel .info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    word-break: break-word;
 }
 
-.audit-info-panel .edit-info-button {
-    flex-shrink: 0;
+.audit-info-panel .info-item > strong {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.audit-info-panel .info-item .value {
+    margin: 0;
+    color: var(--text-color-muted);
 }

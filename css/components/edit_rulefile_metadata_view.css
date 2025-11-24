@@ -18,10 +18,11 @@
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    border: 1px solid var(--surface-emphasis-border);
-    border-radius: 10px;
-    background: var(--surface-emphasis-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--plate-background-color);
     padding: 1.75rem;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
 }
 
 .form-section h2 {
@@ -100,10 +101,11 @@
 }
 
 .editable-card {
-    border: 1px dashed var(--border-color);
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
     padding: 1.25rem;
-    background: var(--surface-emphasis-bg);
+    background: var(--plate-background-color);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
     display: flex;
     flex-direction: column;
     gap: 1rem;

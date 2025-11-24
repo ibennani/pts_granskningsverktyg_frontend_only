@@ -187,14 +187,14 @@ export const SampleListComponent = (function () {
             if (can_edit_or_delete) {
                  if (on_edit_callback) {
                     main_actions_div.appendChild(create_element('button', {
-                        class_name: ['button', 'button-secondary', 'button-small'],
+                    class_name: ['button', 'button-secondary', 'button--secondary', 'button-small'],
                         attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
                         html_content: `<span>${t('edit_sample')}</span>` + (get_icon_svg ? get_icon_svg('edit', ['currentColor'], 16) : '')
                     }));
                  }
                  if (on_delete_callback && state.samples.length > 1) {
                     delete_actions_div.appendChild(create_element('button', {
-                        class_name: ['button', 'button-danger', 'button-small'],
+                    class_name: ['button', 'button-danger', 'button--ghost', 'button-small'],
                         attributes: { 'data-action': 'delete-sample', 'aria-label': `${t('delete_sample')}: ${sample.description}` },
                         html_content: `<span>${t('delete_sample')}</span>` + (get_icon_svg ? get_icon_svg('delete', ['currentColor'], 16) : '')
                     }));
@@ -203,7 +203,7 @@ export const SampleListComponent = (function () {
 
             if (total_relevant_reqs > 0) {
                 main_actions_div.appendChild(create_element('button', {
-                    class_name: ['button', 'button-secondary', 'button-small'],
+                    class_name: ['button', 'button-secondary', 'button--secondary', 'button-small'],
                     attributes: { 'data-action': 'view-requirements', 'aria-label': `${t('view_all_requirements_button')}: ${sample.description}` },
                     html_content: `<span>${t('view_all_requirements_button')}</span>` + (get_icon_svg ? get_icon_svg('list', ['currentColor'], 16) : '')
                 }));
@@ -213,7 +213,7 @@ export const SampleListComponent = (function () {
                 const first_incomplete = find_first_incomplete_requirement_key_for_sample(state.ruleFileContent, sample);
                 if (first_incomplete) {
                     main_actions_div.appendChild(create_element('button', {
-                        class_name: ['button', 'button-primary', 'button-small'],
+                    class_name: ['button', 'button-primary', 'button--primary', 'button-small'],
                         attributes: { 'data-action': 'review-sample', 'aria-label': `${t('audit_next_incomplete_requirement')}: ${sample.description}` },
                         html_content: `<span>${t('audit_next_incomplete_requirement')}</span>` + (get_icon_svg ? get_icon_svg('audit_sample', ['currentColor'], 16) : '')
                     }));

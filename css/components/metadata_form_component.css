@@ -1,55 +1,77 @@
-/* Styles for the reusable MetadataFormComponent */
-
-/* Innehåller nu stylingen som tidigare låg i metadata_view_component.css */
-/* Notera: .metadata-view-plate har bytts ut mot en mer generell .metadata-form-plate */
-
-.metadata-form-plate {
-    background-color: var(--plate-background-color);
-    padding: 1.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    /* Skugga hanteras av global CSS för .content-plate */
+.metadata-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.metadata-form-plate h1 {
-    margin-bottom: 0.5rem;
+.metadata-form-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
 }
 
-.metadata-form-plate .view-intro-text {
-    margin-bottom: 1.5rem;
+.metadata-form-hero h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--link-color);
+}
+
+.metadata-form-hero .view-intro-text {
+    margin: 0;
     font-size: 1rem;
     color: var(--text-color-muted);
 }
 
-.metadata-form-container .form-group {
-    margin-bottom: 1.25rem; 
+.metadata-form-container.section,
+.metadata-form-container.metadata-form-section {
+    padding: 1.25rem;
+    border-radius: var(--radius-lg);
+    background: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
-.metadata-form-container .form-label {
-    font-weight: 500; 
-    display: block;
-    margin-bottom: 0.375rem;
-}
-
-.metadata-form-container .form-control {
-    border-width: 1px;
-    border-color: var(--border-color);
-    padding: 0.625rem 0.875rem;
-    background-color: var(--input-background-color);
-    color: var(--text-color);
-}
-[data-theme="dark"] .metadata-form-container .form-control {
-    border-color: var(--border-color);
-}
-
-.metadata-form-container .form-control:focus {
-    border-color: var(--border-color);
-}
-
-/* Actions are now part of the form component itself */
-.metadata-form-container .form-actions {
-    margin-top: 2rem;
+.metadata-form-field {
     display: flex;
-    justify-content: flex-end; 
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.metadata-form-field label {
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 0.95rem;
+}
+
+.metadata-form-field .form-control {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--plate-background-color);
+    color: var(--color-text);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metadata-form-field .form-control:focus {
+    border-color: var(--color-primary-bg);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(22, 28, 70, 0.2);
+}
+
+.metadata-form-container .form-actions {
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+    .metadata-form-container .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .metadata-form-container .form-actions .button {
+        width: 100%;
+    }
 }

@@ -3,6 +3,8 @@
 export const ConfirmSampleEditViewComponent = (function () {
     'use-strict';
 
+    const CSS_PATH = 'css/components/confirm_sample_edit_view_component.css';
+
     let app_container_ref;
     let router_ref;
     
@@ -11,7 +13,7 @@ export const ConfirmSampleEditViewComponent = (function () {
     let local_StoreActionTypes;
 
     let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html;
+    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_load_css;
     let NotificationComponent_show_global_message, NotificationComponent_get_global_message_element_reference;
 
     let plate_element_ref;
@@ -22,6 +24,7 @@ export const ConfirmSampleEditViewComponent = (function () {
         Helpers_create_element = window.Helpers?.create_element;
         Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
         Helpers_escape_html = window.Helpers?.escape_html;
+        Helpers_load_css = window.Helpers?.load_css;
         NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;
         NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
     }
@@ -33,6 +36,15 @@ export const ConfirmSampleEditViewComponent = (function () {
         local_getState = _getState;
         local_dispatch = _dispatch;
         local_StoreActionTypes = _StoreActionTypes;
+
+        if (Helpers_load_css) {
+            try {
+                const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
+                if (!link_tag) await Helpers_load_css(CSS_PATH);
+            } catch (error) {
+                console.warn('[ConfirmSampleEditViewComponent] Failed to load CSS:', error);
+            }
+        }
     }
 
     function handle_confirm_and_save() {
@@ -85,24 +97,29 @@ export const ConfirmSampleEditViewComponent = (function () {
         }
 
         if (!pending_changes) {
-            plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
-            plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('error_no_pending_sample_changes') }));
+            const empty_section = Helpers_create_element('section', { class_name: ['section', 'confirm-sample-edit-section'] });
+            empty_section.appendChild(Helpers_create_element('h1', { class_name: 'section-header', text_content: t('error_internal') }));
+            empty_section.appendChild(Helpers_create_element('p', { text_content: t('error_no_pending_sample_changes') }));
             const back_button = Helpers_create_element('button', {
-                class_name: ['button', 'button-default'],
+                class_name: ['button', 'button--secondary'],
                 text_content: t('back_to_audit_overview')
             });
             back_button.addEventListener('click', () => router_ref('audit_overview'));
-            plate_element_ref.appendChild(back_button);
+            const actions = Helpers_create_element('div', { class_name: ['form-actions', 'confirm-sample-edit-actions'] });
+            actions.appendChild(back_button);
+            empty_section.appendChild(actions);
+            plate_element_ref.appendChild(empty_section);
             return;
         }
 
-        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: t('sample_edit_confirm_dialog_title') }));
+        const section = Helpers_create_element('section', { class_name: ['section', 'confirm-sample-edit-section'] });
+        section.appendChild(Helpers_create_element('h1', { class_name: 'section-header', text_content: t('sample_edit_confirm_dialog_title') }));
 
         const { added_reqs, removed_reqs, data_will_be_lost } = pending_changes.analysis;
         const rule_file = current_state.ruleFileContent;
 
         const render_req_list = (req_ids) => {
-            const ul = Helpers_create_element('ul', { class_name: 'report-list' });
+            const ul = Helpers_create_element('ul', { class_name: 'confirm-sample-edit-report' });
             req_ids.forEach(id => {
                 const req = rule_file.requirements[id];
                 if (req) {
@@ -113,36 +130,33 @@ export const ConfirmSampleEditViewComponent = (function () {
             return ul;
         };
 
-        if (added_reqs.length > 0) {
-            const section = Helpers_create_element('div', { class_name: 'report-section' });
-            section.appendChild(Helpers_create_element('h3', { text_content: t('sample_edit_confirm_added_reqs_header') }));
-            section.appendChild(render_req_list(added_reqs));
-            plate_element_ref.appendChild(section);
-        }
+        const addReportSection = (titleKey, reqIds) => {
+            if (!reqIds.length) return;
+            const report = Helpers_create_element('div', { class_name: 'confirm-sample-edit-report' });
+            report.appendChild(Helpers_create_element('h3', { text_content: t(titleKey) }));
+            report.appendChild(render_req_list(reqIds));
+            section.appendChild(report);
+        };
 
-        if (removed_reqs.length > 0) {
-            const section = Helpers_create_element('div', { class_name: 'report-section' });
-            section.appendChild(Helpers_create_element('h3', { text_content: t('sample_edit_confirm_removed_reqs_header') }));
-            section.appendChild(render_req_list(removed_reqs));
-            plate_element_ref.appendChild(section);
-        }
-        
+        addReportSection('sample_edit_confirm_added_reqs_header', added_reqs);
+        addReportSection('sample_edit_confirm_removed_reqs_header', removed_reqs);
+
         if (data_will_be_lost) {
-            const warning_div = Helpers_create_element('div', { style: 'margin-top: 1rem; padding: 1rem; border: 2px solid var(--danger-color); border-radius: var(--border-radius); background-color: var(--danger-color-light);' });
+            const warning_div = Helpers_create_element('div', { class_name: 'confirm-sample-edit-warning' });
             warning_div.appendChild(Helpers_create_element('h4', { 
                 html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('warning', ['var(--danger-color)']) + ' ' : '') + t('sample_edit_confirm_data_loss_warning_header')
             }));
             warning_div.appendChild(Helpers_create_element('p', { text_content: t('sample_edit_confirm_data_loss_warning_text') }));
-            plate_element_ref.appendChild(warning_div);
+            section.appendChild(warning_div);
         }
 
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
+        const actions_div = Helpers_create_element('div', { class_name: ['form-actions', 'confirm-sample-edit-actions'] });
         const confirm_btn = Helpers_create_element('button', { 
-            class_name: ['button', 'button-primary'], 
+            class_name: ['button', 'button--primary'], 
             text_content: t('sample_edit_confirm_action_button') 
         });
         const discard_btn = Helpers_create_element('button', { 
-            class_name: ['button', 'button-danger'], 
+            class_name: ['button', 'button--secondary'], 
             text_content: t('sample_edit_discard_action_button') 
         });
 
@@ -150,7 +164,8 @@ export const ConfirmSampleEditViewComponent = (function () {
         discard_btn.addEventListener('click', handle_discard_and_return);
 
         actions_div.append(confirm_btn, discard_btn);
-        plate_element_ref.appendChild(actions_div);
+        section.appendChild(actions_div);
+        plate_element_ref.appendChild(section);
     }
 
     function destroy() {

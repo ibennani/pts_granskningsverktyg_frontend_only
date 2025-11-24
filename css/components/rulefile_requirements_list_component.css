@@ -38,3 +38,98 @@
     outline-offset: 2px;
 }
 
+.requirements-list-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.item-list-item {
+    background: var(--surface-emphasis-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.requirement-list-item__text {
+    flex: 1;
+    min-width: 0;
+}
+
+.requirement-list-item__title {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+.requirement-list-item__title a {
+    color: inherit;
+}
+
+.requirement-list-item__meta {
+    margin: 0.35rem 0 0;
+    color: var(--text-color-muted);
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.requirement-list-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.requirement-list-item-actions .button {
+    border-radius: var(--radius-md);
+}
+
+.results-summary {
+    font-size: 0.95rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .item-list-item {
+        padding: 0.85rem;
+    }
+
+    .item-list-item .sample-actions-main {
+        justify-content: flex-start;
+    }
+}
+
+.rulefile-requirements-hero {
+    margin-bottom: 1rem;
+}
+
+.rulefile-requirements-hero .view-intro-text {
+    margin: 0;
+    color: var(--text-color-muted);
+}
+
+.rulefile-requirements-toolbar-section {
+    margin-bottom: 1.25rem;
+}
+
+.rulefile-requirements-actions-section {
+    margin-top: 1.5rem;
+}
+

@@ -1,0 +1,18 @@
+
+.confirm-delete-criterion-panel {
+    background: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.04);
+}
+
+.confirm-delete-criterion-panel p {
+    margin: 0 0 0.75rem;
+    color: var(--color-text);
+}
+
+.confirm-delete-criterion-panel .button {
+    margin-right: 0.6rem;
+}
+

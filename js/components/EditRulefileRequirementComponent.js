@@ -476,38 +476,45 @@ export const EditRulefileRequirementComponent = (function () {
     
     function _create_action_buttons(position) {
         const t = Translation_t;
-        const actions_div = Helpers_create_element('div', { 
-            class_name: 'form-actions', 
-            style: { 
-                marginTop: position === 'top' ? '1.5rem' : '2rem',
-                marginBottom: position === 'top' ? '2rem' : '0',
-                paddingBottom: position === 'top' ? '1.5rem' : '0',
-                borderBottom: position === 'top' ? '1px dashed var(--secondary-color)' : 'none'
-            } 
+        const actions_section = Helpers_create_element('section', {
+            class_name: ['section', 'requirement-edit-actions-section'],
+            style: {
+                paddingTop: position === 'top' ? '0.75rem' : '1rem',
+                marginTop: position === 'top' ? '1.25rem' : '1.75rem'
+            }
+        });
+        const actions_div = Helpers_create_element('div', {
+            class_name: 'form-actions',
+            style: {
+                marginTop: 0,
+                marginBottom: 0,
+                borderBottom: 'none'
+            }
         });
         
         const save_button = Helpers_create_element('button', {
             type: 'submit',
-            class_name: ['button', 'button-primary'],
+            class_name: ['button', 'button--primary'],
             html_content: `<span>${t('save_changes_button')}</span>` + Helpers_get_icon_svg('save')
         });
 
         const cancel_button = Helpers_create_element('button', {
             type: 'button',
-            class_name: ['button', 'button-default'],
+            class_name: ['button', 'button--secondary'],
             html_content: `<span>${t('cancel_and_return_to_list')}</span>`
         });
         cancel_button.addEventListener('click', () => router_ref('rulefile_requirements'));
         
         actions_div.append(save_button, cancel_button);
-        return actions_div;
+        actions_section.appendChild(actions_div);
+        return actions_section;
     }
     
     function _create_classification_section(metadata, classifications) {
         const t = Translation_t;
         const fragment = document.createDocumentFragment();
         
-        const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
+        const section_wrapper = Helpers_create_element('section', { class_name: ['section', 'audit-section'] });
         section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('classification_title') }));
         section_wrapper.appendChild(_create_form_group('main_category_text', 'mainCategoryText', metadata?.mainCategory?.text));
         section_wrapper.appendChild(_create_form_group('sub_category_text', 'subCategoryText', metadata?.subCategory?.text));
@@ -517,7 +524,7 @@ export const EditRulefileRequirementComponent = (function () {
         const pour_taxonomy = current_state.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
         
         if (pour_taxonomy && pour_taxonomy.concepts) {
-            const pour_section = Helpers_create_element('div', { class_name: 'audit-section' });
+            const pour_section = Helpers_create_element('section', { class_name: ['section', 'audit-section'] });
             const fieldset = Helpers_create_element('div', { class_name: 'classification-group' });
             const legend_text = t('wcag_principles_title');
             pour_section.appendChild(Helpers_create_element('h2', { text_content: legend_text }));
@@ -548,7 +555,7 @@ export const EditRulefileRequirementComponent = (function () {
 
     function _create_impact_section(metadata) {
         const t = Translation_t;
-        const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
+        const section_wrapper = Helpers_create_element('section', { class_name: ['section', 'audit-section'] });
         section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('impact_title') }));
         
         const impact_group = Helpers_create_element('div', { class_name: 'impact-group' });
@@ -612,7 +619,7 @@ export const EditRulefileRequirementComponent = (function () {
 
     function _create_content_types_section(all_content_types, selected_content_types) {
         const t = Translation_t;
-        const section_wrapper = Helpers_create_element('div', { class_name: 'audit-section' });
+        const section_wrapper = Helpers_create_element('section', { class_name: ['section', 'audit-section'] });
         section_wrapper.appendChild(Helpers_create_element('h2', { text_content: t('content_types_section_title') }));
         section_wrapper.addEventListener('change', _handle_content_type_change);
 
@@ -670,14 +677,14 @@ export const EditRulefileRequirementComponent = (function () {
         
         form_element_ref.appendChild(_create_action_buttons('top'));
 
-        const basic_info_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        const basic_info_section = Helpers_create_element('section', { class_name: ['section', 'audit-section'] });
         basic_info_section.appendChild(Helpers_create_element('h2', { text_content: t('requirement_general_info_title') }));
         basic_info_section.appendChild(_create_form_group('requirement_title', 'title', local_requirement_data.title));
         basic_info_section.appendChild(_create_form_group('requirement_standard_reference_text', 'standardReferenceText', local_requirement_data.standardReference?.text));
         basic_info_section.appendChild(_create_form_group('requirement_standard_reference_url', 'standardReferenceUrl', local_requirement_data.standardReference?.url));
         form_element_ref.appendChild(basic_info_section);
         
-        const help_texts_section = Helpers_create_element('div', { class_name: 'audit-section' });
+        const help_texts_section = Helpers_create_element('section', { class_name: ['section', 'audit-section'] });
         help_texts_section.appendChild(Helpers_create_element('h2', { text_content: t('help_texts_title') }));
         help_texts_section.appendChild(_create_form_group('requirement_expected_observation', 'expectedObservation', local_requirement_data.expectedObservation, true));
         help_texts_section.appendChild(_create_form_group('requirement_instructions', 'instructions', local_requirement_data.instructions, true));
@@ -687,7 +694,7 @@ export const EditRulefileRequirementComponent = (function () {
         help_texts_section.appendChild(_create_form_group('requirement_examples', 'examples', local_requirement_data.examples, true));
         form_element_ref.appendChild(help_texts_section);
         
-        const checks_container_wrapper = Helpers_create_element('div', { class_name: 'checks-container-edit' });
+        const checks_container_wrapper = Helpers_create_element('section', { class_name: ['section', 'checks-container-edit'] });
         form_element_ref.appendChild(checks_container_wrapper);
         _rerender_checks_section(options);
         _apply_flip_animation(previous_layout, options.animateInfo);
@@ -740,7 +747,12 @@ export const EditRulefileRequirementComponent = (function () {
             checks_section.appendChild(check_el);
         });
 
-        const add_check_button = Helpers_create_element('button', { type: 'button', class_name: ['button', 'button-primary'], attributes: { 'data-action': 'add-check' }, text_content: t('add_check_button') });
+        const add_check_button = Helpers_create_element('button', {
+            type: 'button',
+            class_name: ['button', 'button--primary'],
+            attributes: { 'data-action': 'add-check' },
+            text_content: t('add_check_button')
+        });
         checks_section.appendChild(add_check_button);
 
         _apply_animation_info(options.animateInfo);
@@ -1241,8 +1253,10 @@ export const EditRulefileRequirementComponent = (function () {
         const page_title = is_new_requirement 
             ? t('rulefile_add_requirement_title')
             : `${t('rulefile_edit_requirement_title')}: ${local_requirement_data.title}`;
-        plate_element.appendChild(Helpers_create_element('h1', { text_content: page_title }));
-        
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'requirement-edit-hero'] });
+        hero_section.appendChild(Helpers_create_element('h1', { text_content: page_title }));
+        plate_element.appendChild(hero_section);
+
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);
         form_element_ref.addEventListener('click', handle_form_click);
@@ -1250,7 +1264,9 @@ export const EditRulefileRequirementComponent = (function () {
         
         _rerender_all_sections();
         
-        plate_element.appendChild(form_element_ref);
+        const form_section_wrapper = Helpers_create_element('section', { class_name: ['section', 'requirement-edit-form-section'] });
+        form_section_wrapper.appendChild(form_element_ref);
+        plate_element.appendChild(form_section_wrapper);
         app_container_ref.appendChild(plate_element);
 
         setTimeout(() => {

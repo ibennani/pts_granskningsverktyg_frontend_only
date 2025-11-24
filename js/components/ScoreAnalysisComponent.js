@@ -97,41 +97,60 @@ export const ScoreAnalysisComponent = (function () {
             return;
         }
 
-        const main_container = Helpers.create_element('div', { class_name: 'score-analysis-content' });
+        const section = Helpers.create_element('section', {
+            class_name: ['section', 'score-analysis-section']
+        });
+        const hero_section = Helpers.create_element('div', { class_name: 'score-analysis-hero' });
+        hero_section.appendChild(Helpers.create_element('h2', {
+            class_name: 'score-analysis-section__main-title',
+            text_content: t('deficiency_index_title', { defaultValue: "Deficiency Index" })
+        }));
+        hero_section.appendChild(Helpers_create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('deficiency_index_summary_intro', { defaultValue: "A lower score indicates fewer deficiencies." })
+        }));
+        section.appendChild(hero_section);
+        section.appendChild(Helpers.create_element('div', { class_name: 'score-analysis-section__divider' }));
 
         const totalScoreContainer = Helpers.create_element('div', { class_name: 'score-analysis-total' });
-        
-        totalScoreContainer.appendChild(Helpers.create_element('h3', { 
-            class_name: 'score-analysis-total__title',
-            text_content: t('deficiency_index_title', {defaultValue: "Deficiency Index"})
+        totalScoreContainer.appendChild(Helpers.create_element('p', {
+            class_name: 'score-analysis-section__group-title',
+            text_content: t('deficiency_index_summary', { defaultValue: "Current score" })
         }));
 
         const scoreVisualization = Helpers.create_element('div', { class_name: 'score-analysis-total__visualization' });
-        
         const gaugeWrapper = Helpers.create_element('div', { class_name: 'score-gauge-wrapper' });
         gaugeWrapper.innerHTML = _createGaugeSVG(analysis.totalScore, lang_code);
-        
+
         const scoreContext = Helpers.create_element('div', { class_name: 'score-analysis-total__context' });
-        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('lower_is_better', {defaultValue: "Lower is better"})})` }));
-        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: t('based_on_samples', { count: analysis.sampleCount, defaultValue: `Based on ${analysis.sampleCount} audited samples.`}) }));
-        
+        scoreContext.appendChild(Helpers.create_element('p', {
+            class_name: 'score-analysis-total__subtext',
+            text_content: `(${t('lower_is_better', { defaultValue: "Lower is better" })})`
+        }));
+        scoreContext.appendChild(Helpers.create_element('p', {
+            class_name: 'score-analysis-total__info',
+            text_content: t('based_on_samples', {
+                count: analysis.sampleCount,
+                defaultValue: `Based on ${analysis.sampleCount} audited samples.`
+            })
+        }));
+
         scoreVisualization.appendChild(gaugeWrapper);
         scoreVisualization.appendChild(scoreContext);
         totalScoreContainer.appendChild(scoreVisualization);
-        main_container.appendChild(totalScoreContainer);
+        section.appendChild(totalScoreContainer);
 
         const principlesContainer = Helpers.create_element('div', { class_name: 'score-analysis-principles' });
-        principlesContainer.appendChild(Helpers.create_element('h3', { 
-            class_name: 'score-analysis-principles__title',
-            text_content: t('score_by_principle_deficiency', {defaultValue: "Breakdown by Principle"})
+        principlesContainer.appendChild(Helpers.create_element('p', {
+            class_name: 'score-analysis-section__group-title',
+            text_content: t('score_by_principle_deficiency', { defaultValue: "Breakdown by Principle" })
         }));
-
         const dl = Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
 
         for (const principleId in analysis.principles) {
             const data = analysis.principles[principleId];
             
-            const row = Helpers.create_element('div', { class_name: 'principle-row' });
+            const row = Helpers.create_element('div', { class_name: ['principle-row', 'row'] });
             const dt = Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: data.label });
             
             const dd = Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
@@ -161,8 +180,8 @@ export const ScoreAnalysisComponent = (function () {
         }
         
         principlesContainer.appendChild(dl);
-        main_container.appendChild(principlesContainer);
-        container_ref.appendChild(main_container);
+        section.appendChild(principlesContainer);
+        container_ref.appendChild(section);
     }
 
     function destroy() {

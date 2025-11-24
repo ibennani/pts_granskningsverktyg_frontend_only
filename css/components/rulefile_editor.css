@@ -1,19 +1,98 @@
 /* css/components/rulefile_editor.css */
 
-.editor-nav-buttons {
+.rulefile-editor-hero {
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.rulefile-editor-hero h1 {
+    margin: 0;
+    font-size: 1.75rem;
+    color: var(--link-color);
+}
+
+.rulefile-editor-hero .view-intro-text {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text-color-muted);
+}
+
+.rulefile-editor-nav-row {
+    display: flex;
     flex-wrap: wrap;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--border-color);
+    gap: 0.75rem;
+}
+
+.rulefile-editor-content-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.rulefile-editor-subview {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+}
+
+.rulefile-editor-subview .view-intro-text {
+    margin: 0;
+}
+
+.rulefile-editor-subview .section {
+    margin: 0;
+}
+
+.rulefile-editor-subview .button {
+    min-width: 140px;
+}
+
+.rulefile-editor-subview .cf-status-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.rulefile-editor-content-section .rulefile-editor-subview {
+    padding-top: 0;
+}
+
+.rulefile-editor-nav-row .button {
+    min-width: 160px;
+    flex: none;
+}
+
+.rulefile-editor-nav-row .button:hover,
+.rulefile-editor-nav-row .button:focus {
+    border-color: var(--color-primary-bg);
+}
+
+.rulefile-editor-content-section .rulefile-editor-subview {
+    margin-top: 0;
+}
+
+@media (max-width: 640px) {
+    .rulefile-editor-nav-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .rulefile-editor-nav-row .button {
+        width: 100%;
+    }
 }
 
 .rulefile-editor-section fieldset {
     margin-top: 1.5rem;
     padding: 1.5rem;
-    border: 2px solid var(--secondary-color);
-    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--plate-background-color);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.05);
 }
 
 .rulefile-editor-section h3,
@@ -27,7 +106,7 @@
 .rulefile-editor-section fieldset > h3 {
     font-size: 1.2rem;
     font-weight: 500;
-    color: var(--primary-color-dark);
+    color: var(--link-color);
     margin: -2.5rem 0 1rem 0;
     background-color: var(--plate-background-color);
     display: inline-block;
@@ -71,13 +150,14 @@
 /* --- UPDATED PASS CRITERION STYLES --- */
 
 .pass-criterion-item {
-    display: flex; /* Changed from relative */
-    flex-direction: column; /* Stack header and content vertically */
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
     padding: 1rem;
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background-color: var(--plate-background-color);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .criterion-item-header {

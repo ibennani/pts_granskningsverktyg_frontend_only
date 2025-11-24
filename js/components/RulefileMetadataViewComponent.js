@@ -86,10 +86,18 @@ export const RulefileMetadataViewComponent = (function () {
     }
 
     function _create_section(title_key, content_nodes = []) {
-        const section = Helpers_create_element('section', { class_name: 'metadata-section' });
+        const section = Helpers_create_element('section', { class_name: ['section', 'rulefile-metadata-section'] });
+        const inner_container = Helpers_create_element('div', { class_name: 'rulefile-metadata-section-inner' });
+
         if (title_key) {
-            section.appendChild(Helpers_create_element('h2', { text_content: Translation_t(title_key) }));
+            inner_container.appendChild(Helpers_create_element('h2', {
+                class_name: 'rulefile-metadata-section__title',
+                text_content: Translation_t(title_key)
+            }));
         }
+
+        section.appendChild(inner_container);
+
         const valid_nodes = content_nodes.filter(Boolean);
         if (valid_nodes.length === 0) {
             return section;
@@ -100,12 +108,13 @@ export const RulefileMetadataViewComponent = (function () {
         });
 
         if (has_card_like_nodes) {
-            valid_nodes.forEach(node => section.appendChild(node));
+            valid_nodes.forEach(node => inner_container.appendChild(node));
         } else {
             const wrapper = Helpers_create_element('article', { class_name: ['metadata-card', 'metadata-section-card'] });
             valid_nodes.forEach(node => wrapper.appendChild(node));
-            section.appendChild(wrapper);
+            inner_container.appendChild(wrapper);
         }
+
         return section;
     }
 
@@ -275,10 +284,10 @@ export const RulefileMetadataViewComponent = (function () {
             plate.appendChild(global_message_element);
         }
 
-        const header_wrapper = Helpers_create_element('div', { class_name: 'metadata-header' });
+        const header_wrapper = Helpers_create_element('div', { class_name: 'rulefile-metadata-header' });
         const heading = Helpers_create_element('h1', { text_content: t('rulefile_metadata_title') });
         const edit_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-secondary', 'metadata-edit-button'],
+            class_name: ['button', 'button--secondary', 'metadata-edit-button'],
             attributes: {
                 type: 'button',
                 'aria-label': t('rulefile_metadata_edit_button_aria')
@@ -290,8 +299,13 @@ export const RulefileMetadataViewComponent = (function () {
         header_wrapper.appendChild(heading);
         header_wrapper.appendChild(edit_button);
 
-        plate.appendChild(header_wrapper);
-        plate.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_metadata_intro') }));
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'rulefile-metadata-hero'] });
+        hero_section.appendChild(header_wrapper);
+        hero_section.appendChild(Helpers_create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('rulefile_metadata_intro')
+        }));
+        plate.appendChild(hero_section);
 
         const current_state = typeof local_getState === 'function' ? local_getState() : {};
         const metadata = current_state?.ruleFileContent?.metadata;
@@ -371,14 +385,19 @@ export const RulefileMetadataViewComponent = (function () {
             });
         }
 
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
+        const actions_div = Helpers_create_element('div', {
+            class_name: ['form-actions', 'rulefile-metadata-actions'],
+            style: { justifyContent: 'flex-start' }
+        });
         const back_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
+            class_name: ['button', 'button--secondary'],
             html_content: `<span>${t('back_to_edit_options')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('arrow_back') : '')
         });
         back_button.addEventListener('click', () => router_ref('edit_rulefile_main'));
         actions_div.appendChild(back_button);
-        plate.appendChild(actions_div);
+        const actions_section = Helpers_create_element('section', { class_name: ['section', 'rulefile-metadata-actions-section'] });
+        actions_section.appendChild(actions_div);
+        plate.appendChild(actions_section);
 
         app_container_ref.appendChild(plate);
     }

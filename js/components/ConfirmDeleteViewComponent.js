@@ -101,7 +101,7 @@ export const ConfirmDeleteViewComponent = (function () {
         const t = Translation_t;
         app_container_ref.innerHTML = '';
         const plate_element = Helpers_create_element('div', { class_name: 'content-plate' });
-        
+
         const deleteType = params_ref?.type;
         const config = get_config_for_delete_type(deleteType, local_getState(), params_ref);
 
@@ -117,7 +117,7 @@ export const ConfirmDeleteViewComponent = (function () {
             if (config.focusOnSuccess === 'h1') {
                 sessionStorage.setItem('focusOnH1AfterLoad', 'true');
             } else {
-                sessionStorage.setItem('focusAfterLoad', config.focusOnSuccess); 
+                sessionStorage.setItem('focusAfterLoad', config.focusOnSuccess);
             }
             router_ref(config.returnRoute, config.returnParams || {});
         };
@@ -126,10 +126,13 @@ export const ConfirmDeleteViewComponent = (function () {
             sessionStorage.setItem('focusAfterLoad', config.focusOnCancelSelector);
             router_ref(config.returnRoute, config.returnParams || {});
         };
-        
-        plate_element.appendChild(Helpers_create_element('h1', { text_content: t(config.titleKey) }));
-        
-        const warning_box = Helpers_create_element('div', { class_name: 'warning-box' });
+
+        const content_section = Helpers_create_element('section', { class_name: ['section', 'confirm-delete-section'] });
+        const header_wrapper = Helpers_create_element('div', { class_name: 'confirm-delete-header' });
+        header_wrapper.appendChild(Helpers_create_element('h1', { text_content: t(config.titleKey) }));
+        content_section.appendChild(header_wrapper);
+
+        const warning_box = Helpers_create_element('div', { class_name: 'confirm-delete-warning' });
         let introHTML = `<p>${t(config.introKey, config.itemContext || {})}</p>`;
         if (config.itemText) {
             introHTML += `<blockquote>${Helpers_escape_html(config.itemText)}</blockquote>`;
@@ -138,24 +141,25 @@ export const ConfirmDeleteViewComponent = (function () {
             introHTML += `<p>${t(config.warningKey)}</p>`;
         }
         warning_box.innerHTML = introHTML;
-        plate_element.appendChild(warning_box);
 
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
+        const actions_div = Helpers_create_element('div', { class_name: ['form-actions', 'confirm-delete-actions'] });
 
         const confirm_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-danger'],
+            class_name: ['button', 'button--danger'],
             html_content: `<span>${t('rulefile_confirm_delete_button')}</span>` + Helpers_get_icon_svg('delete')
         });
         confirm_button.addEventListener('click', handle_confirm);
 
         const cancel_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-default'],
+            class_name: ['button', 'button--secondary'],
             html_content: `<span>${t('cancel_and_return_to_list')}</span>`
         });
         cancel_button.addEventListener('click', handle_cancel);
 
         actions_div.append(confirm_button, cancel_button);
-        plate_element.appendChild(actions_div);
+        content_section.appendChild(warning_box);
+        content_section.appendChild(actions_div);
+        plate_element.appendChild(content_section);
 
         app_container_ref.appendChild(plate_element);
     }

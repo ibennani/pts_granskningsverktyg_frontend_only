@@ -66,8 +66,9 @@ export const AuditInfoComponent = (function () {
         const t = Translation_t;
         const current_state = getState_ref();
 
-        const info_panel = Helpers_create_element('div', { class_name: 'audit-info-panel' });
+        const info_panel = Helpers_create_element('section', { class_name: ['section', 'audit-info-panel'] });
 
+        const hero_section = Helpers_create_element('div', { class_name: 'audit-info-hero' });
         const header_wrapper = Helpers_create_element('div', { class_name: 'panel-header-wrapper' });
         header_wrapper.appendChild(Helpers_create_element('h2', { 
             class_name: 'dashboard-panel__title',
@@ -76,7 +77,7 @@ export const AuditInfoComponent = (function () {
 
         if (current_state.auditStatus === 'in_progress') {
             const edit_button = Helpers_create_element('button', {
-                class_name: ['button', 'button-default', 'button-small', 'edit-info-button'],
+                class_name: ['button', 'button--secondary', 'button-small', 'edit-info-button'],
                 attributes: { 'aria-label': t('edit_audit_information') },
                 html_content: `<span>${t('edit_button_label')}</span>` + Helpers_get_icon_svg('edit', ['currentColor'], 16)
             });
@@ -86,7 +87,10 @@ export const AuditInfoComponent = (function () {
             header_wrapper.appendChild(edit_button);
         }
 
-        info_panel.appendChild(header_wrapper);
+        hero_section.appendChild(header_wrapper);
+        info_panel.appendChild(hero_section);
+
+        const info_grid = Helpers_create_element('div', { class_name: ['info-grid', 'audit-info-grid'] });
         
         const md = current_state.auditMetadata || {};
         const rf_meta = current_state.ruleFileContent.metadata || {};
@@ -94,34 +98,35 @@ export const AuditInfoComponent = (function () {
 
         // --- START OF CHANGE: Conditional Rendering Logic ---
         if (md.caseNumber) {
-            info_panel.appendChild(create_info_item('case_number', md.caseNumber));
+            info_grid.appendChild(create_info_item('case_number', md.caseNumber));
         }
 
         // Actor is mandatory, so it's always shown.
-        info_panel.appendChild(create_info_item('actor_name', md.actorName));
+        info_grid.appendChild(create_info_item('actor_name', md.actorName));
 
         if (md.actorLink) {
             const safe_link = Helpers_add_protocol_if_missing(md.actorLink);
             const link_html = `<a href="${Helpers_escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${Helpers_escape_html(md.actorLink)}</a>`;
-            info_panel.appendChild(create_info_item('actor_link', link_html, { is_html: true }));
+            info_grid.appendChild(create_info_item('actor_link', link_html, { is_html: true }));
         }
 
         if (md.auditorName) {
-            info_panel.appendChild(create_info_item('auditor_name', md.auditorName));
+            info_grid.appendChild(create_info_item('auditor_name', md.auditorName));
         }
         
         if (md.caseHandler) {
-            info_panel.appendChild(create_info_item('case_handler', md.caseHandler));
+            info_grid.appendChild(create_info_item('case_handler', md.caseHandler));
         }
         // --- END OF CHANGE ---
 
-        info_panel.appendChild(create_info_item('rule_file_title', rf_meta.title));
-        info_panel.appendChild(create_info_item('version_rulefile', rf_meta.version));
-        info_panel.appendChild(create_info_item('status', t(`audit_status_${current_state.auditStatus}`)));
-        info_panel.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_state.startTime, lang_code)));
+        info_grid.appendChild(create_info_item('rule_file_title', rf_meta.title));
+        info_grid.appendChild(create_info_item('version_rulefile', rf_meta.version));
+        info_grid.appendChild(create_info_item('status', t(`audit_status_${current_state.auditStatus}`)));
+        info_grid.appendChild(create_info_item('start_time', Helpers_format_iso_to_local_datetime(current_state.startTime, lang_code)));
         if (current_state.endTime) {
-            info_panel.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_state.endTime, lang_code)));
+            info_grid.appendChild(create_info_item('end_time', Helpers_format_iso_to_local_datetime(current_state.endTime, lang_code)));
         }
+        info_panel.appendChild(info_grid);
         
         if (md.internalComment) {
             let parsed_comment = md.internalComment;

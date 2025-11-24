@@ -268,14 +268,15 @@ export const AddSampleFormComponent = (function () {
         original_content_types_on_load = sample_data ? [...sample_data.selectedContentTypes] : [];
 
         form_container_ref.innerHTML = '';
-        form_element = Helpers.create_element('form', { class_name: 'add-sample-form' });
+        form_element = Helpers_create_element('form', { class_name: ['add-sample-form', 'section'] });
         form_element.addEventListener('submit', handle_form_submit);
         form_element.addEventListener('click', handle_button_click);
 
         // --- Category Section ---
-        form_element.appendChild(Helpers.create_element('h2', { text_content: t('sample_category_title') }));
-        category_fieldset_element = Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
-        category_fieldset_element.appendChild(Helpers.create_element('legend', { text_content: t('sample_category_title'), class_name: 'visually-hidden' }));
+        const category_section = Helpers_create_element('div', { class_name: ['section', 'add-sample-section'] });
+        category_section.appendChild(Helpers_create_element('h2', { text_content: t('sample_category_title') }));
+        category_fieldset_element = Helpers_create_element('fieldset', { class_name: 'content-type-parent-group' });
+        category_fieldset_element.appendChild(Helpers_create_element('legend', { text_content: t('sample_category_title'), class_name: 'visually-hidden' }));
         sample_categories.forEach((cat, index) => {
             const radio_id = `sample-cat-${cat.id}`;
             const radio_wrapper = Helpers.create_element('div', { class_name: ['form-check', 'content-type-child-item'] });
@@ -288,32 +289,38 @@ export const AddSampleFormComponent = (function () {
             radio_wrapper.append(radio, Helpers.create_element('label', { attributes: { for: radio_id }, text_content: cat.text }));
             category_fieldset_element.appendChild(radio_wrapper);
         });
-        form_element.appendChild(category_fieldset_element);
+        category_section.appendChild(category_fieldset_element);
+        form_element.appendChild(category_section);
 
         // --- Sample Info Section ---
-        form_element.appendChild(Helpers.create_element('h2', { text_content: t('sample_info_title')}));
-        sample_type_select = Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true }});
+        const info_section = Helpers_create_element('div', { class_name: ['section', 'add-sample-section'] });
+        info_section.appendChild(Helpers_create_element('h2', { text_content: t('sample_info_title')}));
+        sample_type_select = Helpers_create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true }});
         sample_type_select.addEventListener('change', update_description_from_sample_type);
         sample_type_select.addEventListener('change', () => { if (current_editing_sample_id) debounced_autosave_form(); });
-        description_input = Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true }});
+        description_input = Helpers_create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true }});
         description_input.addEventListener('input', () => { if (current_editing_sample_id) debounced_autosave_form(); });
         description_input.addEventListener('blur', () => { if (current_editing_sample_id) debounced_autosave_form(); });
-        url_input = Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' }});
+        url_input = Helpers_create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' }});
         url_input.addEventListener('input', () => { if (current_editing_sample_id) debounced_autosave_form(); });
         url_input.addEventListener('blur', () => { if (current_editing_sample_id) debounced_autosave_form(); });
-        url_form_group_ref = Helpers.create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleUrlInput'}, text_content: t('url') }), url_input]});
-        form_element.append(
-            Helpers.create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleTypeSelect'}, text_content: t('sample_type_label') + '*' }), sample_type_select]}),
-            Helpers.create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleDescriptionInput'}, text_content: t('description') + '*' }), description_input]}),
+        url_form_group_ref = Helpers_create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleUrlInput'}, text_content: t('url') }), url_input]});
+        const info_row = Helpers_create_element('div', { class_name: ['section-inner-row'] });
+        info_row.append(
+            Helpers_create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleTypeSelect'}, text_content: t('sample_type_label') + '*' }), sample_type_select]}),
+            Helpers_create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleDescriptionInput'}, text_content: t('description') + '*' }), description_input]}),
             url_form_group_ref
         );
+        info_section.appendChild(info_row);
+        form_element.appendChild(info_section);
         description_input.value = sample_data?.description || "";
         url_input.value = sample_data?.url || "";
 
         // --- Content Types Section ---
-        content_types_container_element = Helpers.create_element('div', { class_name: 'content-types-group' });
-        content_types_container_element.appendChild(Helpers.create_element('h2', { text_content: t('content_types')}));
-        content_types_container_element.appendChild(Helpers.create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
+        const content_section = Helpers_create_element('div', { class_name: ['section', 'add-sample-section'] });
+        content_section.appendChild(Helpers_create_element('h2', { text_content: t('content_types')}));
+        content_section.appendChild(Helpers_create_element('p', { text_content: t('content_types_instruction'), class_name: 'view-intro-text' }));
+        content_types_container_element = Helpers_create_element('div', { class_name: 'content-types-group' });
         grouped_content_types.forEach(group => {
             const fieldset = Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
             const legend = Helpers.create_element('legend');
@@ -340,11 +347,12 @@ export const AddSampleFormComponent = (function () {
         const all_child_checkboxes = content_types_container_element.querySelectorAll('input[data-child-for]');
         all_child_checkboxes.forEach(cb => { cb.checked = sample_data?.selectedContentTypes?.includes(cb.value) || false; });
         content_types_container_element.querySelectorAll('input[data-parent-id]').forEach(_updateParentCheckboxState);
-        form_element.appendChild(content_types_container_element);
+        content_section.appendChild(content_types_container_element);
+        form_element.appendChild(content_section);
 
         // --- Actions ---
-        const actions_div = Helpers.create_element('div', { class_name: 'form-actions' });
-        const save_button = Helpers.create_element('button', { class_name: ['button', 'button-primary'], attributes: { type: 'submit' }});
+        const actions_div = Helpers_create_element('div', { class_name: ['form-actions'] });
+        const save_button = Helpers_create_element('button', { class_name: ['button', 'button--primary'], attributes: { type: 'submit' }});
         const button_text = current_editing_sample_id ? t('save_changes_button') : t('save_sample_button');
         const button_span = Helpers.create_element('span', { text_content: button_text });
         save_button.appendChild(button_span);

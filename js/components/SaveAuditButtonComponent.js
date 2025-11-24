@@ -69,12 +69,20 @@ export const SaveAuditButtonComponentFactory = function () { // Ändrad till en 
         container_ref.innerHTML = ''; // Rensa container
 
         button_element = helpers_create_element_ref('button', {
-            class_name: ['button', 'button-primary'], // Primär knapp för huvudåtgärd
+            class_name: ['button', 'button--primary'],
             html_content: `<span class="button-text">${t_function_ref('save_audit_to_file')}</span>` +
                           (helpers_get_icon_svg_ref ? helpers_get_icon_svg_ref('save', ['currentColor'], 18) : '')
         });
         button_element.addEventListener('click', handle_save_click);
-        container_ref.appendChild(button_element);
+
+        const wrapper = helpers_create_element_ref('div', { class_name: ['save-audit-button-component-wrapper'] });
+        wrapper.appendChild(button_element);
+
+        const section_wrapper = helpers_create_element_ref('section', {
+            class_name: ['section', 'save-audit-button-section']
+        });
+        section_wrapper.appendChild(wrapper);
+        container_ref.appendChild(section_wrapper);
     }
 
     function destroy() {

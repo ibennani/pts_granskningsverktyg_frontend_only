@@ -55,8 +55,13 @@
 
             if (type === 'error' || type === 'warning') {
                 const close_button = create_element('button', {
-                    class_name: 'global-message-close-btn', html_content: '×',
-                    attributes: { 'aria-label': t('close'), title: t('close') }
+                    class_name: ['button', 'button--ghost', 'global-message-close-btn'],
+                    html_content: `<span aria-hidden="true">&times;</span>`,
+                    attributes: {
+                        'aria-label': t('close'),
+                        title: t('close'),
+                        type: 'button'
+                    }
                 });
                 const closeHandler = () => clear_global_message();
                 close_button.addEventListener('click', closeHandler, { once: true });
@@ -115,12 +120,14 @@
             if (window.Helpers && typeof window.Helpers.create_element === 'function' && !document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID)) {
                  global_message_element = window.Helpers.create_element('div', {
                     id: GLOBAL_MESSAGE_CONTAINER_ID,
+                    class_name: ['section', 'global-message-section'],
                     attributes: { 'aria-live': 'polite', hidden: 'true' }
                 });
             } else if (!document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID)) {
                 // Fallback om Helpers inte är redo, men detta bör inte hända.
                 global_message_element = document.createElement('div');
                 global_message_element.id = GLOBAL_MESSAGE_CONTAINER_ID;
+                global_message_element.classList.add('section', 'global-message-section');
                 global_message_element.setAttribute('aria-live', 'polite');
                 global_message_element.hidden = true;
             } else {

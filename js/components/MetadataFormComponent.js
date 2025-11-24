@@ -158,8 +158,9 @@ export const MetadataFormComponent = (function () {
 
     function create_form_field(id, label_key, type = 'text', current_value = '', is_required = false) { // Added is_required param
         const t = Translation_t;
-        const form_group = Helpers_create_element('div', { class_name: 'form-group' });
+        const form_group = Helpers_create_element('div', { class_name: ['metadata-form-field'] });
         const label = Helpers_create_element('label', {
+            class_name: 'metadata-form-label',
             attributes: { for: id },
             text_content: t(label_key)
         });
@@ -199,7 +200,15 @@ export const MetadataFormComponent = (function () {
         } = options;
 
         form_container_ref.innerHTML = '';
-        const form_wrapper = Helpers_create_element('div', { class_name: 'metadata-form-container' });
+        const hero_section = Helpers_create_element('section', { class_name: ['section', 'metadata-form-hero'] });
+        hero_section.appendChild(Helpers_create_element('h2', { text_content: Translation_t('audit_metadata_title') }));
+        hero_section.appendChild(Helpers_create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: Translation_t('metadata_form_instruction')
+        }));
+        form_container_ref.appendChild(hero_section);
+
+        const form_wrapper = Helpers_create_element('div', { class_name: ['section', 'metadata-form-container', 'metadata-form-section'] });
 
         form_element_ref = Helpers_create_element('form');
         // Use novalidate to prevent default browser bubbles, allowing our custom message to show
@@ -235,11 +244,11 @@ export const MetadataFormComponent = (function () {
             window.Helpers.init_auto_resize_for_textarea(internal_comment_input);
         }
 
-        const form_actions_wrapper = Helpers_create_element('div', { class_name: 'form-actions' });
+        const form_actions_wrapper = Helpers_create_element('div', { class_name: ['form-actions', 'metadata-form-actions'] });
         
         if (cancelButtonText && typeof on_cancel_callback === 'function') {
             const cancel_button = Helpers_create_element('button', {
-                class_name: ['button', 'button-default'],
+                class_name: ['button', 'button--secondary'],
                 attributes: { type: 'button' },
                 text_content: cancelButtonText
             });
@@ -248,7 +257,7 @@ export const MetadataFormComponent = (function () {
         }
 
         const submit_button = Helpers_create_element('button', {
-            class_name: ['button', 'button-primary'],
+            class_name: ['button', 'button--primary'],
             attributes: { type: 'submit' },
             html_content: `<span>${submitButtonText}</span>` + Helpers_get_icon_svg('arrow_forward')
         });

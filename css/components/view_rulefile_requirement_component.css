@@ -1,0 +1,24 @@
+/* Basic styling for the view-rulefile requirement view */
+.view-rulefile-requirement-plate {
+    background: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+}
+
+.view-rulefile-requirement-plate h1 {
+    margin: 0 0 0.5rem 0;
+    color: var(--link-color);
+}
+
+.view-rulefile-requirement-plate .requirement-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.view-rulefile-requirement-plate .status-tag {
+    align-self: flex-start;
+}
+

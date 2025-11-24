@@ -104,8 +104,8 @@ export const ErrorBoundaryComponent = (function () {
 
         // Försök igen-knapp (om retry callback finns)
         if (retry_callback && typeof retry_callback === 'function') {
-            const retry_button = document.createElement('button');
-            retry_button.className = 'error-boundary-retry-button';
+        const retry_button = document.createElement('button');
+        retry_button.className = 'button button--danger error-boundary-retry-button';
             retry_button.textContent = t('error_boundary_retry');
             retry_button.addEventListener('click', () => {
                 try {
@@ -124,7 +124,7 @@ export const ErrorBoundaryComponent = (function () {
 
         // Ladda om sidan-knapp
         const reload_button = document.createElement('button');
-        reload_button.className = 'error-boundary-reload-button';
+        reload_button.className = 'button button--ghost error-boundary-reload-button';
         reload_button.textContent = t('error_boundary_reload_page');
         reload_button.addEventListener('click', () => {
             window.location.reload();
@@ -133,7 +133,7 @@ export const ErrorBoundaryComponent = (function () {
 
         // Gå tillbaka-knapp
         const back_button = document.createElement('button');
-        back_button.className = 'error-boundary-back-button';
+        back_button.className = 'button button--secondary error-boundary-back-button';
         back_button.textContent = t('error_boundary_go_back');
         back_button.addEventListener('click', () => {
             if (window.history.length > 1) {
