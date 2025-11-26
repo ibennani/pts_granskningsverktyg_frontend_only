@@ -105,7 +105,7 @@ export const ScoreAnalysisComponent = (function () {
             class_name: 'score-analysis-section__main-title',
             text_content: t('deficiency_index_title', { defaultValue: "Deficiency Index" })
         }));
-        hero_section.appendChild(Helpers_create_element('p', {
+        hero_section.appendChild(Helpers.create_element('p', {
             class_name: 'view-intro-text',
             text_content: t('deficiency_index_summary_intro', { defaultValue: "A lower score indicates fewer deficiencies." })
         }));
