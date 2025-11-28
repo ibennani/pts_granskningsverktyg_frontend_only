@@ -41,7 +41,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@fontsource/roboto": "^5.2.8",
+    "@fontsource/roboto": "^5.2.9",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "cat": "^0.2.0",
     "codex": "^0.0.6",
