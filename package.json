@@ -29,7 +29,7 @@
     "axe-core": "^4.11.0",
     "chokidar-cli": "^3.0.0",
     "concurrently": "^9.0.1",
-    "eslint": "^9.37.0",
+    "eslint": "^9.39.2",
     "eslint-plugin-import": "^2.32.0",
     "jest": "^29.7.0",
     "jest-axe": "^9.0.0",
