@@ -60,7 +60,7 @@
     "@fortawesome/fontawesome-free": "^7.1.0",
     "cat": "^0.2.0",
     "codex": "^0.0.6",
-    "docx": "^9.5.1",
+    "docx": "^9.6.0",
     "dotenv": "^16.6.1",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
