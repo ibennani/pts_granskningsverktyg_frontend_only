@@ -1,4 +1,6 @@
 {
   "retention_days": 30,
-  "schedule_cron": "0 0,6,12,18 * * *"
+  "runs_per_day": 6,
+  "first_run_hour": 9,
+  "last_run_hour": 18
 }
