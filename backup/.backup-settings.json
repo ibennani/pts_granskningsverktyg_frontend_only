@@ -1,0 +1,4 @@
+{
+  "retention_days": 30,
+  "schedule_cron": "0 0,6,12,18 * * *"
+}
