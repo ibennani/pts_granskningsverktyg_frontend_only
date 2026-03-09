@@ -1,0 +1,6 @@
+{
+  "retention_days": 30,
+  "runs_per_day": 6,
+  "first_run_hour": 9,
+  "last_run_hour": 18
+}
